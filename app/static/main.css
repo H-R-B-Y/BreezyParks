@@ -1,0 +1,32 @@
+/* Style for the background canvas */
+.background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; /* Places it behind the foreground */
+    background-color: #464a4a;
+  }
+  
+/* Style for the foreground content */
+.foreground {
+  position: relative;
+  z-index: 1; /* Places it above the canvas */
+  background-color: transparent; /* Adjust transparency here */
+  border-radius: 20px;
+  margin: auto;
+  width:95%;
+  /* Other styles for spacing, margins, etc. */
+}
+  
+  
+.bodyContent {
+  background-color: rgba(255, 255, 255, 0.692);
+  border-radius: 10px;
+  margin: auto;
+  margin-bottom: 5px;
+  margin-top: 5px;
+  padding: 5px 10px
+
+}

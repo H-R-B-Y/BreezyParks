@@ -1,0 +1,12 @@
+{% extends "nonZetaTemplate.html.jinja" %}
+{% block body %}
+  <form method="POST">
+    <label for="username">Username:</label>
+    <input type="text" name="username" required><br><br>
+    <label for="password">Password:</label>
+    <input type="password" name="password" required><br><br>
+    <input type="checkbox" name="remember_me">Remember Me<br><br>
+    <input type="submit" value="Login">
+  </form>
+  <p> Don't have an account: <a href = "/reg"> Register </a> </p>
+{% endblock %}

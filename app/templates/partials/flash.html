@@ -1,0 +1,12 @@
+{# <!-- This will allow the flask flash code to work, the way these flash messages are displayed can be configured here --> #}
+{# <!-- to include use {% include partials/flash.html %} --> #}
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class=flashes>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}

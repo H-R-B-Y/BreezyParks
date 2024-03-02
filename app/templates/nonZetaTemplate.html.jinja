@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% block head %} {# Override for all standard head content #}
+    {# in order to add more head content Override this block and call {{ super() }} #}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %} Title {% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}"/>
+  {% endblock %}
+</head>
+<body style="background-color: #464a4a;">
+  {% block foreground %} {# Override foreground will override flash / header / body / footer #}
+    <div class="foreground" >
+      {% include "partials/flash.html" %}
+      {% block header %} {% include "partials/header.html" %} {% endblock %} {# Override for header #}
+      <div class="bodyContent">
+        {% block body %} {# Body is for main content #}
+          <div id="main">
+            <p>Hello World</p>
+          </div>
+        {% endblock %}
+      </div>
+
+      {% block footer %} {% include "partials/footer.html" %} {% endblock %} {# Override for footer #}
+    {% endblock %}
+  </div>
+</body>
+</html>

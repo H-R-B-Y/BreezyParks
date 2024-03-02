@@ -1,0 +1,14 @@
+{% extends "nonZetaTemplate.html.jinja" %}
+{%  block extraHead %}
+  <script src="{{ url_for('static', filename='registerScript.js')}}"></script>
+{% endblock %}
+{% block body %}
+  <form method="POST" id="regisForm">
+    <label for="username">Username:</label>
+    <input type="text" name="username" required><br><br>
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required><br><br>
+    <input type="submit" value="Register">
+  </form>
+  <div id="errorDiv" style="display: none; color: red;"></div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "nonZetaTemplate.html.jinja" %}
+
+{% block head %}
+  {{super()}}
+  <link rel="stylesheet" href="{{ url_for('static', filename='imgPicker.css') }}">
+{% endblock %}
+
+{% block body %}
+  <div style = "margin: auto; max-width: 75%">
+    <div style="height:20px"></div>
+    <form method="POST" action="/setimg" class="imgPicker">
+    <div id="pickerRow">
+      <label>
+        <input type="radio" id="S1" name="Sprite" value="0" {{ 'checked' if current_user.image_index == 0 else '' }}>
+        <img src={{img1}}>
+      </label>
+      <label>
+        <input type="radio" id="S2" name="Sprite" value="1" {{ 'checked' if current_user.image_index == 1 else '' }}>
+        <img src={{img2}}>
+      </label>
+      <label>
+        <input type="radio" id="S3" name="Sprite" value="2" {{ 'checked' if current_user.image_index == 2 else '' }}>
+        <img src={{img3}}>
+      </label>
+      <label>
+        <input type="radio" id="S4" name="Sprite" value="3" {{ 'checked' if current_user.image_index == 3 else '' }}>
+        <img src={{img4}}>
+      </label>
+      <label>
+        <input type="radio" id="S5" name="Sprite" value="4" {{ 'checked' if current_user.image_index == 4 else '' }}>
+        <img src={{img5}}>
+      </label>
+      </div>
+      <input type="submit" value="Set Image">
+    </form>
+    <div style="height:20px"></div>
+  </div>
+{% endblock %}

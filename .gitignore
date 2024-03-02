@@ -1,0 +1,5 @@
+app/secrets.json
+run.py
+app/gensecretkey.py
+app/__pycache__/*
+app/Monsters1/*
