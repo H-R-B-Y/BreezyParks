@@ -21,14 +21,13 @@ class User(UserMixin, db.Model):
     username -- The username for the user
     Return: user instance
     """
-    
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
     image_token = db.Column(db.String(100), nullable = True)
     image_index = db.Column(db.Integer, nullable = True)
-    is_admin = db.Column(db.Boolean, unique=False, default=False, nullable=False)
+    is_admin = db.Column(db.Boolean, unique=False, server_default='f', nullable=False)
 
 
     def set_password (self, password) -> None :  

@@ -1,78 +1,92 @@
+
 class Player {
-    constructor(playerId){
-        this.playerId = playerId;
+    constructor(username){
+        this.username = username;
         this.sprite = null;
+        this.usernameText = null;
         this.ready = null;
-        console.log(this)
     }
 
-    loadSprite (onReady){
-        console.log(this)
-        fetch('/'+this.playerId+'/sprite')
-        .then(response => {
-            if (!response.ok){
-                throw new Error("Not Ok");
-            }
-            return response.json();
-        })
-        .then(spriteData =>{
-            console.log("Recieved Data: ",spriteData);
-            this.sprite = PIXI.Sprite.from(spriteData.sprite);
+    loadSprite (drawContainer){
+        this.usernameText = new PIXI.Text(self.username);
+        this.usernameText.anchor.set(0.5,1);    
+        fetch('/'+this.username+'/sprite').then((response) => {
+            if (!response.ok){throw new Error("Not OK")};
+            self.sprite = new PIXI.Sprite.from(response.json().sprite);
+        }).catch(error => {
+            console.log(error);
+            this.sprite = new PIXI.Sprite.from("/static/generichamster.png");
+        }).then(() => {
             this.sprite.width = 64;
-            this.sprite.height = 64;
-            this.sprite.zindex = 5
+            this.sprite.width = 64;
+            this.sprite.anchor.set(0.5,0.5);
             this.setPosition(parseInt(window.innerWidth/2), parseInt(window.innerHeight/2));
+            this.sprite.zindex = 5; // why do we set it to 5?
+            drawContainer.addChild(this.sprite);
+            drawContainer.addChild(this.usernameText);
             this.ready = true;
-            onReady();
-        })
-        .catch(error =>{
-            this.sprite = PIXI.Sprite.from("/static/generichamster.png");
-            this.sprite.width = 64;
-            this.sprite.height = 64;
-            this.setPosition(parseInt(window.innerWidth/2), parseInt(window.innerHeight/2));
-            this.sprite.zindex = 5
-            this.ready = true
-            onReady();
-            //console.error("Problem fetching sprite: ", error);
-        });  
-    };
-    
+        });
+    }
+
     setPosition (x, y) {
-        var sizex = 64;
-        var sizey = 64;
-        var xpos = parseInt(x - (sizex/2));
-        var ypos = parseInt(y - (sizey/2));
-        if (this.ready){
+        // this needs to not only set the position of the sprite 
+        // but also the position of the name/anything attached to the player
+        if (this.sprite){
             this.sprite.x = xpos;
             this.sprite.y = ypos;
         }
+        if (this.usernameText){
+            this.usernameText.x = x;
+            this.usernameText.y = y - parseInt(this.sprite.height/2);
+        }
     }
 
-};
+}
 
 
-const socket = io("/zeta");
-
-app = null;
+const currentPath = new URL(window.location.href).pathname.substring(0,currentPath.indexOf("/",4)) == '' ? '/' : currentPath;
+const socket = io("/zeta"+currentPath);
 
 const userContainer = new PIXI.Container();
 const lobbyContainer = new PIXI.Container();
 const uiContainer = new PIXI.Container();
 
-players = {};
-currentPlayer = null;
-currentPath = new URL(window.location.href).pathname;
-currentPath = currentPath.substring(0,currentPath.indexOf("/",4));
-currentPath = currentPath == '' ? '/' : currentPath;
+var app = null;
+var players = {};
+var currentPlayer = null;
 
+function onJoined(data){
+    if(!data.username){return};
+    if(data.username == currentPlayer.username){return};
+    console.log("New Player: ", data);
 
-document.addEventListener('DOMContentLoaded', function() {
+    players[data.username] = new Player(data.username);
+    players[data.username].loadSprite(lobbyContainer);
+};
+
+function onLeft(data){
+    if(!data.username){return};
+    if(data.username == currentPlayer.username){throw new Error("Recieved Disconnect event for current player.");};
+    console.log("Disconnecting player", data);
+    lobbyContainer.removeChild(players[data.username]);
+    delete players[data.username];
+};
+
+function onMove(data){
+    if(!data.username){return};
+    console.log("Moving Player: ", data);
+    if(!data.x || !data.y){throw new Error("Move recieved with no position!")};
+    if(!(data.username in players)){throw new Error("Tried to move non existant player!")};
+    players[data.username].setPosition(data.x, data.y);
+};
+
+document.addEventListener("DOMContentLoaded", () => {
     currentPlayer = new Player(document.getElementById("zetaCanvas").dataset.userid);
-    
+
     app = new PIXI.Application({
         view : document.getElementById("zetaCanvas"),
-        background: "#464a4a",
-        resizeTo: window,
+        background : "#464a4a",
+        resizeTo: window
     });
 
     // Stack order for containers
@@ -81,64 +95,22 @@ document.addEventListener('DOMContentLoaded', function() {
     app.stage.addChild(uiContainer);
     app.stage.sortableChildren = true;
 
-    // when client connects; send the room connection event and room ID
-    socket.on("connect", () => {
-        socket.emit("joined", {"room" : currentPath});
-        
-        window.addEventListener("beforeunload", function(e){
-            socket.emit("left", {"room" : currentPath})
-         })
-
-        // Init the player sprite and add to user container
-        // If this is a reconnect the current player will already be initialised so skip
-        if (!currentPlayer.ready){
-            currentPlayer.loadSprite(() => {
-                if (currentPlayer.ready){
-                    userContainer.addChild(currentPlayer.sprite);
-                };
-                document.addEventListener("click", (event) => {
-                    currentPlayer.setPosition(parseInt(event.clientX), parseInt(event.clientY));
-                    socket.emit("moved", {"room" : currentPath, "x": currentPlayer.sprite.x, "y": currentPlayer.sprite.y});
-                });
-            });
+    currentPlayer.loadSprite(userContainer);
+    document.getElementById("zetaCanvas").addEventListener("click", (event) => {
+        // Should probably move this function into a method of the player?
+        // Should also probably just use PIXI js event handling so we can know what was clicked, I.E. to bring up user profiles.
+        currentPlayer.setPosition(parseInt(event.clientX), parseInt(event.clientY));
+        if (socket.connected){
+            socket.emit("moved", {"x":currentPlayer.sprite.x, "y":currentPlayer.sprite.y});
         };
     });
 
-    socket.on("joined", (data) => {
-        console.log("New player: ", data);
-        // WARN: not recieving id will break? handle this please xoxoxoxo
-        // should i use ID or username
-        if (data["username"] == currentPlayer.playerId){
-            return;
-        }
-
-        let fromPlayer = new Player(data["username"]);
-        players[data["username"]] = fromPlayer;
-
-        // WARN: not recieving coords will break? handle this please xoxoxo
-        fromPlayer.loadSprite(() => {
-            fromPlayer.sprite.x = data["x"];
-            fromPlayer.sprite.y = data["y"];
-            lobbyContainer.addChild(fromPlayer.sprite);
-        });
+    socket.on("connect", () => {
+        console.log("Connected to room!");
     });
 
-    socket.on("moved", (data) => {
-        console.log("Move recieved: ", data);
-        if (!(data["username"] in players) || data["username"] == currentPlayer.playerId){
-            return;
-        }
-        let fromPlayer = players[data["username"]];
-        fromPlayer.setPosition(data["x"], data["y"])
-    });
+    socket.on("joined", onJoined);
+    socket.on("left", onLeft);
+    socket.on("moved", onMove);
 
-    socket.on("left", (data) => {
-        console.log("Disconnect recieved: ", data);
-        let fromPlayer = players[data["username"]];
-        lobbyContainer.removeChild(fromPlayer.sprite);
-        delete players[data["username"]];
-    });
-
-    socket.connect();
 });
-

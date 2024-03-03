@@ -18,6 +18,7 @@ class zeta(Namespace):
         self.sidLookup = {} # sid : username lookup
         super().__init__(*args, **kwargs)
 
+
     def on_connect(self):
         '''
         On connect store the sid, the username, and create a lookup value for this sid.
@@ -37,6 +38,7 @@ class zeta(Namespace):
             self.activeUsers.append(current_user.username)
             self.sidLookup[request.sid] = current_user.username
     
+
     def on_disconnect(self):
         '''
         On Disconnect we need to remove the sid
@@ -52,8 +54,8 @@ class zeta(Namespace):
         # Code that needs to be executed IF and ONLY IF the disconnecting session is the last active session for the user.
         self.sidLookup.pop(request.sid)
         if(not any(map(lambda x: x==current_user.username, set(self.sidLookup.values)))):
-                self.activeUsers.pop(current_user.username)
-                emit("left", {"username":current_user.username}, include_self=False, broadcast=True)
+            self.activeUsers.pop(current_user.username)
+            emit("left", {"username":current_user.username}, include_self=False, broadcast=True)
     
     
     def on_moved(self, data):

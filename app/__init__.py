@@ -62,7 +62,7 @@ def initdb():
 # Socket IO Stup
 socketio = SocketIO(app)
 from app import zetaSocketIO
-socketio.on_namespace(zetaSocketIO.zeta("/zeta"))
+socketio.on_namespace(zetaSocketIO.zeta("/zeta/"))
 
 
 # allow app to be run as-is (in dev mode)
