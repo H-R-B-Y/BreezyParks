@@ -4,6 +4,8 @@ from app import db
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 
+# so autocomplete works
+db : SQLAlchemy = db
 
 with open ('./app/static/availableSprite.json') as file:
     sprites = json.load(file)
@@ -26,6 +28,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(120), nullable=False)
     image_token = db.Column(db.String(100), nullable = True)
     image_index = db.Column(db.Integer, nullable = True)
+    is_admin = db.Column(db.Boolean, unique=False, default=False, nullable=False)
 
 
     def set_password (self, password) -> None :  

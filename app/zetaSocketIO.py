@@ -1,6 +1,7 @@
 from flask import request
 from flask_socketio import Namespace, emit, join_room, leave_room
 from flask_login import current_user
+from app import socketio
 
 '''
 The aim of this is to try and utilise Namespace sub classes to implement.
@@ -9,6 +10,9 @@ See devlog for details
 
 class zeta(Namespace):
     def __init__(self, *args, **kwargs):
+        '''
+        Initialise room data, then initialise the namespace as normal.
+        '''
         self.activeSids = set() # sids currently connected
         self.activeUsers = set() # Users currently connected
         self.sidLookup = {} # sid : username lookup
@@ -53,6 +57,10 @@ class zeta(Namespace):
     
     
     def on_moved(self, data):
+        '''
+        Currently just emits the new position out to all connected sessions.
+        In future might need to change the code to account for Local/Global positioning.
+        '''
         if not current_user:
             return
         
@@ -67,3 +75,7 @@ class zeta(Namespace):
         )
 
 
+'''
+Create a function for initialising the namespace.
+Might want to consider making the namespace custom, like adding custom event listeners or making them only available to certain players i.e. Admins.
+'''
