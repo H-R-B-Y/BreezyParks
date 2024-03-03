@@ -33,9 +33,9 @@ class zeta(Namespace):
             emit("joined", {"username":current_user.username, "x":0, "y":0},include_self=False, broadcast=True)
         
         # Add user details to the class (Done after broadcast such that no actions are dispatched for uninitialised users)
-        self.activeSids.append(request.sid)
+        self.activeSids.add(request.sid)
         if current_user:
-            self.activeUsers.append(current_user.username)
+            self.activeUsers.add(current_user.username)
             self.sidLookup[request.sid] = current_user.username
     
 
@@ -46,15 +46,16 @@ class zeta(Namespace):
         We also need to remove the user from the active users IF and ONLY IF they have no other active session in this namespace.
         '''
         # Code that needs to be executed regardless of whether user  still has active sessions or not:
-        self.activeSids.pop(request.sid, False)
+        if request.sid in self.activeSids:
+            self.activeSids.discard(request.sid)
 
         if not current_user:
              return
         
         # Code that needs to be executed IF and ONLY IF the disconnecting session is the last active session for the user.
-        self.sidLookup.pop(request.sid)
-        if(not any(map(lambda x: x==current_user.username, set(self.sidLookup.values)))):
-            self.activeUsers.pop(current_user.username)
+        self.sidLookup.pop(request.sid, False)
+        if(not any(map(lambda x: x==current_user.username, set(self.sidLookup.values())))):
+            self.activeUsers.discard(current_user.username)
             emit("left", {"username":current_user.username}, include_self=False, broadcast=True)
     
     

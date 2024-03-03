@@ -64,8 +64,8 @@ socketio = SocketIO(app)
 from app import zetaSocketIO
 socketio.on_namespace(zetaSocketIO.zeta("/zeta/"))
 
-
 # allow app to be run as-is (in dev mode)
 if __name__ == '__main__':
     socketio.run(app)
     app.run()
+

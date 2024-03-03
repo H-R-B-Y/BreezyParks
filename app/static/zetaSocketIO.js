@@ -8,17 +8,20 @@ class Player {
     }
 
     loadSprite (drawContainer){
-        this.usernameText = new PIXI.Text(self.username);
-        this.usernameText.anchor.set(0.5,1);    
-        fetch('/'+this.username+'/sprite').then((response) => {
+        this.usernameText = new PIXI.Text(this.username);
+        this.usernameText.anchor.set(0.5,1);
+        
+        fetch('/'+this.username+'/sprite').then(response => {
             if (!response.ok){throw new Error("Not OK")};
-            self.sprite = new PIXI.Sprite.from(response.json().sprite);
+            return response.json();
+        }).then(data => {
+            this.sprite = PIXI.Sprite.from(data.sprite);
         }).catch(error => {
             console.log(error);
-            this.sprite = new PIXI.Sprite.from("/static/generichamster.png");
+            this.sprite = PIXI.Sprite.from("/static/generichamster.png");
         }).then(() => {
             this.sprite.width = 64;
-            this.sprite.width = 64;
+            this.sprite.height = 64;
             this.sprite.anchor.set(0.5,0.5);
             this.setPosition(parseInt(window.innerWidth/2), parseInt(window.innerHeight/2));
             this.sprite.zindex = 5; // why do we set it to 5?
@@ -32,8 +35,8 @@ class Player {
         // this needs to not only set the position of the sprite 
         // but also the position of the name/anything attached to the player
         if (this.sprite){
-            this.sprite.x = xpos;
-            this.sprite.y = ypos;
+            this.sprite.x = x;
+            this.sprite.y = y;
         }
         if (this.usernameText){
             this.usernameText.x = x;
@@ -43,8 +46,8 @@ class Player {
 
 }
 
-
-const currentPath = new URL(window.location.href).pathname.substring(0,currentPath.indexOf("/",4)) == '' ? '/' : currentPath;
+const initialPath = new URL(window.location.href).pathname
+const currentPath = initialPath.substring(0,initialPath.indexOf("/",4)) === '' ? '/' : initialPath.substring(0,initialPath.indexOf("/",4));
 const socket = io("/zeta"+currentPath);
 
 const userContainer = new PIXI.Container();
@@ -58,6 +61,7 @@ var currentPlayer = null;
 function onJoined(data){
     if(!data.username){return};
     if(data.username == currentPlayer.username){return};
+    if(data.username in players){return};
     console.log("New Player: ", data);
 
     players[data.username] = new Player(data.username);
@@ -68,7 +72,10 @@ function onLeft(data){
     if(!data.username){return};
     if(data.username == currentPlayer.username){throw new Error("Recieved Disconnect event for current player.");};
     console.log("Disconnecting player", data);
-    lobbyContainer.removeChild(players[data.username]);
+    lobbyContainer.removeChild(players[data.username].sprite);
+    lobbyContainer.removeChild(players[data.username].usernameText);
+    players[data.username].sprite.destroy();
+    players[data.username].usernameText.destroy();
     delete players[data.username];
 };
 
@@ -76,6 +83,7 @@ function onMove(data){
     if(!data.username){return};
     console.log("Moving Player: ", data);
     if(!data.x || !data.y){throw new Error("Move recieved with no position!")};
+    if(data.username == currentPlayer.username){currentPlayer.setPosition(data.x, data.y)};
     if(!(data.username in players)){throw new Error("Tried to move non existant player!")};
     players[data.username].setPosition(data.x, data.y);
 };

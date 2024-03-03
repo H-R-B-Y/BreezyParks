@@ -1,10 +1,15 @@
 
 <link rel="stylesheet" href="{{ url_for('static', filename='header.css') }}" />
 <div class = "header">
-    <a href="/" class="logo">ZetaWorld</a>
+    <a href="/" class="logo">BreezyParks</a>
     <div class="header-right">
         <a class="active" href="/">Home</a>
         <a class="active">Menu Item</a>
-        <a>Menu Item 2</a>
+        {% set username = getUsername(current_user) %}
+        {% if username is none %}
+            <a href="/login">Login</a>
+        {% else %}
+            <a href="/user">{{ username }}</a>
+        {% endif %}
     </div>
 </div>
