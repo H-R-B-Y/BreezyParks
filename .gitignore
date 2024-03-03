@@ -7,4 +7,3 @@ venv/pyvenv.cfg
 venv/*
 instance/*
 migrations/*
-.gitignore
