@@ -16,3 +16,4 @@ def rndid ():
 
 app.jinja_env.globals.update(getUsername = getUsername)
 app.jinja_env.globals.update(rndId = rndid)
+app.jinja_env.globals.update(conf = app.config)

@@ -1,3 +1,4 @@
+import requests
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import login_user, logout_user, login_required, current_user
@@ -24,33 +25,54 @@ def about ():
 
 @app.route('/register', methods=["GET", "POST"])
 def register ():
-    if request.method == "POST" and request.form and 'username' in request.form and 'password' in request.form:
-        username = request.form['username']
-        password = request.form['password']
-        
-        if len(username) > 80:
-            flash("Username is too long, must be 80 characters of less")
-            return redirect(url_for("register"))
+    if request.method == "GET":
+        return render_template("register.html.jinja")
+    
+    if not request.method == "POST":
+        return "Resource not found.", 404
 
-        # check username not in use
-        user : schema.User = schema.User.query.filter_by(username=username).first()
-        if user:
-            flash("Username already in use!")
-            return redirect(url_for("register"))
-        
-        # check password is valid
-        if len(password) < 8 or not any(char.isupper() for char in password) or not any(char.isdigit() for char in password):
-            flash ("Password does not meet security requirements.")
-            return redirect(url_for("register"))
-        
-        # user is valid
-        user = schema.User(username=username)
-        user.set_password(password)
-        db.session.add(user)
-        db.session.commit()
-        return redirect(url_for("login"))
+    if not request.form:
+        return "No data.", 400
+    
+    if 'username' not in request.form or 'password' not in request.form or 'cf-turnstile-response' not in request.form or request.headers.get('CF-Connecting-IP', False):
+        return "Malformed data.", 400
 
-    return render_template("register.html.jinja")
+    username = request.form['username']
+    password = request.form['password']
+    if len(username) > 80:
+        flash("Username is too long, must be 80 characters of less")
+        return redirect(url_for("register")), 400
+    
+    user : schema.User = schema.User.query.filter_by(username=username).first()
+    if user:
+        flash("Username already in use!")
+        return redirect(url_for("register")), 403
+    
+    if len(password) < 8 or not any(char.isupper() for char in password) or not any(char.isdigit() for char in password):
+        flash ("Password does not meet security requirements.")
+        return redirect(url_for("register")), 403
+
+    turnstileResponse = request.form['cf-turnstile-response']
+    connectingIp = request.headers.get('CF-Connecting-IP')
+
+    cfData = {
+        "secret" : app.config['cfSecretKey'],
+        "response" : turnstileResponse,
+        "remoteip" : connectingIp
+    }
+
+    cfUrl = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+    resp = requests.post(cfUrl, data=cfData)
+
+    if not resp.json()['success']:
+        flash("Could not verify turnstile.")
+        return redirect(url_for("register")), 403
+
+    user = schema.User(username=username)
+    user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+    return redirect(url_for("login"))
 
 
 @app.route('/login', methods=["GET","POST"])

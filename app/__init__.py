@@ -39,6 +39,8 @@ with open("app/secrets.json") as secretstxt:
     secrets = json.load(secretstxt)
     # Secret key parsed from secrets.json, for unique secret key please run gensecretkey.py in the app folder
     app.config["SECRET_KEY"] = secrets["secretKey"]
+    app.config["cfSiteKey"] = secrets["cfSiteKey"]
+    app.config["cfSecretKey"] = secrets["cfSecretKey"]
     del(secrets)
 
 # Routes Config

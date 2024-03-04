@@ -8,6 +8,7 @@
     <title>{% block title %} Title {% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}"/>
   {% endblock %}
+  {% block extraHead %}{% endblock %}
 </head>
 <body style="background-color: #464a4a;">
   {% block foreground %} {# Override foreground will override flash / header / body / footer #}

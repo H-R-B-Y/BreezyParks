@@ -28,6 +28,9 @@ class User(UserMixin, db.Model):
     image_token = db.Column(db.String(100), nullable = True)
     image_index = db.Column(db.Integer, nullable = True)
     is_admin = db.Column(db.Boolean, unique=False, server_default='f', nullable=False)
+    created_date = db.Column(db.DateTime, nullable=True)
+    is_email_auth = db.Column(db.Boolean, nullable=False, server_default='f')
+    email_auth_code = db.Column(db.String(100), nullable=True)
 
 
     def set_password (self, password) -> None :  
@@ -68,4 +71,11 @@ class User(UserMixin, db.Model):
         if user:
             return user
         else: return None
+
+    @classmethod
+    def check_authcode_conflicts(cls, authCode):
+        '''
+        Returns true if authCode is in the database.
+        '''
+        return User.query.filter_by(email_auth_code=authCode).count() > 0
     
