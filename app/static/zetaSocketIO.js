@@ -22,7 +22,7 @@ class Player {
         }).then(() => {
             this.sprite.width = 64;
             this.sprite.height = 64;
-            this.sprite.anchor.set(0.5,0.5);
+            this.sprite.anchor.set(0.5,0.6);
             this.setPosition(parseInt(window.innerWidth/2), parseInt(window.innerHeight/2));
             this.sprite.zindex = 5; // why do we set it to 5?
             drawContainer.addChild(this.sprite);
