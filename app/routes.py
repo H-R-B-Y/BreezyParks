@@ -1,14 +1,11 @@
-import requests
-from flask import render_template, request, redirect, url_for, flash, jsonify
-from flask_sqlalchemy import SQLAlchemy
+import string, random, base64, datetime
+import requests as req
+
+from flask import render_template, request, redirect, url_for, flash, jsonify, render_template_string
 from flask_login import login_user, logout_user, login_required, current_user
 
-from app import app, db, schema, loginMan
-
-from urllib import parse
-import requests as req
-import base64, datetime
-
+from app import app, db, schema
+from app.emailAuthRoutes import emailQueue, emailQueueItem
 
 # BASIC ROUTES
 @app.route('/')
@@ -24,16 +21,10 @@ def about ():
 # Login and Reg Routes
 
 @app.route('/register', methods=["GET", "POST"])
-def register ():
-    if request.method == "GET":
-        return render_template("register.html.jinja")
-    
-    if not request.method == "POST":
-        return "Resource not found.", 404
-
-    if not request.form:
-        return "No data.", 400
-    
+def register():
+    if request.method == "GET": return render_template("register.html.jinja") if not current_user else redirect(url_for("/user"))
+    if not request.method == "POST": return "Resource not found.", 404
+    if not request.form: return "No data.", 400
     if 'username' not in request.form or 'password' not in request.form or 'cf-turnstile-response' not in request.form or request.headers.get('CF-Connecting-IP', False):
         return "Malformed data.", 400
 
@@ -52,31 +43,32 @@ def register ():
         flash ("Password does not meet security requirements.")
         return redirect(url_for("register")), 403
 
+    cfUrl = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
     turnstileResponse = request.form['cf-turnstile-response']
     connectingIp = request.headers.get('CF-Connecting-IP')
-
-    cfData = {
-        "secret" : app.config['cfSecretKey'],
+    cfData = {"secret" : app.config['cfSecretKey'],
         "response" : turnstileResponse,
         "remoteip" : connectingIp
     }
 
-    cfUrl = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
-    resp = requests.post(cfUrl, data=cfData)
+    resp = req.post(cfUrl, data=cfData)
 
     if not resp.json()['success']:
         flash("Could not verify turnstile.")
         return redirect(url_for("register")), 403
 
+    alphabet = string.ascii_letters + string.digits
     user = schema.User(username=username)
     user.set_password(password)
+    user.email_auth_code = ''.join([random.choice(alphabet) for x in range(10)])
     db.session.add(user)
     db.session.commit()
+    emailQueue.put_nowait(emailQueueItem("bunncatty@gmail.com", user.email_auth_code, user.username))
     return redirect(url_for("login"))
 
 
 @app.route('/login', methods=["GET","POST"])
-def login ():
+def login():
     if request.method == "POST" and request.form and 'username' in request.form and 'password' in request.form:
         username = request.form['username']
         password = request.form['password']
@@ -94,14 +86,12 @@ def login ():
 
 
 @app.route('/logout', methods=["GET"])
-def logout ():
-    logout_user()
-    return redirect(url_for('login'))
+def logout():logout_user();return redirect(url_for('login'))
 
 
 @app.route('/user')
 @login_required
-def user ():
+def user():
     #return jsonify({"User" : f"{current_user.username}"}), 200
     return render_template("user.html.jinja", img1=schema.sprites[0], img2=schema.sprites[1], img3=schema.sprites[2], img4=schema.sprites[3], img5=schema.sprites[4])
 
@@ -127,15 +117,13 @@ def set_img ():
 @app.route('/<string:username>/sprite', methods=["GET"])
 def get_user_sprite_username (username:str):
     user = schema.User.get_user_by_name(username)
-    if not user:
-        return 'User not found', 404
+    if not user: return 'User not found', 404
     return jsonify({'username':user.username, 'sprite':user.image_token}), 200
     
 
 @app.route('/<int:userid>/sprite', methods=["GET"])
 def get_user_sprite_id (userID:int):
     user = schema.User.get_user_by_id(userID)
-    if not user:
-        return 'User not found', 404
+    if not user: return 'User not found', 404
     return jsonify({'username':user.username, 'sprite':user.image_token}), 200
     

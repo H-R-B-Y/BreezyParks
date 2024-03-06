@@ -14,10 +14,12 @@ class Player {
         fetch('/'+this.username+'/sprite').then(response => {
             if (!response.ok){throw new Error("Not OK")};
             return response.json();
-        }).then(data => {
+        }).then(async data => {
+            texture = await PIXI.Assets.load(data.sprite);
             this.sprite = PIXI.Sprite.from(data.sprite);
-        }).catch(error => {
+        }).catch(async error => {
             console.log(error);
+            texture = await PIXI.Assets.load("/static/generichamster.png");
             this.sprite = PIXI.Sprite.from("/static/generichamster.png");
         }).then(() => {
             this.sprite.width = 64;
@@ -93,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     app = new PIXI.Application();
     app.init({
-        view : document.getElementById("zetaCanvas"),
+        canvas : document.getElementById("zetaCanvas"),
         background : "#464a4a",
         resizeTo: window
     });

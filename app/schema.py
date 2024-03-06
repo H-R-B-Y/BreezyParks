@@ -31,6 +31,7 @@ class User(UserMixin, db.Model):
     created_date = db.Column(db.DateTime, nullable=True)
     is_email_auth = db.Column(db.Boolean, nullable=False, server_default='f')
     email_auth_code = db.Column(db.String(100), nullable=True)
+    email_address = db.Column(db.String(100), nullable=True)
 
 
     def set_password (self, password) -> None :  
