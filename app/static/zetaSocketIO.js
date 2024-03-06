@@ -8,7 +8,7 @@ class Player {
     }
 
     loadSprite (drawContainer){
-        this.usernameText = new PIXI.Text(this.username);
+        this.usernameText = new PIXI.Text({text:this.username});
         this.usernameText.anchor.set(0.5,1);
         
         fetch('/'+this.username+'/sprite').then(response => {
@@ -91,7 +91,8 @@ function onMove(data){
 document.addEventListener("DOMContentLoaded", () => {
     currentPlayer = new Player(document.getElementById("zetaCanvas").dataset.userid);
 
-    app = new PIXI.Application({
+    app = new PIXI.Application();
+    app.init({
         view : document.getElementById("zetaCanvas"),
         background : "#464a4a",
         resizeTo: window
