@@ -12,9 +12,11 @@ emailPattern = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
 def doTurnstile (turnstileResponse, connectingIp):
     cfUrl = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
     cfData = {"secret" : app.config['cfSecretKey'],
-        "response" : turnstileResponse,
-        "remoteip" : connectingIp
+        "response" : turnstileResponse
     }
+    if connectingIp:
+        cfData["remoteip"] = connectingIp
+    
     return req.post(cfUrl, data=cfData)
 
 
@@ -42,8 +44,7 @@ def register():
     if ('username' not in request.form or 
         not "email" in request.form or 
         'password' not in request.form or 
-        'cf-turnstile-response' not in request.form or 
-        request.headers.get('CF-Connecting-IP', False)):
+        'cf-turnstile-response' not in request.form):
         return "Malformed data.", 400
 
     username = request.form['username']
@@ -70,7 +71,7 @@ def register():
         return redirect(url_for("register")), 403
 
     # Turnstile check.
-    resp = doTurnstile(request.form['cf-turnstile-response'], request.headers.get('CF-Connecting-IP'))
+    resp = doTurnstile(request.form['cf-turnstile-response'], request.headers.get('CF-Connecting-IP', None))
     if not resp.json()['success']: flash("Could not verify turnstile."); return redirect(url_for("register"))
 
     # Commit to database.
