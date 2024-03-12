@@ -1,10 +1,14 @@
 {% extends "nonZetaTemplate.html.jinja" %}
+{% block extraHead%}
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
+{% endblock%}
 {% block body %}
   <form method="POST">
     <label for="username">Username:</label>
     <input type="text" name="username" required><br><br>
     <label for="password">Password:</label>
     <input type="password" name="password" required><br><br>
+    <div class="cf-turnstile" data-sitekey="{{ conf['cfSiteKey'] }}" data-theme="light"></div><br><br>
     <input type="checkbox" name="remember_me">Remember Me<br><br>
     <input type="submit" value="Login">
   </form>

@@ -15,11 +15,11 @@ class Player {
             if (!response.ok){throw new Error("Not OK")};
             return response.json();
         }).then(async data => {
-            texture = await PIXI.Assets.load(data.sprite);
+            var texture = await PIXI.Assets.load(data.sprite);
             this.sprite = PIXI.Sprite.from(data.sprite);
         }).catch(async error => {
             console.log(error);
-            texture = await PIXI.Assets.load("/static/generichamster.png");
+            var texture = await PIXI.Assets.load("/static/generichamster.png");
             this.sprite = PIXI.Sprite.from("/static/generichamster.png");
         }).then(() => {
             this.sprite.width = 64;

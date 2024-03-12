@@ -1,0 +1,16 @@
+{% extends "nonZetaTemplate.html.jinja" %}
+{%  block extraHead %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='regis.css') }}"/>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
+{% endblock %}
+{% block body %}
+  <div class="authoriseForm">
+    <form method="POST" id="authForm">
+      <label for="authCode">Authorisation Code:</label>
+      <input type="text" name="authCode" required><br><br>
+      <div class="cf-turnstile" data-sitekey="{{ conf['cfSiteKey'] }}" data-theme="light"></div><br><br>
+      <input type="submit" value="Register">
+    </form>
+    <div id="errorDiv"></div>
+  </div>
+{% endblock %}

@@ -6,14 +6,15 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_socketio import SocketIO
+from multiprocessing import Process, Queue
 
 requiredSecrets = {
-    "secretKey":"The site secret key.",
-    "cfSiteKey":"The key or the sites turnstile",
-    "cfSecretKey":"The secret for the sites turnstile",
-    "mailServerKey":"Key/Password for mail server",
-    "mailAddress":"Mail address to send from / login with",
-    "loginAddress":"Address to login to smtp server"
+    "secretKey": "The site secret key.",
+    "cfSiteKey": "The key or the sites turnstile",
+    "cfSecretKey": "The secret for the sites turnstile",
+    "mailServerKey": "Key/Password for mail server",
+    "mailAddress": "Mail address to send from / login with",
+    "loginAddress": "Address to login to smtp server"
 }
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
@@ -28,6 +29,10 @@ logging.basicConfig(level=logging.ERROR, format=log_format)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+
+# Socket IO Stup
+socketio = SocketIO(app)
+mailQ = Queue()
 
 # Import the schema definition
 from app import schema
@@ -60,6 +65,7 @@ with open("app/secrets.json") as secretstxt:
     app.config["cfSecretKey"] = secrets["cfSecretKey"]
     app.config["mailPassword"] = secrets["mailServerKey"]
     app.config["mailAddress"] = secrets["mailAddress"]
+    app.config["loginAddress"] = secrets["loginAddress"]
     del(secrets)
 
 
@@ -67,7 +73,7 @@ with open("app/secrets.json") as secretstxt:
 # import routes for main app
 # blueprints can be imported here
 from app import routes
-
+from app import emailAuthRoutes
 
 # custom Jinja addons
 from app import jinjaTemplateAddons
@@ -80,13 +86,11 @@ def initdb():
     db.create_all()
 
 
-# Socket IO Stup
-socketio = SocketIO(app)
-from app import zetaSocketIO
-socketio.on_namespace(zetaSocketIO.zeta("/zeta/"))
+emailWorker = Process(target=emailAuthRoutes.authEmailLoop, args=[app.config["loginAddress"], app.config["mailAddress"], app.config["mailPassword"], mailQ])
 
 # allow app to be run as-is (in dev mode)
 if __name__ == '__main__':
+    emailWorker.start()
     socketio.run(app)
-    app.run()
+    emailWorker.join()
 

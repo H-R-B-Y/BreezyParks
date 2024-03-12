@@ -27,9 +27,9 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(120), nullable=False)
     image_token = db.Column(db.String(100), nullable = True)
     image_index = db.Column(db.Integer, nullable = True)
-    is_admin = db.Column(db.Boolean, unique=False, server_default='f', nullable=False)
+    is_admin = db.Column(db.Boolean, unique=False, server_default=db.sql.expression.false(), nullable=False)
     created_date = db.Column(db.DateTime, nullable=True)
-    is_email_auth = db.Column(db.Boolean, nullable=False, server_default='f')
+    is_email_auth = db.Column(db.Boolean, nullable=False, server_default=db.sql.expression.false())
     email_auth_code = db.Column(db.String(100), nullable=True)
     email_address = db.Column(db.String(100), nullable=True)
 

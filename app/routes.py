@@ -1,13 +1,25 @@
-import string, random, base64, datetime
+import string, random, re
 import requests as req
 
-from flask import render_template, request, redirect, url_for, flash, jsonify, render_template_string
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 
-from app import app, db, schema
-from app.emailAuthRoutes import emailQueue, emailQueueItem
+from app import app, db, schema, socketio, zetaSocketIO, mailQ, emailAuthRoutes
+
+
+emailPattern = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
+
+def doTurnstile (turnstileResponse, connectingIp):
+    cfUrl = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+    cfData = {"secret" : app.config['cfSecretKey'],
+        "response" : turnstileResponse,
+        "remoteip" : connectingIp
+    }
+    return req.post(cfUrl, data=cfData)
+
 
 # BASIC ROUTES
+socketio.on_namespace(zetaSocketIO.zeta("/zeta/"))
 @app.route('/')
 def index():
     return render_template("index.html.jinja")
@@ -19,51 +31,56 @@ def about ():
 
 
 # Login and Reg Routes
-
 @app.route('/register', methods=["GET", "POST"])
 def register():
-    if request.method == "GET": return render_template("register.html.jinja") if not current_user else redirect(url_for("/user"))
+    # Redirects and errors.
+    if request.method == "GET": return render_template("register.html.jinja") if not current_user.is_authenticated else redirect(url_for("user"))
     if not request.method == "POST": return "Resource not found.", 404
     if not request.form: return "No data.", 400
-    if 'username' not in request.form or 'password' not in request.form or 'cf-turnstile-response' not in request.form or request.headers.get('CF-Connecting-IP', False):
+    
+    # Validation for form data.
+    if ('username' not in request.form or 
+        not "email" in request.form or 
+        'password' not in request.form or 
+        'cf-turnstile-response' not in request.form or 
+        request.headers.get('CF-Connecting-IP', False)):
         return "Malformed data.", 400
 
     username = request.form['username']
+    email = request.form['email']
     password = request.form['password']
-    if len(username) > 80:
-        flash("Username is too long, must be 80 characters of less")
-        return redirect(url_for("register")), 400
     
+    # Username Length Check.
+    if len(username) > 80: flash("Username is too long, must be 80 characters of less."); return redirect(url_for("register")), 400
+    if len(username) < 1: flash("Username is too Short, must be 1 characters or more."); return redirect(url_for("register")), 400
+
+    # Email validation check.
+    if not emailPattern.match(email): flash("Invalid email address."); return redirect(url_for("register")), 400
+    
+    # User already created.
     user : schema.User = schema.User.query.filter_by(username=username).first()
-    if user:
-        flash("Username already in use!")
-        return redirect(url_for("register")), 403
+    if user: flash("Username already in use!"); return redirect(url_for("register")), 403
+    user : schema.User = schema.User.query.filter_by(email_address=email).first()
+    if user: flash("Email already in use!"); return redirect(url_for("register")), 403
     
+    # Password validity check.
     if len(password) < 8 or not any(char.isupper() for char in password) or not any(char.isdigit() for char in password):
         flash ("Password does not meet security requirements.")
         return redirect(url_for("register")), 403
 
-    cfUrl = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
-    turnstileResponse = request.form['cf-turnstile-response']
-    connectingIp = request.headers.get('CF-Connecting-IP')
-    cfData = {"secret" : app.config['cfSecretKey'],
-        "response" : turnstileResponse,
-        "remoteip" : connectingIp
-    }
+    # Turnstile check.
+    resp = doTurnstile(request.form['cf-turnstile-response'], request.headers.get('CF-Connecting-IP'))
+    if not resp.json()['success']: flash("Could not verify turnstile."); return redirect(url_for("register")), 403
 
-    resp = req.post(cfUrl, data=cfData)
-
-    if not resp.json()['success']:
-        flash("Could not verify turnstile.")
-        return redirect(url_for("register")), 403
-
+    # Commit to database.
     alphabet = string.ascii_letters + string.digits
     user = schema.User(username=username)
     user.set_password(password)
     user.email_auth_code = ''.join([random.choice(alphabet) for x in range(10)])
+    user.email_address = email
     db.session.add(user)
     db.session.commit()
-    emailQueue.put_nowait(emailQueueItem("bunncatty@gmail.com", user.email_auth_code, user.username))
+    mailQ.put(emailAuthRoutes.emailQueueItem(email, user.email_auth_code, username))
     return redirect(url_for("login"))
 
 
@@ -73,12 +90,18 @@ def login():
         username = request.form['username']
         password = request.form['password']
 
-        user : schema.User = schema.User.query.filter_by(username=username).first()
+        if ('cf-turnstile-response' not in request.form or 
+            request.headers.get('CF-Connecting-IP', False)):
+            return "Malformed Request", 400
+    
+        resp = doTurnstile(request.form['cf-turnstile-response'], request.headers.get('CF-Connecting-IP'))
+        if not resp.json()['success']: flash("Could not verify turnstile."); return redirect(url_for("register")), 403
 
+        user : schema.User = schema.User.query.filter_by(username=username).first()
         if user and user.check_password(password=password):
             flash("Login Success")
             login_user(user, remember = request.form.get("remember_me")=='on')
-            return redirect(url_for('user'))
+            return redirect(url_for('user'))        
 
         flash("Login failed")
 
