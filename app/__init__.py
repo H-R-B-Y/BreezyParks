@@ -33,6 +33,7 @@ migrate = Migrate(app, db)
 # Socket IO Stup
 socketio = SocketIO(app)
 mailQ = Queue()
+outputQ = Queue()
 
 # Import the schema definition
 from app import schema
@@ -86,11 +87,18 @@ def initdb():
     db.create_all()
 
 
-emailWorker = Process(target=emailAuthRoutes.authEmailLoop, args=[app.config["loginAddress"], app.config["mailAddress"], app.config["mailPassword"], mailQ])
+emailWorker = Process(target=emailAuthRoutes.authEmailLoop, args=[app.config["loginAddress"], app.config["mailAddress"], app.config["mailPassword"], mailQ, outputQ])
 
 # allow app to be run as-is (in dev mode)
 if __name__ == '__main__':
     emailWorker.start()
-    socketio.run(app)
-    emailWorker.join()
+    try:
+        socketio.run(app)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        emailWorker.join()
+        while not outputQ.empty():
+            print(outputQ.get())
+    
 

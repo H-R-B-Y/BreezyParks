@@ -1,4 +1,4 @@
-import string, random, re
+import string, random, re, datetime
 import requests as req
 
 from flask import render_template, request, redirect, url_for, flash, jsonify
@@ -51,17 +51,18 @@ def register():
     password = request.form['password']
     
     # Username Length Check.
-    if len(username) > 80: flash("Username is too long, must be 80 characters of less."); return redirect(url_for("register")), 400
-    if len(username) < 1: flash("Username is too Short, must be 1 characters or more."); return redirect(url_for("register")), 400
+    if len(username) > 80: flash("Username is too long, must be 80 characters of less."); return redirect(url_for("register"))
+    if len(username) < 1: flash("Username is too Short, must be 1 characters or more."); return redirect(url_for("register"))
+    if emailPattern.match(username): flash("Username cannot be an email address."); return redirect(url_for("register"))
 
     # Email validation check.
-    if not emailPattern.match(email): flash("Invalid email address."); return redirect(url_for("register")), 400
+    if not emailPattern.match(email): flash("Invalid email address."); return redirect(url_for("register"))
     
     # User already created.
     user : schema.User = schema.User.query.filter_by(username=username).first()
-    if user: flash("Username already in use!"); return redirect(url_for("register")), 403
+    if user: flash("Username already in use!"); return redirect(url_for("register"))
     user : schema.User = schema.User.query.filter_by(email_address=email).first()
-    if user: flash("Email already in use!"); return redirect(url_for("register")), 403
+    if user: flash("Email already in use!"); return redirect(url_for("register"))
     
     # Password validity check.
     if len(password) < 8 or not any(char.isupper() for char in password) or not any(char.isdigit() for char in password):
@@ -70,7 +71,7 @@ def register():
 
     # Turnstile check.
     resp = doTurnstile(request.form['cf-turnstile-response'], request.headers.get('CF-Connecting-IP'))
-    if not resp.json()['success']: flash("Could not verify turnstile."); return redirect(url_for("register")), 403
+    if not resp.json()['success']: flash("Could not verify turnstile."); return redirect(url_for("register"))
 
     # Commit to database.
     alphabet = string.ascii_letters + string.digits
@@ -78,6 +79,7 @@ def register():
     user.set_password(password)
     user.email_auth_code = ''.join([random.choice(alphabet) for x in range(10)])
     user.email_address = email
+    user.created_date = datetime.datetime.utcnow()
     db.session.add(user)
     db.session.commit()
     mailQ.put(emailAuthRoutes.emailQueueItem(email, user.email_auth_code, username))
@@ -111,11 +113,10 @@ def login():
 @app.route('/logout', methods=["GET"])
 def logout():logout_user();return redirect(url_for('login'))
 
-
 @app.route('/user')
 @login_required
 def user():
-    #return jsonify({"User" : f"{current_user.username}"}), 200
+    if not current_user.is_email_auth: flash("User is not currently authorised. Un-authorised accounts will be deleted after 30 days. Please check your email for authorisation instructions.")
     return render_template("user.html.jinja", img1=schema.sprites[0], img2=schema.sprites[1], img3=schema.sprites[2], img4=schema.sprites[3], img5=schema.sprites[4])
 
 @app.route('/setimg', methods=["GET","POST"])

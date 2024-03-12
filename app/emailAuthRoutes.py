@@ -3,12 +3,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from multiprocessing import Queue
 
-from app import app, db, routes
-
-# const
-emailProcessOutput = Queue()
+from app import app, db, routes, schema
 
 class emailQueueItem ():
     def __init__(self, toAddress, secretCode, username):
@@ -17,20 +13,23 @@ class emailQueueItem ():
         self.username = username
 
     def getMessage(self):
-        mailTemplate = f"""Hello {self.username},
+        mailTemplate = f"""Hello {self.username}.
+
 Welcome to BreezyParks,
-Please enter the code at the following link to verify account details:
+Please use the following link to authorise your email:
 https://breezyparks.com/emailauth/{self.username}/{self.secretCode}/authorise
 
-If the above link is not working please enter the following code at https://www.breezyparks.com/emailauth/authorise 
-\n
+If the above link is not working please enter the following code at https://www.breezyparks.com/emailauth/authorise \n
 {self.secretCode}
 
 If you are recieving this and have not signed up for a BreezyParks account please use the following link to request for account deletion:
+https://breezyparks.com/emailauth/{self.username}/{self.secretCode}/unauthorise
+
+
 """
         return mailTemplate
 
-def authEmailLoop(loginAddress, fromAddress, password, mailQueue):
+def authEmailLoop(loginAddress, fromAddress, password, mailQueue, emailProcessOutput):
     '''
     Creates a mail loop that reads the mail queue.
     Once a mail items is recieved the message is formed.
@@ -85,8 +84,6 @@ def authEmailLoop(loginAddress, fromAddress, password, mailQueue):
     return emailProcessOutput
 
             
-        
-
 # Flask app routes        
 @app.route('/emailauth/authorise', methods=["GET","POST"])
 @login_required
@@ -119,18 +116,26 @@ def authoriseFromPage():
     
     current_user.is_email_auth = True
     db.session.commit()
-    flash("Authorised successully.")
+    flash("Authorised successfully.")
     return redirect(url_for("user"))
 
     
-
-
-
 @app.route('/emailauth/<string:username>/<string:authCode>/authorise')
 def authoriseFromCode(username:str, authCode:str):
-    pass
+    if not (user := schema.User.get_user_by_name(username)): flash("User does not exist!"); return redirect(url_for("index"))
+    if user.is_email_auth: flash("User already authorised."); return redirect(url_for("index"))
+    if not authCode == user.email_auth_code: flash("Invalid auth code."); return redirect(url_for("index"))
+    user.is_email_auth = True
+    db.session.commit()
+    flash("Authorised successfully.")
+    return redirect(url_for("user"))
 
-
-@app.route('/emailauth/<string:authCode>/unauthorise')
-def unauthoriseFromCode(authCode:str):
-    pass
+@app.route('/emailauth/<string:username>/<string:authCode>/unauthorise')
+def unauthoriseFromCode(username:str, authCode:str):
+    if not (user := schema.User.get_user_by_name(username)): flash("User does not exist!"); return redirect(url_for("index"))
+    if user.is_email_auth: flash("User already authorised."); return redirect(url_for("index"))
+    if not authCode == user.email_auth_code: flash("Invalid auth code."); return redirect(url_for("index"))
+    schema.User.query.filter(schema.User.username == username).delete()
+    db.session.commit()
+    flash("Account removed successfully.")
+    return redirect(url_for("index"))
