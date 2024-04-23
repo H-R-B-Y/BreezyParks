@@ -4,7 +4,7 @@ import requests as req
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 
-from app import app, db, schema, socketio, zetaSocketIO, emailAuthRoutes
+from app import app, db, schema, socketio, zetaSocketIO
 
 
 emailPattern = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')

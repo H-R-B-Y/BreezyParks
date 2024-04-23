@@ -1,0 +1,60 @@
+.titlebar {
+    margin-left: 50px;
+    margin-right: 50px;
+    margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+}
+.titlebar .addplayer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+.players {
+    margin-bottom: 50px;
+    margin-right: 50px;
+    margin-left: 50px;
+    padding: 30px 5px 30px 5px;
+    background-color: #aaa;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.players .player {
+    display: flex;
+    background-color: #888;
+    border-radius: 5px 5px 5px 5px;
+    flex-direction: row;
+    margin: 5px 5px;
+    padding: px;
+}
+.players .player .name {
+    background-color: #999;
+    border-radius: 5px 5px 5px 5px;
+    padding: 10px 15px;
+    flex-grow: 1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+.players .player .options {
+    display: none;
+    padding: 0px 15px;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 5px 5px 5px 5px;
+}
+.players .player:hover .options {
+    display: flex;
+
+}
+.players .player .options button {
+    margin: 0px 5px;
+}
+
+@media screen and (max-width: 750px) {
+    .players .player .options {
+        display: flex;
+    } 
+}

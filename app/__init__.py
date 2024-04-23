@@ -72,7 +72,8 @@ with open("app/secrets.json") as secretstxt:
 # import routes for main app
 # blueprints can be imported here
 from app import routes
-from app import emailAuthRoutes
+from app import scoreboard
+#from app import emailAuthRoutes
 
 # custom Jinja addons
 from app import jinjaTemplateAddons
