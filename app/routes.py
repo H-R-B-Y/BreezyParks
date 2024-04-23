@@ -4,7 +4,7 @@ import requests as req
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 
-from app import app, db, schema, socketio, zetaSocketIO, mailQ, emailAuthRoutes
+from app import app, db, schema, socketio, zetaSocketIO, emailAuthRoutes
 
 
 emailPattern = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
@@ -76,14 +76,19 @@ def register():
 
     # Commit to database.
     alphabet = string.ascii_letters + string.digits
+    
     user = schema.User(username=username)
     user.set_password(password)
     user.email_auth_code = ''.join([random.choice(alphabet) for x in range(10)])
     user.email_address = email
     user.created_date = datetime.datetime.utcnow()
+    
     db.session.add(user)
     db.session.commit()
-    mailQ.put(emailAuthRoutes.emailQueueItem(email, user.email_auth_code, username))
+    
+    # send authentiation email here
+    #mailQ.put(emailAuthRoutes.emailQueueItem(email, user.email_auth_code, username))
+
     return redirect(url_for("login"))
 
 
