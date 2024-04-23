@@ -39,7 +39,7 @@ function updatePlayersList() {
 
 function changeScore(index, isIncrement) {
     scores[index].score += (isIncrement ? 1 : -1);
-    document.getElementById(`score-${index}`).innerText = 'Score: ' + players[index].score;
+    document.getElementById(`score-${index}`).innerText = 'Score: ' + scores[index].score;
 }
 
 function removePlayer(index) {
