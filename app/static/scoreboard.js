@@ -1,7 +1,7 @@
 
-let players = [];
+let scores = [];
 
-function addPlayer (){
+function addScore (){
     const name = document.getElementById("playerName").value;
     if (name === ''){
 
@@ -10,7 +10,7 @@ function addPlayer (){
         name:name,
         score:0
     };
-    players.push(player);
+    scores.push(player);
     updatePlayersList();
     document.getElementById('playerName').value='';
 
@@ -19,7 +19,7 @@ function addPlayer (){
 function updatePlayersList() {
     const playerList = document.getElementById("playersList");
     playerList.innerHTML = '';
-    players.forEach((player, index) => {
+    scores.forEach((player, index) => {
         const playerDiv = document.createElement('div');
         playerDiv.innerHTML = `
         <div class="name">
@@ -38,17 +38,17 @@ function updatePlayersList() {
 };
 
 function changeScore(index, isIncrement) {
-    players[index].score += (isIncrement ? 1 : -1);
+    scores[index].score += (isIncrement ? 1 : -1);
     document.getElementById(`score-${index}`).innerText = 'Score: ' + players[index].score;
 }
 
 function removePlayer(index) {
-    players.splice(index, 1);
+    scores.splice(index, 1);
     updatePlayersList();
 }
 
 function orderedSort () {
-    players = players.sort((a,b) => b.score - a.score);
+    scores = scores.sort((a,b) => b.score - a.score);
     updatePlayersList();
 }
 
