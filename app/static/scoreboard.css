@@ -7,8 +7,20 @@
 }
 .titlebar .addplayer {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.titlebar .addplayer div{
+    display: flex;
+    flex-wrap: wrap;
+    flex-grow: 1;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.titlebar .addplayer #playerName {
+    flex-grow:1;
 }
 .players {
     margin-bottom: 50px;
@@ -27,7 +39,8 @@
     border-radius: 5px 5px 5px 5px;
     flex-direction: row;
     margin: 5px 5px;
-    padding: px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 .players .player .name {
     background-color: #999;
@@ -44,6 +57,7 @@
     justify-content: space-between;
     align-items: center;
     border-radius: 5px 5px 5px 5px;
+    flex-wrap: wrap;
 }
 .players .player:hover .options {
     display: flex;
