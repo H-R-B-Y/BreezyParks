@@ -33,7 +33,7 @@ function updatePlayersList() {
         </div>
         `;
         playerDiv.setAttribute('class', 'player')
-        playersList.appendChild(playerDiv);
+        playerList.appendChild(playerDiv);
     });
 };
 
