@@ -20,13 +20,15 @@
   /* Other styles for spacing, margins, etc. */
 }
   
-  
 .bodyContent {
   background-color: rgba(255, 255, 255, 0.692);
   border-radius: 10px;
   margin: auto;
   margin-bottom: 5px;
   margin-top: 5px;
-  padding: 5px 10px
-
+  padding: 10px 25px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-content: center;
 }
