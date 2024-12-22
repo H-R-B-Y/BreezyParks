@@ -52,7 +52,14 @@ def things_pages():
 			"total_pages":total_pages
 		})
 
-
 @app.route("/thing/<int:id>")
 def thing_id(id):
-	pass
+	thing = ThingPost.query.filter_by(id=id).first()
+	if not thing:
+		return "Thing not found", 404
+	if thing.type == "url":
+		return redirect(url_for(thing.url_for))
+	elif thing.type == "template":
+		return render_template(thing.template_path)
+	else:
+		return "Something went wrong", 404

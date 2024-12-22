@@ -98,9 +98,6 @@ def update_profile():
 	# Render the update form for GET requests
 	return render_template("edit_profile.html.jinja")
 
-
-	
-
 # @app.route('/<string:username>/sprite', methods=["GET"])
 # def get_user_sprite_username (username:str):
 # 	user = User.get_user_by_name(username)
@@ -128,7 +125,6 @@ def update_profile():
 
 # 	login_user(user)
 # 	return redirect(url_for("index"))
-
 
 @app.route("/logout")
 @login_required

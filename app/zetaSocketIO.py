@@ -8,6 +8,10 @@ The aim of this is to try and utilise Namespace sub classes to implement.
 See devlog for details
 '''
 
+'''
+Allow for multiple types of coordinate spaces but for the moment you can just focus on screenspace relative (normalised).
+'''
+
 class zeta(Namespace):
 	def __init__(self, *args, **kwargs):
 		'''
@@ -30,7 +34,7 @@ class zeta(Namespace):
 
 		# Broadcast that new user has joined here.
 		if current_user:
-			emit("joined", {"username":current_user.username, "x":0, "y":0},include_self=False, broadcast=True)
+			emit("joined", {"username":current_user.username, "x":0, "y":0}, include_self=False, broadcast=True)
 		
 		# Add user details to the class (Done after broadcast such that no actions are dispatched for uninitialised users)
 		self.activeSids.add(request.sid)
