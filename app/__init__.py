@@ -1,95 +1,182 @@
-import sys
-import json
-import logging
-from flask import Flask
+import os, json
+from dotenv import load_dotenv
+from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 from flask_socketio import SocketIO
-from multiprocessing import Process, Queue
+from authlib.jose import JsonWebKey
+from authlib.integrations.flask_client import OAuth
+from functools import wraps
 
-requiredSecrets = {
-    "secretKey": "The site secret key.",
-    "cfSiteKey": "The key or the sites turnstile",
-    "cfSecretKey": "The secret for the sites turnstile",
-    "mailServerKey": "Key/Password for mail server",
-    "mailAddress": "Mail address to send from / login with",
-    "loginAddress": "Address to login to smtp server"
-}
+
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
-# Configure the logging format
-log_format = "[%(asctime)s] [%(levelname)s] [%(module)s] %(message)s"
-logging.basicConfig(level=logging.ERROR, format=log_format)
-
-# DB config
-# SQL_ALCHEMY_DATABASE_URL : the location of the database
-# Here SQLite with no security is used but this can be secured if needed
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+load_dotenv()
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DBADDR")
 db = SQLAlchemy(app)
-migrate = Migrate(app, db)
+
+app.config["SECRET_KEY"] = os.getenv("secretkey")
+app.config["cfSiteKey"] = os.getenv("cfSiteKey")
+app.config["cfSecretKey"] = os.getenv("cfSecretKey")
+app.config["mailPassword"] = os.getenv("mailServerKey")
+app.config["mailAddress"] = os.getenv("mailAddress")
+app.config["loginAddress"] = os.getenv("loginAddress")
+app.config["googleclientid"] = os.getenv("googleclientid")
+# print(app.config["googleclientid"])
+# print(os.getenv("googleclientsecret"))
 
 # Socket IO Stup
 socketio = SocketIO(app)
 
-# Import the schema definition
+loginman = LoginManager(app)
+
+# Need to double check this later.
+# deal with schema here: 
+loginman.login_view = 'login' 
+# Define the user loader function
+@loginman.user_loader
+def load_user(user_id):
+	return schema.User.get_user_by_id(user_id)
+
+# OAuth setup
+oauth = OAuth(app)
+google = oauth.register(
+	name="google",
+	client_id=app.config["googleclientid"],
+	client_secret=os.getenv("googleclientsecret"),
+	authorize_url="https://accounts.google.com/o/oauth2/auth",
+	authorize_params=None,
+	access_token_url="https://accounts.google.com/o/oauth2/token",
+	access_token_params=None,
+	refresh_token_url=None,
+	client_kwargs={"scope": "openid profile email"},
+	jwks_uri='https://www.googleapis.com/oauth2/v3/certs',
+)
+
 from app import schema
 
+# should probably move this stuff into its own file but whatever
+def require_admin(func):
+	@wraps(func)
+	def wrapper(*args, **kwargs):
+		if not current_user or not current_user.is_authenticated:
+			return abort(403)
+		if not current_user.is_admin:
+			return {"error": "Unauthorized"}, 401
+		return (func(*args, **kwargs))
+	return wrapper
 
-# INIT flask login
-loginMan = LoginManager(app)
-loginMan.login_view = 'login'
+# Example wrapper for later token use
+def require_token(func):
+	@wraps(func)
+	def wrapper(*args, **kwargs):
+		print(request.headers)
+		auth_header = request.headers.get('Authorization')
+		if not auth_header:
+			return jsonify({"error": "Missing Authorization header"}), 401
+		# Ensure the header starts with 'Bearer'
+		parts = auth_header.split()
+		if len(parts) != 2 or parts[0].lower() != "bearer":
+			return jsonify({"error": "Invalid Authorization header format"}), 401
+		# Validate the token
+		token = parts[1]
+		# valid something like:
+		if schema.AccessToken.query.filter_by(token=token).first() != None:
+			return func(*args, **kwargs)
+		return jsonify({"error": "Invalid token"}), 403
+	return wrapper
 
+def write_to_extra(key : str, value : str):
+	file_path = "extra_data.json"
+	if not os.path.exists(file_path):
+		with open(file_path, "w") as f:
+			json.dump({}, f)
+	with open(file_path, "r") as f:
+		try:
+			data = json.load(f)
+		except json.JSONDecodeError:
+			data = {}
+	data[key] = value
+	with open(file_path, "w") as f:
+		json.dump(data, f, indent=1)
+	return True
 
-# Define the user loader function
-@loginMan.user_loader
-def load_user(user_id):
-    return schema.User.query.get(int(user_id))
+def get_extra_data(key : str):
+	file_path = "extra_data.json"
+	if not os.path.exists(file_path):
+		return None
+	with open(file_path, "r") as f:
+		try:
+			data = json.load(f)
+		except json.JSONDecodeError:
+			data = {}
+	if key in data.keys():
+		return data[key]
+	else: return None
 
+from app import basic_routes
+from app import jinja_template_addons
+from app import login_auth_routes
+from app import paper_note_routes
 
-# Secrets config
-with open("app/secrets.json") as secretstxt:
-    secrets = json.load(secretstxt)
-    # Check for missing headers
-    missingSecrets = list(map(lambda x: False if x in secrets.keys() else x,requiredSecrets.keys()))
-    #print(missingSecrets)
-    if any(missingSecrets):
-        logging.critical(f"Missing required secrets:\n{', '.join(list(filter(lambda x: not x is False, missingSecrets)))}")
-        sys.exit()
+# github = oauth.register(
+# 	name="github",
+# 	client_id=os.environ.get("GITHUB_CLIENT_ID"),
+# 	client_secret=os.environ.get("GITHUB_CLIENT_SECRET"),
+# 	authorize_url="https://github.com/login/oauth/authorize",
+# 	access_token_url="https://github.com/login/oauth/access_token",
+# 	client_kwargs={"scope": "read:user user:email"},
+# )
 
-    # Secret key parsed from secrets.json, for unique secret key please run gensecretkey.py in the app folder
-    app.config["SECRET_KEY"] = secrets["secretKey"]
-    app.config["cfSiteKey"] = secrets["cfSiteKey"]
-    app.config["cfSecretKey"] = secrets["cfSecretKey"]
-    app.config["mailPassword"] = secrets["mailServerKey"]
-    app.config["mailAddress"] = secrets["mailAddress"]
-    app.config["loginAddress"] = secrets["loginAddress"]
-    del(secrets)
+# example usage:
+# @app.route("/login")
+# def login():
+#     return google.authorize_redirect(redirect_uri=url_for("auth", _external=True))
 
+# @app.route("/auth")
+# def auth():
+#     token = google.authorize_access_token()
+#     user_info = google.parse_id_token(token)
+    
+#     # Create or retrieve the user
+#     user = users.get(user_info['email'])
+#     if not user:
+#         user = User(id=user_info['email'], email=user_info['email'])
+#         users[user.id] = user
+    
+#     login_user(user)
+#     return redirect(url_for("index"))
 
-# Routes Config
-# import routes for main app
-# blueprints can be imported here
-from app import routes
-from app import scoreboard
-#from app import emailAuthRoutes
+# @app.route("/login/github")
+# def login_github():
+#     return github.authorize_redirect(redirect_uri=url_for("auth_github", _external=True))
 
-# custom Jinja addons
-from app import jinjaTemplateAddons
+# @app.route("/auth/github")
+# def auth_github():
+#     token = github.authorize_access_token()
+#     user_info = github.get("user").json()
 
-# CLI command config
-# initdb command, Only run this when the app is installed, this will generate the database using the imported schema above.
-@app.cli.command()
-def initdb():
-    # create the tables defined in schema
-    db.create_all()
+#     # Create or retrieve the user
+#     user = users.get(user_info['login'])
+#     if not user:
+#         user = User(id=user_info['login'], email=user_info['email'])
+#         users[user.id] = user
 
+#     login_user(user)
+#     return redirect(url_for("index"))
 
+# @app.route("/logout")
+# @login_required
+# def logout():
+#     logout_user()
+#     return redirect(url_for("index")
 
-
-# allow app to be run as-is (in dev mode)
-if __name__ == '__main__':
-    socketio.run(app)
-
-
+# reference:
+# Load the Google Platform Library
+# You must include the Google Platform Library on your web pages that integrate Google Sign-In.
+# <script src="https://apis.google.com/js/platform.js" async defer></script>
+# Specify your app's client ID
+# Specify the client ID you created for your app in the Google Developers Console with the google-signin-client_id meta element.
+# <meta name="google-signin-client_id" content="YOUR_CLIENT_ID.apps.googleusercontent.com">

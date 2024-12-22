@@ -1,0 +1,19 @@
+<div class="w3-auto" style="width:{{ canvas_width if canvas_width is defined else 300 }}px;">
+	<canvas id="drawingCanvas" width="{{ canvas_width if canvas_width is defined else 300 }}" height="{{ canvas_height if canvas_height is defined else 300}}"
+		style="border: 1px solid black;background-color:{{ canvas_background if canvas_background is defined else 'white' }};"></canvas>
+	<script>
+		const canvas = document.getElementById("drawingCanvas");
+		const ctx = canvas.getContext("2d");
+		let drawing = false;
+		ctx.strokeStyle = "{{ canvas_color if canvas_color is defined else 'black'}}";
+		ctx.lineWidth = 1;
+		canvas.addEventListener("mousedown", (e) => {
+				drawing = true;ctx.beginPath();ctx.moveTo(e.offsetX, e.offsetY);
+		});
+		canvas.addEventListener("mousemove", (e) => {
+				if (drawing) {ctx.lineTo(e.offsetX, e.offsetY);ctx.stroke();}
+		});
+		canvas.addEventListener("mouseup", () => {drawing = false;});
+		function clearCanvas() {ctx.clearRect(0, 0, canvas.width, canvas.height);}
+	</script>
+</div>

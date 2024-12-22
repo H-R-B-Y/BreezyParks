@@ -1,12 +1,21 @@
-{% extends "zetaTemplate.html.jinja" %}
+{% extends "main_template.html.jinja" %}
+{% block title %} Breezyparks.com {% endblock %}
 {% block body %}
 
 <div id="main">
-  <p>Site under construction!</p>
+	<h2>Welcome,</h2>
+  <p>Site currently under construction!</p>
   <p>
-  Please be aware account registration is not secure at this point.
-  Any and all accounts created using the current registration system will be removed without warning when account authentication is implemented.
+	I don't know what to write on the index page.<br>
+	Maybe have a look at some of these:
   </p>
+	<ul>
+	<li>Put</li>
+	<li>some</li>
+	<li>things</li>
+	<li>here?</li>
+	</ul>
+	{% if current_user.is_authenticated %}<p class="w3-small">Please ignore the hamster.</p>{% endif %}
 </div>
 
 {% endblock %}

@@ -1,0 +1,70 @@
+{% extends "nonzeta_template.html.jinja" %}
+{% block title %} Edit your profile! {% endblock %}
+{% block body %}
+
+<div id="main">
+	<form id="update-form" class="w3-container w3-margin" method="POST" data-userid="{{ current_user.username }}">
+		<h3 class="w3-center">Edit profile</h2>
+		<div class="w3-row w3-section">
+			<div class="w3-col" style="width:auto;"><label style="padding:8px;display:block;">Username </label></div>
+				<div class="w3-rest">
+					<input id="username" class="w3-input" name="username" type="text" placeholder="{{ getUsername(current_user) }}" style="font-size:15px">
+				</div>
+			</div>
+			<div id="error-text" class="w3-red w3-center" style="display:none;"><a>Username is taken.</a></div>
+		<button id="send-button" class="w3-button w3-block my-lilac w3-section w3-ripple w3-padding">Send</button>
+	</form>
+</div>
+<script>
+let timeout;
+document.getElementById('username').addEventListener('input', function () {
+		const username = this.value.trim(); // Trim to remove extra spaces
+		const error_text = document.getElementById('error-text');
+		const my_username = document.getElementById('update-form').dataset.userid;
+		const send_button = document.getElementById('send-button');
+		clearTimeout(timeout);
+		if (!username) {
+				error_text.style.display = "block";
+				error_text.firstChild.innerText = "Username cannot be blank."
+				send_button.disabled = true;
+				return;
+		} else {
+			error_text.style.display = "none";
+			send_button.disabled = false;
+		}
+		timeout = setTimeout(() => {
+				// Perform the fetch call
+				if (username === my_username)
+				{
+					error_text.style.display = "block";
+					error_text.firstChild.innerText = "What are you doing???"
+					send_button.disabled = true;
+					return ;
+				}
+				fetch(`/check-username?username=${encodeURIComponent(username)}`)
+						.then(response => {
+								if (!response.ok) {
+										throw new Error('Failed to check username.');
+								}
+								return response.json();
+						})
+						.then(data => {
+								if (data.available) {
+										error_text.style.display = "none";
+										send_button.disabled = false;
+								} else {
+										error_text.style.display = "block";
+										error_text.firstChild.innerText = 'Username is already taken.';
+										send_button.disabled = true;
+								}
+						})
+						.catch(error => {
+								console.error('Error:', error);
+								error_text.style.display = "block";
+								error_text.firstChild.innerText = 'Error checking username.';
+								send_button.disabled = true;
+						});
+		}, 300); // Delay of 300ms
+});
+</script>
+{% endblock %}

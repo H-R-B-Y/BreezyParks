@@ -9,73 +9,73 @@ See devlog for details
 '''
 
 class zeta(Namespace):
-    def __init__(self, *args, **kwargs):
-        '''
-        Initialise room data, then initialise the namespace as normal.
-        '''
-        self.activeSids = set() # sids currently connected
-        self.activeUsers = set() # Users currently connected
-        self.sidLookup = {} # sid : username lookup
-        super().__init__(*args, **kwargs)
+	def __init__(self, *args, **kwargs):
+		'''
+		Initialise room data, then initialise the namespace as normal.
+		'''
+		self.activeSids = set() # sids currently connected
+		self.activeUsers = set() # Users currently connected
+		self.sidLookup = {} # sid : username lookup
+		super().__init__(*args, **kwargs)
 
 
-    def on_connect(self):
-        '''
-        On connect store the sid, the username, and create a lookup value for this sid.
-        Active users and active sids are sets so don't need to worry about duplicates
-        '''
-        # Let users know about other users in the lobby.
-        for uName in self.activeUsers:
-            emit("joined", {"username":uName, "x":0, "y":0}, to=request.sid, broadcast=False)
+	def on_connect(self):
+		'''
+		On connect store the sid, the username, and create a lookup value for this sid.
+		Active users and active sids are sets so don't need to worry about duplicates
+		'''
+		# Let users know about other users in the lobby.
+		for uName in self.activeUsers:
+			emit("joined", {"username":uName, "x":0, "y":0}, to=request.sid, broadcast=False)
 
-        # Broadcast that new user has joined here.
-        if current_user:
-            emit("joined", {"username":current_user.username, "x":0, "y":0},include_self=False, broadcast=True)
-        
-        # Add user details to the class (Done after broadcast such that no actions are dispatched for uninitialised users)
-        self.activeSids.add(request.sid)
-        if current_user:
-            self.activeUsers.add(current_user.username)
-            self.sidLookup[request.sid] = current_user.username
-    
+		# Broadcast that new user has joined here.
+		if current_user:
+			emit("joined", {"username":current_user.username, "x":0, "y":0},include_self=False, broadcast=True)
+		
+		# Add user details to the class (Done after broadcast such that no actions are dispatched for uninitialised users)
+		self.activeSids.add(request.sid)
+		if current_user:
+			self.activeUsers.add(current_user.username)
+			self.sidLookup[request.sid] = current_user.username
+	
 
-    def on_disconnect(self):
-        '''
-        On Disconnect we need to remove the sid
-        We then need to remove the sids lookup value
-        We also need to remove the user from the active users IF and ONLY IF they have no other active session in this namespace.
-        '''
-        # Code that needs to be executed regardless of whether user  still has active sessions or not:
-        if request.sid in self.activeSids:
-            self.activeSids.discard(request.sid)
+	def on_disconnect(self):
+		'''
+		On Disconnect we need to remove the sid
+		We then need to remove the sids lookup value
+		We also need to remove the user from the active users IF and ONLY IF they have no other active session in this namespace.
+		'''
+		# Code that needs to be executed regardless of whether user  still has active sessions or not:
+		if request.sid in self.activeSids:
+			self.activeSids.discard(request.sid)
 
-        if not current_user:
-             return
-        
-        # Code that needs to be executed IF and ONLY IF the disconnecting session is the last active session for the user.
-        self.sidLookup.pop(request.sid, False)
-        if(not any(map(lambda x: x==current_user.username, set(self.sidLookup.values())))):
-            self.activeUsers.discard(current_user.username)
-            emit("left", {"username":current_user.username}, include_self=False, broadcast=True)
-    
-    
-    def on_moved(self, data):
-        '''
-        Currently just emits the new position out to all connected sessions.
-        In future might need to change the code to account for Local/Global positioning.
-        '''
-        if not current_user:
-            return
-        
-        emit("moved", 
-             {
-                "username": current_user.username, 
-                "x": 0 if not "x" in data.keys() else data["x"], 
-                "y": 0 if not "y" in data.keys() else data["y"]
-             }, 
-             broadcast=True, 
-             include_self=False
-        )
+		if not current_user:
+			return
+		
+		# Code that needs to be executed IF and ONLY IF the disconnecting session is the last active session for the user.
+		self.sidLookup.pop(request.sid, False)
+		if(not any(map(lambda x: x==current_user.username, set(self.sidLookup.values())))):
+			self.activeUsers.discard(current_user.username)
+			emit("left", {"username":current_user.username}, include_self=False, broadcast=True)
+	
+	
+	def on_moved(self, data):
+		'''
+		Currently just emits the new position out to all connected sessions.
+		In future might need to change the code to account for Local/Global positioning.
+		'''
+		if not current_user:
+			return
+		
+		emit("moved", 
+			{
+				"username": current_user.username, 
+				"x": 0 if not "x" in data.keys() else data["x"], 
+				"y": 0 if not "y" in data.keys() else data["y"]
+			}, 
+			broadcast=True, 
+			include_self=False
+		)
 
 
 '''

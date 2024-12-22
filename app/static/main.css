@@ -1,34 +1,56 @@
 /* Style for the background canvas */
 .background {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1; /* Places it behind the foreground */
-    background-color: #464a4a;
-  }
-  
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: -1; /* Places it behind the foreground */
+}
+
 /* Style for the foreground content */
 .foreground {
-  position: relative;
-  z-index: 1; /* Places it above the canvas */
-  background-color: transparent; /* Adjust transparency here */
-  border-radius: 20px;
-  margin: auto;
-  width:95%;
-  /* Other styles for spacing, margins, etc. */
+	position: relative;
+	z-index: 1; /* Places it above the canvas */
+	background-color: transparent; /* Adjust transparency here */
+	border-radius: 20px;
+	margin: auto;
+	width:95%;
+	/* Other styles for spacing, margins, etc. */
 }
-  
+
 .bodyContent {
-  background-color: rgba(255, 255, 255, 0.692);
-  border-radius: 10px;
-  margin: auto;
-  margin-bottom: 5px;
-  margin-top: 5px;
-  padding: 10px 25px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-content: center;
+	background-color: rgba(255, 255, 255, 0.692);
+	border-radius: 10px;
+	margin:10px 10%;
+	padding: 10px 25px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-content: center;
+	background:#27292a;
+}
+
+.my-text-lilac {
+	color: #e6d7ff !important;
+}
+
+.my-lilac {
+	color: #27292a !important;
+	background-color: #e6d7ff !important;
+}
+
+.my-hover-lilac:hover {
+	color: #27292a !important;
+	background-color: #e6d7ff !important;
+}
+
+.w3-button:hover {
+	color: #27292a !important;
+	background-color: #e6d7ff !important;
+}
+
+.w3-input {
+	background-color: grey;
+	border-bottom: 1px solid #1f2122;
 }

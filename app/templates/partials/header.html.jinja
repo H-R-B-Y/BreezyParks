@@ -1,0 +1,45 @@
+
+
+<div style="margin:auto;">
+	<div class="w3-top" style="position:inherit;">
+		<div class="w3-bar w3-card w3-text-white" style="margin:10px 10% 10px 10%;width:auto;background:#27292a;border-radius:15px;">
+			<a class="w3-bar-item w3-button w3-padding-large w3-hide-medium w3-hide-large w3-right" href="javascript:void(0)" onclick="showNavBar()" title="Toggle Navigation Menu"><i class="fa fa-bars"></i></a>
+			<a href="/" class="w3-bar-item w3-button w3-padding-large">breezyparks</a>
+			<a href="/wip" class="w3-bar-item w3-button w3-padding-large w3-hide-small">posts</a>
+			<a href="/things" class="w3-bar-item w3-button w3-padding-large w3-hide-small">things</a>
+			<a href="/wip" class="w3-bar-item w3-button w3-padding-large w3-hide-small">about</a>
+			{# <div class="w3-dropdown-hover w3-hide-small">
+				<button class="w3-padding-large w3-button" title="More">more<i class="fa fa-caret-down"></i></button>
+				<div class="w3-dropdown-content w3-bar-block w3-card-4">
+					<a href="#" class="w3-bar-item w3-button">Merchandise</a>
+					<a href="#" class="w3-bar-item w3-button">Extras</a>
+					<a href="#" class="w3-bar-item w3-button">Media</a>
+				</div>
+			</div> #}
+			{# <a href="javascript:void(0)" class="w3-padding-large w3-hover-red w3-hide-small w3-right"><i class="fa fa-search"></i></a> #}
+			{% set username = getUsername(current_user) %}
+			{% if username is none %}
+					<a href="/login" class="w3-button w3-bar-item w3-padding-large w3-hide-small w3-right">login</a>
+			{% else %}
+					<a href="/profile" class="w3-button w3-bar-item w3-padding-large w3-hide-small w3-right">{{ username }}</a>
+			{% endif %}
+		</div>
+	</div>
+</div>
+
+<div id="navBarPhones" class="w3-bar-block w3-hide w3-hide-large w3-hide-medium" style="margin:10px 10%;background:#27292a;border-radius:20px;padding:15px 0px;">
+			<a href="/wip" class="w3-bar-item w3-button w3-padding-large">posts</a>
+			<a href="/things" class="w3-bar-item w3-button w3-padding-large">things</a>
+			<a href="/wip" class="w3-bar-item w3-button w3-padding-large">about</a>
+			{% if username is none %}
+					<a href="/login" class="w3-button w3-bar-item w3-padding-large">login</a>
+			{% else %}
+					<a href="/profile" class="w3-button w3-bar-item w3-padding-large">{{ username }}</a>
+			{% endif %}
+</div>
+<script>
+function showNavBar() {
+	var x = document.getElementById("navBarPhones");
+	if (x.className.indexOf("w3-show") == -1){x.className += " w3-show";} else {x.className = x.className.replace(" w3-show", "");}
+}
+</script>

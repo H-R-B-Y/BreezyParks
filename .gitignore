@@ -1,9 +1,12 @@
 app/secrets.json
 run.py
 app/gensecretkey.py
-app/__pycache__/*
-app/Monsters1/*
+app/__pycache__/
+app/Monsters1/
 venv/pyvenv.cfg
-venv/*
-instance/*
-migrations/*
+venv/
+instance/
+migrations/
+trash/
+extra_data.json
+.env

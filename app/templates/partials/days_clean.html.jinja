@@ -1,0 +1,20 @@
+<div>
+	<div class="w3-margin-bottom">
+		<p class="w3-medium">
+			<strong>Days since last cigarette:</strong> 
+			<span id="daysCounter" class="my-text-lilac"></span>
+		</p>
+		</div>
+		<script>
+		function calculateDaysSince(eventDate) {
+			const today = new Date();
+			const event = new Date(eventDate);
+			const differenceInTime = today - event;
+			const daysSince = Math.floor(differenceInTime / (1000 * 60 * 60 * 24));
+			return daysSince;
+		}
+		const eventDate = "{{ getExtraData("last_cig") }}";
+		const daysCounter = calculateDaysSince(eventDate);
+		document.getElementById('daysCounter').innerText = daysCounter;
+	</script>
+</div>

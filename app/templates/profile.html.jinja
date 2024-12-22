@@ -1,0 +1,18 @@
+{% extends "nonzeta_template.html.jinja" %}
+{% if user is not defined %}{% set user = current_user %}{% set myprofile = true %}{% endif %}
+{% set username = getUsername(user) %}
+{% set likedthings = getUserLikedCount(username)%}
+{% block body %}
+	<div id="main" class="w3-container w3-margin-bottom">
+		<div class="w3-cell-row"> 
+			<div class="w3-cell"><h2>{{ username }}</h2></div>
+			<div class="w3-cell w3-cell-top w3-right-align"><a class="w3-small">Liked: {{ likedthings[0] }} posts {{ likedthings[1] }} comments</a></div>
+		</div>
+		{% if user.id == 0 %} {% include "partials/days_clean.html.jinja" %} {% endif %}
+		<p>More here soon!</p>
+		{# {% set canvas_width, canvas_height, canvas_color = 100, 100, 'blue'%}
+		{% include "partials/drawable.html.jinja"%} #}
+		{% if myprofile is true%}<a href="/profile/update">Edit Profile</a><br><a href="/logout">Logout</a>{% endif %}
+
+	</div>
+{% endblock %}
