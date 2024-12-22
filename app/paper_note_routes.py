@@ -1,13 +1,12 @@
-import os
 import base64
 from functools import wraps
 from datetime import datetime, timedelta
-from app import app, db, google, loginman, zetaSocketIO, require_token, require_admin, get_extra_data, write_to_extra
+from app import app, db, require_token, require_admin, get_extra_data, write_to_extra
 from app.schema import User, PaperNote
-from flask import Flask, redirect, url_for, session, request, render_template, flash, jsonify
+from flask import Flask, redirect, url_for, request, render_template, flash, jsonify
 from sqlalchemy import desc, func
 from authlib.integrations.flask_client import OAuth
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_login import login_required, current_user
 
 def user_can_note(user : User):
 	if True: return True # WARN: delete after test
@@ -56,8 +55,6 @@ def post_note():
 		else: new_note.text = data_text
 	elif (request.headers.get("Content-Type") == "application/octet-stream"):
 		data = request.data
-		print(type(data))
-		print("Here")
 		new_note = PaperNote(user_id=current_user.id,type=0,data=data)
 	db.session.add(new_note)
 	db.session.commit()

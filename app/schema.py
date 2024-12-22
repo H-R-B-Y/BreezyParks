@@ -2,7 +2,8 @@ import bcrypt
 import json
 from datetime import datetime
 from sqlalchemy import (
-    BLOB, Column, Integer, String, Boolean, Text, ForeignKey, DateTime, UniqueConstraint, CheckConstraint
+	BLOB, Column, Integer, String, Boolean, Text, ForeignKey,
+	DateTime, UniqueConstraint, CheckConstraint, desc
 )
 from app import db
 from flask_sqlalchemy import SQLAlchemy
@@ -28,23 +29,23 @@ class User(UserMixin, db.Model):
 	likes = db.relationship("Like", back_populates="user", cascade="all, delete-orphan")
 	comments = db.relationship("Comment", back_populates="user", cascade="all, delete-orphan")
 
-	def set_password (self, password) -> None :  
-		""" Sets the passowrd for the current instance
+	# def set_password (self, password) -> None :  
+	# 	""" Sets the passowrd for the current instance
 		
-		Keyword arguments:
-		password -- the unencrypted password.
-		Return: None
-		"""
-		self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+	# 	Keyword arguments:
+	# 	password -- the unencrypted password.
+	# 	Return: None
+	# 	"""
+	# 	self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
-	def check_password(self, password) -> bool:
-		""" Checks an unhashed password against the hashed password stored on user
+	# def check_password(self, password) -> bool:
+	# 	""" Checks an unhashed password against the hashed password stored on user
 		
-		Keyword arguments:
-		password - the unhashed password you would like to check.
-		Return: bool
-		"""
-		return bcrypt.checkpw(password.encode('utf-8'), self.password_hash)
+	# 	Keyword arguments:
+	# 	password - the unhashed password you would like to check.
+	# 	Return: bool
+	# 	"""
+	# 	return bcrypt.checkpw(password.encode('utf-8'), self.password_hash)
 
 	@classmethod
 	def get_user_by_name(cls, name):
@@ -76,8 +77,15 @@ class BlogPost(db.Model):
 
 	CheckConstraint("body IS NOT NULL OR path_to_body IS NOT NULL", name="check_body_or_path")
 
-	comments = db.relationship("Comment", back_populates="blog_post", cascade="all, delete-orphan")
-	# likes = db.relationship("Like", back_populates="blog_post", cascade="all, delete-orphan")
+
+class ThingPost(db.Model):
+	__tablename__ = 'thing_posts'
+
+	id = Column(Integer, primary_key=True, autoincrement=True)
+	title = Column(Text, nullable=False)
+	template_path = Column(Text)
+	url_for = Column(Text)
+	created_date = Column(DateTime, nullable=False, default=datetime.utcnow())
 
 
 class Comment(db.Model):
@@ -85,21 +93,27 @@ class Comment(db.Model):
 
 	id = db.Column(Integer, primary_key=True, autoincrement=True)
 	user_id = db.Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-	blog_post_id = db.Column(Integer, ForeignKey('blog_posts.id', ondelete='CASCADE'), nullable=False)
+	target_type = db.Column(Text, CheckConstraint("target_type IN ('blog_post','comment','thing')"), nullable=False)
+	target_id = db.Column(Integer, nullable=False)
 	is_reply = db.Column(Boolean, default=False)
-	reply_to = db.Column(Integer, ForeignKey('comments.id', ondelete='CASCADE'), nullable=True)
 	body = db.Column(Text, nullable=False)
 	created_date = db.Column(DateTime, default=datetime.utcnow())
 
 	user = db.relationship("User", back_populates="comments")
-	blog_post = db.relationship("BlogPost", back_populates="comments")
-	replies = db.relationship("Comment", backref=db.backref("parent", remote_side=[id]), cascade="all, delete-orphan")
-	# likes = db.relationship("Like", back_populates="comment", cascade="all, delete-orphan")
+	UniqueConstraint('user_id', 'target_type', 'target_id')
 
-	CheckConstraint(
-		"(is_reply = 1 AND reply_to IS NOT NULL) OR (is_reply = 0 AND reply_to IS NULL)",
-		name="check_reply_constraints"
-	)
+	@classmethod
+	def comments_for(cls, target = None):
+		if (target == None or not type(target) in [BlogPost, Comment, ThingPost]):
+			return None
+		target_type = ['blog_post', 'comment', 'thing'][[BlogPost, Comment, ThingPost, User].index(type(target))]
+		likes = cls.query.filter_by(target_type=target_type, target_id=target.id).order_by(desc(cls.created_date)).all()
+		return (likes)
+
+	def get_replies(self):
+		my_replies = Comment.query.filter_by(target_type="comment", target_id=self.id)\
+			.order_by(desc(Comment.created_date)).all()
+		return my_replies
 
 
 class Like(db.Model):
@@ -114,6 +128,14 @@ class Like(db.Model):
 	user = db.relationship("User", back_populates="likes")
 	UniqueConstraint('user_id','target_type','target_id', name='unique_case')
 
+	@classmethod
+	def likes_for(cls, target = None):
+		if (target == None or not type(target) in [BlogPost, Comment, ThingPost, User]):
+			return None
+		target_type = ['blog_post', 'comment', 'thing', 'profile'][[BlogPost, Comment, ThingPost, User].index(type(target))]
+		likes = cls.query.filter_by(target_type=target_type, target_id=target.id).order_by(desc(cls.created_date)).all()
+		return (likes)
+
 
 class PaperNote(db.Model):
 	__tablename__ = 'paper_notes'
@@ -124,16 +146,6 @@ class PaperNote(db.Model):
 	text = Column(Text, nullable=True)
 	created_date = Column(DateTime, default=datetime.utcnow())
 	type = Column(Integer, CheckConstraint('type IN (0, 1)'), nullable=False)
-
-
-class ThingPost(db.Model):
-	__tablename__ = 'thing_posts'
-
-	id = Column(Integer, primary_key=True, autoincrement=True)
-	title = Column(Text, nullable=False)
-	template_path = Column(Text)
-	url_for = Column(Text)
-	created_date = Column(DateTime, nullable=False, default=datetime.utcnow())
 
 
 class AccessToken(db.Model):
