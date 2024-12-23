@@ -1,4 +1,4 @@
-from app import app, db, get_extra_data
+from app import app, db, get_extra_data, schema
 from app.schema import User, Like
 from flask import request
 import datetime
@@ -23,6 +23,8 @@ def get_username (currentUser : User):
 
 app.jinja_env.globals.update(getUsername = get_username)
 
+app.jinja_env.globals.update(Users = User)
+
 def get_users_liked_count(username : str):
 	if not username:
 		return None
@@ -33,3 +35,18 @@ def get_users_liked_count(username : str):
 	return [likes.filter_by(target_type = "blog_post").count(), likes.filter_by(target_type = "comment").count()]
 
 app.jinja_env.globals.update(getUserLikedCount = get_users_liked_count)
+
+def get_comments(type : str, id : int):
+	table = {"blog_post": schema.BlogPost,
+		"comment": schema.Comment,
+		"thing": schema.ThingPost}
+	if type not in table.keys():
+		return []
+	table = table[type]
+	if table.query.filter_by(id=id).first() is None:
+		return []
+	return schema.Comment.query.filter_by(
+		target_type=type,
+		target_id = id).all()
+
+app.jinja_env.globals.update(getComments = get_comments)

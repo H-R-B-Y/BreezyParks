@@ -1,7 +1,7 @@
 import os
 import json
 from datetime import datetime
-from app import app, db, google, loginman, socketio, zetaSocketIO, require_admin, write_to_extra
+from app import app, db, google, loginman, socketio, zetaSocketIO, require_admin, write_to_extra, schema
 from app.schema import User, ThingPost
 from sqlalchemy import desc
 from flask import render_template, flash, redirect, url_for, request, jsonify
@@ -63,3 +63,32 @@ def thing_id(id):
 		return render_template(thing.template_path)
 	else:
 		return "Something went wrong", 404
+
+'''
+Like something to be called by like buttons, like buttons must provide ID and Type
+'''
+@app.route("/like/<string:type>/<int:id>", methods=["POST"])
+@login_required
+def like_something(type, id):
+	table = {"blog_post": schema.BlogPost,
+		"comment": schema.Comment,
+		"thing": schema.ThingPost,
+		"profile": schema.User}
+	if not type or not id or type not in table.keys():
+		return "Not found", 404
+	table_ref = table.get(type, None)
+	if not table_ref:
+		return "Not found", 404
+	item_ref = table_ref.query.filter_by(id=id).first()
+	if not item_ref:
+		return "Not found", 404
+	# check if a like record exists
+	like = schema.Like.query.filter_by(user_id=current_user.id,target_type=type,target_id=id).first()
+	if like:
+		db.session.delete(like)
+		db.session.commit()
+	else:
+		new_like = schema.Like(user_id=current_user.id, target_type=type, target_id=id)
+		db.session.add(new_like)
+		db.session.commit()
+	return "Ok", 200

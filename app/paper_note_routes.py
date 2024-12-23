@@ -30,7 +30,7 @@ def require_able_to_post(func):
 @login_required
 @require_able_to_post
 def paper_index():
-	return render_template("things/paper_index.html.jinja")
+	return render_template("things/paper_index.html.jinja", thing_id=1)
 
 @app.route("/post_note", methods=["POST"])
 @login_required

@@ -23,6 +23,9 @@
 			{% else %}
 					<a href="/profile" class="w3-button w3-bar-item w3-padding-large w3-hide-small w3-right">{{ username }}</a>
 			{% endif %}
+			{% if hideable_content is defined and hideable_content == true %}
+			<a class="w3-padding-large w3-right w3-hide-small w3-hide-medium" href="javascript:zeta_toggle_content()"> toggle </a>
+			{% endif %}
 		</div>
 	</div>
 </div>
