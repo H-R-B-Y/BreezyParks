@@ -2,7 +2,7 @@ import os
 import json
 from datetime import datetime
 from app import app, db, google, loginman, socketio, zetaSocketIO, require_admin, write_to_extra, schema
-from app.schema import User, ThingPost
+from app.schema import User, ThingPost, Comment
 from sqlalchemy import desc
 from flask import render_template, flash, redirect, url_for, request, jsonify
 from authlib.integrations.flask_client import OAuth
@@ -35,6 +35,7 @@ def flashme(text = "", flash_type = ""):
 def things_index():
 	return render_template("things/index.html.jinja")
 
+# This needs to be revamed;
 @app.route("/thing_pages")
 def things_pages():
 	page = int(request.args.get('page', 1))
@@ -60,7 +61,7 @@ def thing_id(id):
 	if thing.type == "url":
 		return redirect(url_for(thing.url_for))
 	elif thing.type == "template":
-		return render_template(thing.template_path)
+		return render_template(thing.template_path, thing_id=id, thing=thing)
 	else:
 		return "Something went wrong", 404
 
@@ -87,8 +88,22 @@ def like_something(type, id):
 	if like:
 		db.session.delete(like)
 		db.session.commit()
-	else:
-		new_like = schema.Like(user_id=current_user.id, target_type=type, target_id=id)
-		db.session.add(new_like)
-		db.session.commit()
-	return "Ok", 200
+		return jsonify({"state":"unliked"}), 200
+	new_like = schema.Like(user_id=current_user.id, target_type=type, target_id=id)
+	db.session.add(new_like)
+	db.session.commit()
+	return jsonify({"state":"liked"}), 200
+
+@app.route("/post_comment", methods=["POST"])
+@login_required 
+def post_a_comment():
+	comment_body = request.form.get('comment_body')
+	comment_on_type = request.form.get('comment_on_type')
+	comment_on_id = request.form.get('comment_on_id')
+	# Validate the form data
+	if not comment_body or not comment_on_type or not comment_on_id or comment_on_type not in ('blog_post','comment','thing'):
+		return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
+	new_comment = Comment(user_id = current_user.id, target_type = comment_on_type, target_id = comment_on_id, body = comment_body)
+	db.session.add(new_comment)
+	db.session.commit()
+	return jsonify({'status': 'ok'})

@@ -1,5 +1,12 @@
 {% set page_type = "thing" %}
 {% extends "nonzeta_template.html.jinja" %}
+{% block extraHead%} <script src="{{ url_for('static', filename='bp_like_stuff.js') }}"></script> {% endblock %}
+{% block page_title%}
+<div class="w3-cell-row">
+	<div class="w3-cell"><h2 style="margin:15px 0px;">{{title}}</h2></div>
+	<div class="w3-cell w3-cell-top w3-right-align w3-small"><a id="thing-{{thing_id}}" href="javascript:bp_toggle_like_on_item('thing-{{ thing_id }}', 'thing', {{ thing_id}})">{% if UserLikedThis(current_user.id, "thing", thing_id) %}Unlike{% else %}Like{% endif%}</a></div>
+</div>
+{% endblock %}
 {% block body %}
 	{% block sub_body %}
 	{% endblock %}

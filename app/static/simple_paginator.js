@@ -8,7 +8,8 @@ async function fetchData(page) {
 };
 function renderData(data) {
 	const container = document.getElementById('data-container');
-	container.innerHTML = data.map(item => `<a href=${item.path}>${item.title}</a><br>`).join('');
+	container.innerHTML = data.map(item => `<a style="color:white;"
+		href=${item.path}>${item.title}</a><br>`).join('');
 };
 function renderPagination(current, total) {
 	const controls = document.getElementById('pagination-controls');

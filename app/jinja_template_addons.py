@@ -1,6 +1,7 @@
 from app import app, db, get_extra_data, schema
-from app.schema import User, Like
+from app.schema import User, Like, Comment
 from flask import request
+from sqlalchemy import desc
 import datetime
 import random
 import os, json
@@ -47,6 +48,49 @@ def get_comments(type : str, id : int):
 		return []
 	return schema.Comment.query.filter_by(
 		target_type=type,
-		target_id = id).all()
+		target_id = id).order_by(desc(Comment.created_date)).all()
 
 app.jinja_env.globals.update(getComments = get_comments)
+
+def user_liked_x(user_id : int , type : str, id : int):
+	if user_id is None or type is None or id is None:
+		return False
+	else:
+		table = {"blog_post": schema.BlogPost,
+		"comment": schema.Comment,
+		"thing": schema.ThingPost,
+		"profile": schema.User}
+		if type not in table.keys():
+			return False
+		like = Like.query.filter_by(
+			target_type = type,
+			target_id = id,
+			user_id = user_id
+		).first()
+		if like:
+			return True
+	return False
+
+app.jinja_env.globals.update(UserLikedThis = user_liked_x)
+
+def comment_has_replies(comment_id : int):
+	if comment_id is None:
+		return False
+	count = Comment.query.filter_by(
+		target_type = "comment",
+		is_reply = 1,
+		target_id = comment_id).count()
+	return True if count > 0 else False
+
+app.jinja_env.globals.update(CommentHasReplies = comment_has_replies)
+
+# def get_replies_to_comment(comment_id : int):
+# 	if comment_id is None:
+# 		return []
+# 	replies = Comment.query.filter_by(
+# 		target_type = "comment",
+# 		is_reply = 1,
+# 		target_id = comment_id).all()
+# 	return replies or []
+
+# app.jinja_env.globals.update(GetRepliesToComment = get_replies_to_comment)

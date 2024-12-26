@@ -2,7 +2,7 @@ import base64
 from functools import wraps
 from datetime import datetime, timedelta
 from app import app, db, require_token, require_admin, get_extra_data, write_to_extra
-from app.schema import User, PaperNote
+from app.schema import User, PaperNote, ThingPost
 from flask import Flask, redirect, url_for, request, render_template, flash, jsonify
 from sqlalchemy import desc, func
 from authlib.integrations.flask_client import OAuth
@@ -30,7 +30,7 @@ def require_able_to_post(func):
 @login_required
 @require_able_to_post
 def paper_index():
-	return render_template("things/paper_index.html.jinja", thing_id=1)
+	return render_template("things/paper_index.html.jinja", thing_id=1, thing=ThingPost.query.filter_by(id=1).first())
 
 @app.route("/post_note", methods=["POST"])
 @login_required

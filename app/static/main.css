@@ -54,3 +54,15 @@
 	background-color: grey;
 	border-bottom: 1px solid #1f2122;
 }
+
+.simple_textarea {
+	background-color: #27292a;
+	border: none;
+	resize: none;
+	width: 100%;
+	color: white;
+}
+.simple_textarea:focus {
+	outline: none;
+	border: none;
+} 
