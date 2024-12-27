@@ -16,14 +16,14 @@ class User(UserMixin, db.Model):
 	__tablename__ = 'users'
 
 	id = db.Column(Integer, primary_key=True, autoincrement=True)
-	username = db.Column(String, nullable=False, unique=True)
-	password_hash = db.Column(String)
+	username = db.Column(String(255), nullable=False, unique=True)
+	password_hash = db.Column(Text)
 	is_admin = db.Column(Boolean, default=False)
 	created_date = db.Column(DateTime, default=datetime.utcnow())
 	last_login_date = db.Column(DateTime)
-	email = db.Column(String, nullable=False, unique=True)
-	google_id = db.Column(String, unique=True)
-	github_id = db.Column(String, unique=True)
+	email = db.Column(Text, nullable=False, unique=True)
+	google_id = db.Column(String(255), unique=True)
+	github_id = db.Column(String(255), unique=True)
 	username_last_updated = db.Column(DateTime)
 
 	likes = db.relationship("Like", back_populates="user", cascade="all, delete-orphan")
@@ -122,7 +122,7 @@ class Like(db.Model):
 
 	id = Column(Integer, primary_key=True, autoincrement=True)
 	user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-	target_type = Column(String, nullable=False)
+	target_type = Column(String(128), nullable=False)
 	target_id = Column(Integer, nullable=False)
 	created_date = Column(DateTime, default=datetime.utcnow())
 
