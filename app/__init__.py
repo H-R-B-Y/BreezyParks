@@ -17,7 +17,7 @@ load_dotenv()
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DBADDR")
 db = SQLAlchemy(app)
 
-app.config["secret_key"] = os.getenv("SECRET_KEY")
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 app.config["cfSiteKey"] = os.getenv("cfSiteKey")
 app.config["cfSecretKey"] = os.getenv("cfSecretKey")
 app.config["mailPassword"] = os.getenv("mailServerKey")
