@@ -121,6 +121,12 @@ from app import jinja_template_addons
 from app import login_auth_routes
 from app import paper_note_routes
 
+
+# Delete this later.
+@app.cli.command("create-db")
+def create_db():
+	db.create_all()
+
 # github = oauth.register(
 # 	name="github",
 # 	client_id=os.environ.get("GITHUB_CLIENT_ID"),
