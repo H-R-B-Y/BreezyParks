@@ -12,6 +12,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 def login():
 	session['nonce'] = ""
 	return google.authorize_redirect(redirect_uri=url_for("google_auth", _external=True))
+
 # @app.route("/login/github")
 # def login_github():
 #     return github.authorize_redirect(redirect_uri=url_for("auth_github", _external=True))
