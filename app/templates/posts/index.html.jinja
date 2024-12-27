@@ -1,23 +1,20 @@
 {% extends "nonzeta_template.html.jinja" %}
-{% block title %} OMG Things! {% endblock %}
+{% block title %} Posts {% endblock %}
 {% block body %}
 <div id="main">
-			<h2>My things!</h2>
-			<h3>List of things:</h3>
+			<h2>Posts:</h2>
 			<div id="data-container" class="w3-container"
 				style="background-color:#27292a;border-radius:15px;margin-bottom:10px;padding:10px;border-color:#e6d7ff;">
-					<!-- Data will be inserted here -->
 			</div>
 			<div class="w3-auto w3-center"><button class="w3-button my-hover-lilac" id="load-more" data-page="1">Load More</button></div>
-		<script>const data_endpoint = "/thing_pages";</script>
+		<script>const data_endpoint = "/post_pages";</script>
 		<script>const loader_template = `<div class="w3-col s4" style="padding:5px;min-width:100px;">
-			<a href="/thing/{{'{{'}}id{{'}}'}}" style="text-decoration: none;">
+			<a href="/post/{{'{{'}}id{{'}}'}}" style="text-decoration: none;">
 				<div class="w3-center my-hover-lilac" style="padding:5px;border-radius:5px;border-color:#e6d7ff;border-width:1px;border-style:solid;">
 					{{'{{'}}title{{'}}'}}
 				</div>
 			</a>
 		</div>`;</script>
-		
 		<script src="/static/better_simple_paginator.js"></script>
 </div>
 {% endblock %}

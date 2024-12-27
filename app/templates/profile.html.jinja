@@ -1,4 +1,5 @@
 {% extends "nonzeta_template.html.jinja" %}
+{% block extraHead%} <script src="{{ url_for('static', filename='bp_like_stuff.js') }}"></script> {% endblock %}
 {% if user is not defined %}{% set user = current_user %}{% set myprofile = true %}{% endif %}
 {% set username = getUsername(user) %}
 {% set likedthings = getUserLikedCount(username)%}
@@ -6,9 +7,19 @@
 	<div id="main" class="w3-container w3-margin-bottom">
 		<div class="w3-cell-row"> 
 			<div class="w3-cell"><h2>{{ username }}</h2></div>
-			<div class="w3-cell w3-cell-top w3-right-align"><a class="w3-small">Liked: {{ likedthings[0] }} posts {{ likedthings[1] }} comments</a></div>
+			{# <div class="w3-cell w3-cell-top w3-right-align"><a class="w3-small">Liked: {{ likedthings[0] }} posts {{ likedthings[1] }} comments</a></div> #}
+			<div class="w3-cell w3-cell-top w3-right-align">
+				{% if myprofile is true %}
+					<a class="w3-small">
+						Profile likes recieved: {{ getLikesForX("profile", user.id) }}
+					</a>
+				{% else %}
+					{% if user.id != current_user.id %}
+					<a id="profile-{{ user.id }}" href="javascript:bp_toggle_like_on_item('profile-{{ user.id }}', 'profile', {{ user.id}})">{% if UserLikedThis(current_user.id, "profile", user.id) %}Unlike{% else %}Like{% endif%}</a>
+					{% endif %}
+				{% endif %}
+			</div>
 		</div>
-		{% if user.id == 0 %} {% include "partials/days_clean.html.jinja" %} {% endif %}
 		<p>More here soon!</p>
 		{# {% set canvas_width, canvas_height, canvas_color = 100, 100, 'blue'%}
 		{% include "partials/drawable.html.jinja"%} #}

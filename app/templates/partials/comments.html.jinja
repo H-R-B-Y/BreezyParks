@@ -13,7 +13,7 @@
 			</div>
 			{% endif %}
 		</div>
-		<div class="w3-container w3-content">
+		<div class="w3-container w3-content" data-page="1" data-page-type="{{page_type}}">
 			{% if current_user.is_authenticated %}
 			<div id="add_comment_area" class="w3-container" style="display:none;border-radius:15px;outline:solid #1f2122;margin-bottom:15px;box-shadow:0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);">
 			<form id="new_comment_form">
@@ -23,16 +23,16 @@
 			<div id="error_message" style="color: red;display: none;"> </div>
 			</div>
 			{% endif %}
-			{% for comment in getComments(page_type, thing_id) %}
+			{% for comment in getComments(page_type, page_id, 1) %}
 			<div class="w3-container" style="border-radius:15px;outline:solid #1f2122;margin-bottom:15px;box-shadow:0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);">
 			<div class="w3-cell-row">
-				<div class="w3-cell"><a class="w3-small" href="{{Users.get_user_by_id(comment.user_id).username}}/profile">{{Users.get_user_by_id(comment.user_id).username}}</a></div>
+				<div class="w3-cell"><a class="w3-small" href="{{Users.get_user_by_id(comment.user_id).username|e}}/profile">{{Users.get_user_by_id(comment.user_id).username|e}}</a></div>
 				{% if current_user.is_authenticated %}
 				<div class="w3-small w3-cell w3-right-align"><a id="comment-{{ comment.id }}" href="javascript:bp_toggle_like_on_item('comment-{{ comment.id }}', 'comment', {{ comment.id}})">{% if UserLikedThis(current_user.id, "comment", comment.id) %}Unlike{% else %}Like{% endif%}</a></div>
 				{% endif %}
 			</div>
 			<div class="w3-content">
-			<p>{{comment.body}}</p>
+			<p>{{comment.body|e}}</p>
 			</div>
 			<!-- Need to find best way to add replies to the DOM when returned from endpoint -->
 			{% if CommentHasReplies(comment.id) == True %}
@@ -44,6 +44,7 @@
 			{% endif %}
 			</div>
 			{% endfor %}
+			<div class="w3-auto w3-center"><button class="w3-button my-hover-lilac" id="load-more" data-page="1">Load More</button></div>
 		</div>
 	</div>
 <script>
@@ -78,8 +79,8 @@ document.getElementById("new_comment_form").addEventListener("submit", async fun
 	const endpoint = "/post_comment";
 	const formData = new FormData();
 	formData.append("comment_body", comment);
-	formData.append("comment_on_type", "thing");
-	formData.append("comment_on_id", "{{ thing_id }}");
+	formData.append("comment_on_type", "{{ page_type }}");
+	formData.append("comment_on_id", "{{ page_id }}");
 	try
 	{
 		const response = await fetch(endpoint, {method: "POST", body: formData});

@@ -2,7 +2,7 @@ import os
 import json
 from datetime import datetime
 from app import app, db, google, loginman, socketio, zetaSocketIO, require_admin, write_to_extra, schema
-from app.schema import User, ThingPost, Comment
+from app.schema import User, ThingPost, Comment, BlogPost
 from sqlalchemy import desc
 from flask import render_template, flash, redirect, url_for, request, jsonify
 from authlib.integrations.flask_client import OAuth
@@ -35,23 +35,21 @@ def flashme(text = "", flash_type = ""):
 def things_index():
 	return render_template("things/index.html.jinja")
 
-# This needs to be revamed;
 @app.route("/thing_pages")
-def things_pages():
-	page = int(request.args.get('page', 1))
-	per_page = int(request.args.get('per_page', 10))
-	if per_page == 0:
-		return jsonify({})
+def thing_pages():
+	page = int(request.args.get('page',1))
+	per_page = 6
 	start = (page - 1) * per_page
 	end = start + per_page
 	things = ThingPost.query.order_by(desc(ThingPost.created_date)).all()
-	data = [{"title": x.title, "path":url_for(x.url_for)} for x in things[start:end]]
-	total_pages = (len(things) + per_page - 1) / per_page
-	return jsonify({
+	data = [{"id":x.id, "title": x.title, "path":"/thing/"+str(x.id)} for x in things[start:end]]
+	return jsonify(
+		{
 			"data":data,
 			"page":page,
-			"total_pages":total_pages
-		})
+			"last_page": True if end >= len(things) else False,
+		}
+	)
 
 @app.route("/thing/<int:id>")
 def thing_id(id):
@@ -64,6 +62,33 @@ def thing_id(id):
 		return render_template(thing.template_path, thing_id=id, thing=thing)
 	else:
 		return "Something went wrong", 404
+	
+@app.route("/posts")
+def posts_index():
+	return render_template("posts/index.html.jinja")
+
+@app.route("/post_pages")
+def post_pages():
+	page = int(request.args.get('page',1))
+	per_page = 6
+	start = (page - 1) * per_page
+	end = start + per_page
+	things = BlogPost.query.order_by(desc(BlogPost.created_date)).all()
+	data = [{"id":x.id, "title": x.title, "path":"/thing/"+str(x.id)} for x in things[start:end]]
+	return jsonify(
+		{
+			"data":data,
+			"page":page,
+			"last_page": True if end >= len(things) else False,
+		}
+	)
+
+@app.route("/post/<int:id>")
+def post_id(id):
+	thing = BlogPost.query.filter_by(id = id).first()
+	if not thing:
+		return "Thing not found", 404
+	return render_template("posts/default.html.jinja", post=thing)
 
 '''
 Like something to be called by like buttons, like buttons must provide ID and Type
@@ -75,11 +100,11 @@ def like_something(type, id):
 		"comment": schema.Comment,
 		"thing": schema.ThingPost,
 		"profile": schema.User}
-	if not type or not id or type not in table.keys():
+	if "profile" == type and id == current_user.id:
+		return jsonify({"state":"unliked"}), 200
+	if not type or id == None or type not in table.keys():
 		return "Not found", 404
 	table_ref = table.get(type, None)
-	if not table_ref:
-		return "Not found", 404
 	item_ref = table_ref.query.filter_by(id=id).first()
 	if not item_ref:
 		return "Not found", 404

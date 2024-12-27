@@ -37,7 +37,20 @@ def get_users_liked_count(username : str):
 
 app.jinja_env.globals.update(getUserLikedCount = get_users_liked_count)
 
-def get_comments(type : str, id : int):
+def get_likes_for_x(type : str, id : int):
+	table = {"blog_post": schema.BlogPost,
+		"comment": schema.Comment,
+		"thing": schema.ThingPost,
+		"profile": schema.User}
+	if type not in table.keys():
+		return None
+	return Like.query.filter_by(
+		target_type = type,
+		target_id = id).count()
+
+app.jinja_env.globals.update(getLikesForX = get_likes_for_x)
+
+def get_comments(type : str, id : int, page : int = 1):
 	table = {"blog_post": schema.BlogPost,
 		"comment": schema.Comment,
 		"thing": schema.ThingPost}
@@ -46,13 +59,17 @@ def get_comments(type : str, id : int):
 	table = table[type]
 	if table.query.filter_by(id=id).first() is None:
 		return []
+	per_page = 5
+	start = (page - 1) * per_page
+	end = start + per_page
 	return schema.Comment.query.filter_by(
 		target_type=type,
-		target_id = id).order_by(desc(Comment.created_date)).all()
+		target_id = id).order_by(desc(Comment.created_date)).all()[start : end]
 
 app.jinja_env.globals.update(getComments = get_comments)
 
 def user_liked_x(user_id : int , type : str, id : int):
+	print(f"{user_id} {type} {id}")
 	if user_id is None or type is None or id is None:
 		return False
 	else:

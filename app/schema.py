@@ -84,6 +84,7 @@ class ThingPost(db.Model):
 	id = Column(Integer, primary_key=True, autoincrement=True)
 	title = Column(Text, nullable=False)
 	template_path = Column(Text)
+	type = Column(Text)
 	url_for = Column(Text)
 	created_date = Column(DateTime, nullable=False, default=datetime.utcnow())
 

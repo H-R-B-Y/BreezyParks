@@ -1,0 +1,10 @@
+{% extends "posts/post_template.html.jinja" %}
+
+{% block sub_body %}
+	{% if post.body %}
+		<p>{{ post.body }}</p>
+	{% endif %}
+	{% if post.path_to_body %}
+		{% include post.path_to_body %}
+	{% endif %}
+{% endblock %}

@@ -1,4 +1,5 @@
 {% set page_type = "thing" %}
+{% set page_id = thing.id %}
 {% extends "nonzeta_template.html.jinja" %}
 {% block extraHead%} <script src="{{ url_for('static', filename='bp_like_stuff.js') }}"></script> {% endblock %}
 {% block page_title%}
