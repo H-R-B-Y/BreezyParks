@@ -2,7 +2,7 @@ from app import app, db, get_extra_data, schema
 from app.schema import User, Like, Comment
 from app.paper_note_routes import user_can_note
 from flask import request
-from sqlalchemy import desc
+from sqlalchemy import desc, asc
 import datetime
 import random
 import os, json
@@ -18,7 +18,7 @@ app.jinja_env.globals.update(getExtraData = get_extra_data)
 # from app.schema import User
 # # return username or none
 
-def get_username (currentUser : User):
+def get_username(currentUser : User):
 	if not currentUser or not currentUser.is_authenticated:
 		return None
 	return currentUser.username
@@ -65,7 +65,7 @@ def get_comments(type : str, id : int, page : int = 1):
 	end = start + per_page
 	return schema.Comment.query.filter_by(
 		target_type=type,
-		target_id = id).order_by(desc(Comment.created_date)).all()[start : end]
+		target_id = id).order_by(asc(Comment.created_date)).all()[start : end]
 
 app.jinja_env.globals.update(getComments = get_comments)
 

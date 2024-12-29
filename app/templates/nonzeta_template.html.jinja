@@ -10,6 +10,11 @@
 		<link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}"/>
 	{% endblock %}
 	{% block extraHead %}{% endblock %}
+	<script>
+		const user_loggedin = {{ current_user.is_authenticated|lower }};
+		const username = "{{current_user.username}}";
+		const userid = "{{current_user.id}}";
+	</script>
 </head>
 {% block page %}
 	<body class="w3-text-white " style="background:#1f2122;">

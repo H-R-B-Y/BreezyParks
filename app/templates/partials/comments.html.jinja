@@ -1,7 +1,7 @@
 
 <div>
 <!-- Implement lazy loading here later for large comment bases? -->
-<!-- Add like counter? -->
+<!-- Move the JS on this page to a static file so cloudflare can cache it to reduce load on the server -->
 	<div class="w3-container w3-auto">
 		<div class="w3-cell-row" style="margin-bottom:10px;border-bottom:solid #e6d7ff;">
 			<div class="w3-cell w3-left-align">
@@ -9,13 +9,14 @@
 			</div>
 			{% if current_user.is_authenticated %}
 			<div class="w3-cell w3-right-align">
-				<button class="w3-button my-hover-lilac" onclick="show_add_comment_area()">Add Comment</button>
+				<button class="w3-button my-hover-lilac" onclick="show_add_comment_area('{{page_type}}', '{{page_id}}')">Add Comment</button>
 			</div>
 			{% endif %}
 		</div>
-		<div class="w3-container w3-content" data-page="1" data-page-type="{{page_type}}">
+		<div id="comment_area" class="w3-container w3-content" data-page="1" data-pagetype="{{page_type}}" data-pageid="{{page_id}}">
 			{% if current_user.is_authenticated %}
-			<div id="add_comment_area" class="w3-container" style="display:none;border-radius:15px;outline:solid #1f2122;margin-bottom:15px;box-shadow:0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);">
+			<div id="add_comment_area" data-commenton="{{page_type}}" data-commentonid="{{page_id}}" class="w3-container" style="display:none;border-radius:15px;outline:solid #1f2122;margin-bottom:15px;box-shadow:0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);">
+			<a id="new_comment_context"></a>
 			<form id="new_comment_form">
 				<textarea id="new_comment_body" class="simple_textarea"> </textarea>
 				<button type="submit" id="new_comment_send_button" class="w3-button my-hover-lilac" style="width:100%;">Post Comment</button>
@@ -24,48 +25,67 @@
 			</div>
 			{% endif %}
 			{% for comment in getComments(page_type, page_id, 1) %}
-			<div class="w3-container" style="border-radius:15px;outline:solid #1f2122;margin-bottom:15px;box-shadow:0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);">
+			<div id="comment-{{comment.id}}"class="w3-container" style="border-radius:15px;outline:solid #1f2122;margin-bottom:15px;box-shadow:0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);">
 			<div class="w3-cell-row">
-				<div class="w3-cell"><a class="w3-small" href="{{Users.get_user_by_id(comment.user_id).username|e}}/profile">{{Users.get_user_by_id(comment.user_id).username|e}}</a></div>
-				{% if current_user.is_authenticated %}
+				<div class="w3-cell"><a id="comment-{{ comment.id }}-user" class="w3-small" href="{{Users.get_user_by_id(comment.user_id).username|e}}/profile">{{Users.get_user_by_id(comment.user_id).username|e}}</a></div>
 					<div class="w3-small w3-cell w3-right-align">
-					<a id="comment-{{ comment.id }}" href="javascript:bp_toggle_like_on_item('comment-{{ comment.id }}', 'comment', {{ comment.id}})">{% if UserLikedThis(current_user.id, "comment", comment.id) %}Unlike{% else %}Like{% endif%}</a>
-					<a> { </a><a id="comment-{{comment.id}}-count">{{ getLikesForX("comment", comment.id)}}</a><a> }</a>
-					</div>
+				{% if current_user.is_authenticated %}
+					<a id="comment-{{ comment.id }}-like" href="javascript:bp_toggle_like_on_item('comment-{{ comment.id }}-like', 'comment', {{ comment.id}}, 'comment-{{ comment.id }}-count')">{% if UserLikedThis(current_user.id, "comment", comment.id) %}Unlike{% else %}Like{% endif%}</a>
 				{% endif %}
+					<a> { </a><a id="comment-{{comment.id}}-count">{{ getLikesForX("comment", comment.id) }}</a><a> }</a>
+					</div>
 			</div>
 			<div class="w3-content">
-			<p>{{comment.body|e}}</p>
+				<p id="comment-{{ comment.id }}-body">{{comment.body|e}}</p>
 			</div>
-			<!-- Need to find best way to add replies to the DOM when returned from endpoint -->
-			{% if CommentHasReplies(comment.id) == True %}
-			<div class="w3-cell-row"  style="margin-bottom:5px;">
-				<div class="w3-cell w3-small w3-right-align w3-cell-bottom">
-				<a href="#">Load replies</a>
+			<div id="comment-{{comment.id}}-replyrow" class="w3-cell-row"  style="margin-bottom:5px;">
+				{% if current_user.is_authenticated %}<div class="w3-cell w3-small">
+				<a href="javascript:show_add_comment_area('comment', '{{comment.id}}');">reply</a></div>{% endif %}
+				<div id="comment-{{comment.id}}-loadreplies" data-page="0" data-pagetype="comment"
+				data-pageid="{{comment.id}}" class="w3-cell w3-small w3-right-align w3-cell-bottom"
+				{% if CommentHasReplies(comment.id) != true %}style="display:none;" {% endif %}>
+				<a href="javascript:load_more_replies({{comment.id}});">Load replies</a>
 				</div>
 			</div>
-			{% endif %}
 			</div>
 			{% endfor %}
-			<div class="w3-auto w3-center"><button class="w3-button my-hover-lilac" id="load-more" data-page="1">Load More</button></div>
 		</div>
+		<div class="w3-auto w3-center"><button class="w3-button my-hover-lilac" id="load-more-comments" onclick="load_more_comments()">Load More</button></div>
 	</div>
-
-
-
-{% if current_user.is_authenticated %}
 <script>
-function show_add_comment_area()
+{% if current_user.is_authenticated %}
+function show_add_comment_area(type, idofthing)
 {
 	let comment_area = document.getElementById("add_comment_area");
-	if (comment_area.style.display == "none")
-	{comment_area.style.display = "block";}
-	else {comment_area.style.display = "none";};
+	if (comment_area.style.display == "none" || (type != comment_area.dataset.commenton || idofthing != comment_area.dataset.commentonid)) {
+		comment_area.style.display = "block";
+		if (type)
+		{
+			comment_area.dataset.commenton = type;
+			comment_area.dataset.commentonid = idofthing;
+			let context_area = document.getElementById("new_comment_context");
+			if (type == "comment")
+			{
+				let reply_to_user = document.getElementById(`comment-${idofthing}-user`);
+				context_area.innerText = `Replying to ${reply_to_user.innerText}`;
+				context_area.setAttribute("href",`javascript:go_to_highlight("comment-${idofthing}");`);
+			}
+			else
+			{
+				context_area.innerText = "";
+				context_area.setAttribute("href", ``);
+			}
+		}
+		window.scrollTo({ top: comment_area.offsetTop, behavior: 'smooth'});
+	}
+	else {
+		comment_area.style.display = "none";
+	};
 };
 document.getElementById("new_comment_form").addEventListener("submit", async function(event)
 {
-	console.log("Here");
 	event.preventDefault();
+	const add_comment_area = document.getElementById("add_comment_area");
 	const comment = document.getElementById("new_comment_body").value.trim();
 	const error_container = document.getElementById("error_message");
 	if (!comment)
@@ -84,21 +104,171 @@ document.getElementById("new_comment_form").addEventListener("submit", async fun
 	const endpoint = "/post_comment";
 	const formData = new FormData();
 	formData.append("comment_body", comment);
-	formData.append("comment_on_type", "{{ page_type }}");
-	formData.append("comment_on_id", "{{ page_id }}");
+	
+	formData.append("comment_on_type", add_comment_area.dataset.commenton);
+	formData.append("comment_on_id", add_comment_area.dataset.commentonid);
 	try
 	{
 		const response = await fetch(endpoint, {method: "POST", body: formData});
 		if (response.ok)
 		{
 			const result = await response.json();
-			if (result.status === "ok"){location.reload();}
+			if (result.status === "ok"){location.reload()}
 			else{error_container.style.display = "block";error_container.textContent = "Issue posting comment: " + (result.message ? result.message : result.status);};
 		}
 		else{throw new Error("Network response was not ok");};
 	}
 	catch (error){error_container.style.display = 'block';error_container.textContent = 'Error submitting the form: ' + error.message;}
 });
-</script>
 {% endif %}
+function renderComment(id, username, commentBody, isreply) {
+		const template = `
+				<div id="comment-${id}" class="w3-container" style="border-radius:15px;outline:solid #1f2122;margin-bottom:15px;box-shadow:0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);${ isreply ? 'padding: 0.01em 3px;' : ''}">
+						<div class="w3-cell-row">
+								<div class="w3-cell"><a id="comment-${id}-user" class="w3-small" href="${username}/profile">${username}</a></div>
+								<div class="w3-small w3-cell w3-right-align">
+										{% if current_user.is_authenticated %}<a id="comment-${id}-like" href="javascript:bp_toggle_like_on_item('comment-${id}-like', 'comment', ${id}, 'comment-${id}-count')">Unlike</a>{% endif %}
+										<a> { </a><a id="comment-${id}-count">-</a><a> }</a>
+								</div>
+						</div>
+						<div class="w3-content">
+								<p id="comment-${id}-body">${commentBody}</p>
+						</div>
+						<div class="w3-cell-row" style="margin-bottom:5px;">
+								{% if current_user.is_authenticated %}<div class="w3-cell w3-small"><a href="javascript:show_add_comment_area('comment', '${id}');">reply</a></div>{% endif %}
+						<div id="comment-${id}-loadreplies" data-page="0" data-pagetype="comment" data-pageid="${id}" class="w3-cell w3-small w3-right-align w3-cell-bottom" style="display:none;">
+							<a href="javascript:load_more_replies(${id});">Load replies</a>
+						</div>
+						</div>
+				</div>`;
+		return template;
+};
+async function update_comment_data(commentid) {
+		// Helper function to fetch data and handle errors
+		async function fetchData(url) {
+				try {
+						const response = await fetch(url);
+						if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+						const data = await response.json();
+						if (data.status !== "ok") throw new Error(`API error! status: ${data.status}`);
+						return data;
+				} catch (error) {
+						console.error(`Failed to fetch ${url}:`, error);
+						return null;
+				}
+		}
+		const replyButton = document.getElementById(`comment-${commentid}-loadreplies`);
+		const likesCount = document.getElementById(`comment-${commentid}-count`);
+		const likedText = document.getElementById(`comment-${commentid}-like`);
+		const [replyData, likesData] = await Promise.all([
+				fetchData(`/x_has_replies?page_type=comment&page_id=${commentid}`),
+				fetchData(`/likes_for_x?page_type=comment&page_id=${commentid}`)
+		]);
+		if (replyData && replyData.data > 0 && replyButton) {
+				replyButton.style.display = "block";
+		}
+		if (likesData && likesData.data != null && likesCount) {
+				likesCount.innerText = likesData.data;
+				if (!likedText)
+				{return ;}
+				if (likesData.liked_by_you)
+				{
+					likedText.innerText = "unlike";
+				}
+				else
+				{
+					likedText.innerText = "like";
+				}
+		}
+}
+async function load_more_comments()
+{
+	const loader_button = document.getElementById("load-more-comments");
+	const comment_area = document.getElementById("comment_area");
+	let page = parseInt(comment_area.dataset.page) + 1;
+	let page_type = comment_area.dataset.pagetype;
+	const page_id = comment_area.dataset.pageid;
+	try {
+		let response = await fetch("/get_comments"+`?page=${page}&page_type=${page_type}&comment_on_type=${page_type}&comment_on_id=${page_id}`);
+		const comment_data = await response.json();
+		if (response.ok && comment_data.status === "ok")
+		{
+			let comments = comment_data.data;
+			for (var i = 0; i < comments.length; i++)
+			{
+				let comment = comments[i];
+				let rendered = renderComment(comment.id, comment.username, comment.body, 0);
+				comment_area.insertAdjacentHTML("beforeend", rendered);
+				update_comment_data(comment.id);
+			}
+			if (comment_data.last_page)
+			{
+				loader_button.style.display = "none";
+			}
+			comment_area.dataset.page = page;
+		}
+		else {
+			console.error("Error fetchng new posts: ", comment_data.message);
+			loader_button.style.display = "none";
+			return ;
+		}
+	} catch (error)
+	{
+		console.error("Error fetching new posts: ",error);
+		loader_button.style.display = "none";
+		return ;
+	}
+};
+// Note: merge the above function with this one to reduce the ammount of stuff being sent over the network.
+async function load_more_replies(commentid)
+{
+	const comment_container = document.getElementById(`comment-${commentid}-body`).parentElement;
+	const comment_loadreply = document.getElementById(`comment-${commentid}-loadreplies`);
+	let page = parseInt(comment_loadreply.dataset.page) + 1;
+	try {
+		let response = await fetch("/get_comments"+`?page=${page}&page_type={{page_type}}&comment_on_type=comment&comment_on_id=${commentid}`);
+		const comment_data = await response.json();
+		if (response.ok && comment_data.status === "ok")
+		{
+			let comments = comment_data.data;
+			for (var i = 0; i < comments.length; i++)
+			{
+				let comment = comments[i];
+				let rendered = renderComment(comment.id, comment.username, comment.body, 1);
+				comment_container.insertAdjacentHTML("beforeend", rendered);
+				update_comment_data(comment.id);
+			}
+			if (comment_data.last_page)
+			{
+				comment_loadreply.style.display = "none";
+			}
+			comment_loadreply.dataset.page = page;
+		}
+		else {
+			console.error("Error fetchng new posts: ", comment_data.message);
+			comment_loadreply.style.display = "none";
+			return ;
+		}
+	} catch (error)
+	{
+		console.error("Error fetching new posts: ",error);
+		comment_loadreply.style.display = "none";
+		return ;
+	}
+};
+async function go_to_highlight(where)
+{
+	const elem = document.getElementById(where);
+	if (elem)
+	{
+		const old = elem.style.boxShadow;
+		window.scrollTo({ top: elem.offsetTop, behavior: 'smooth'});
+		elem.style.boxShadow = "0 5px 10px 0 rgba(255,255,255,0.16),0 2px 10px 0 rgba(255,255,255,0.12)";
+		setTimeout(() => {
+			elem.style.boxShadow = old;
+		}, 10000);
+	}
+}
+</script>
+
 </div>

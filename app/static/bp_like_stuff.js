@@ -1,8 +1,8 @@
 
-async function bp_toggle_like_on_item(callee, type_of_thing, id_of_thing)
+async function bp_toggle_like_on_item(callee, type_of_thing, id_of_thing, callee_count_elem)
 {
 	let callee_elem = document.getElementById(callee);
-	let callee_count = document.getElementById(callee+"-count");
+	let callee_count = document.getElementById(callee_count_elem);
 	let callee_origin = callee_elem.getAttribute("href");
 	callee_elem.setAttribute("href", "javascript:void(0);")
 	// potential to use set as it is more performant?

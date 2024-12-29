@@ -2,9 +2,9 @@ import os
 import json
 from datetime import datetime, timedelta
 from app import app, db, google, loginman, socketio, zetaSocketIO, require_admin, write_to_extra, schema
-from app.jinja_template_addons import get_likes_for_x
-from app.schema import User, ThingPost, Comment, BlogPost
-from sqlalchemy import desc
+from app.jinja_template_addons import get_likes_for_x, user_liked_x
+from app.schema import User, ThingPost, Comment, BlogPost, Like
+from sqlalchemy import desc, asc
 from flask import render_template, flash, redirect, url_for, request, jsonify
 from authlib.integrations.flask_client import OAuth
 from flask_login import login_required, current_user
@@ -38,18 +38,18 @@ def things_index():
 @app.route("/thing_pages")
 def thing_pages():
 	page = int(request.args.get('page',1))
+	if (page < 1):
+		return jsonify({"status":"error", "message":"Page doesn't exist"}), 404
 	per_page = 6
 	start = (page - 1) * per_page
 	end = start + per_page
 	things = ThingPost.query.order_by(desc(ThingPost.created_date)).all()
 	data = [{"id":x.id, "title": x.title, "path":"/thing/"+str(x.id)} for x in things[start:end]]
-	return jsonify(
-		{
+	return jsonify({
+			"status":"ok",
 			"data":data,
 			"page":page,
-			"last_page": True if end >= len(things) else False,
-		}
-	)
+			"last_page": True if end >= len(things) else False,})
 
 @app.route("/thing/<int:id>")
 def thing_id(id):
@@ -70,18 +70,18 @@ def posts_index():
 @app.route("/post_pages")
 def post_pages():
 	page = int(request.args.get('page',1))
+	if (page < 1):
+		return jsonify({"status":"error", "message":"Page doesn't exist"}), 404
 	per_page = 6
 	start = (page - 1) * per_page
 	end = start + per_page
 	things = BlogPost.query.order_by(desc(BlogPost.created_date)).all()
 	data = [{"id":x.id, "title": x.title, "path":"/thing/"+str(x.id)} for x in things[start:end]]
-	return jsonify(
-		{
+	return jsonify({
+			"status":"ok",
 			"data":data,
 			"page":page,
-			"last_page": True if end >= len(things) else False,
-		}
-	)
+			"last_page": True if end >= len(things) else False,})
 
 @app.route("/post/<int:id>")
 def post_id(id):
@@ -136,7 +136,59 @@ def post_a_comment():
 	# Validate the form data
 	if not comment_body or not comment_on_type or not comment_on_id or comment_on_type not in ('blog_post','comment','thing'):
 		return jsonify({'status': 'error', 'message': 'Missing required fields'}), 200
-	new_comment = Comment(user_id = current_user.id, target_type = comment_on_type, target_id = comment_on_id, body = comment_body)
+	new_comment = Comment(user_id = current_user.id,
+						target_type = comment_on_type,
+						target_id = comment_on_id,
+						body = comment_body,
+						is_reply = False if comment_on_type != "comment" else True)
 	db.session.add(new_comment)
 	db.session.commit()
 	return jsonify({'status': 'ok'})
+
+@app.route("/get_comments")
+def load_more_comments():
+	page_to_load = int(request.args.get('page',1))
+	page_type = request.args.get("page_type", None)
+	comments_for = request.args.get("comment_on_type", None)
+	comments_for_id = request.args.get("comment_on_id", None)
+	if not page_type or page_to_load < 1 or not comments_for:
+		return jsonify({"status":"error", "message":"Page doesn't exist"}), 404
+	per_page = 5
+	start = (page_to_load - 1) * per_page
+	end = start + per_page
+	things = Comment.query.filter_by(target_type=comments_for, target_id=comments_for_id).order_by(asc(Comment.created_date)).all()
+	data = [{"id":x.id, "user": x.user_id, "username":User.query.filter_by(id=x.user_id).first().username, "body":x.body} for x in things[start:end]]
+	return jsonify({
+			"status":"ok",
+			"data":data,
+			"page":page_to_load,
+			"last_page": True if end >= len(things) else False,})
+
+@app.route("/get_user_by_id")
+def get_user_by_id_route():
+	userid = int(request.args.get('user_id', 1))
+	user = User.query.filter(id = userid).first()
+	if not user:
+		return jsonify({"status":"error", "message":"User not found."}), 404
+	return jsonify({"status":"ok", "user_id":user.id, "username":user.username}), 200
+
+@app.route("/likes_for_x")
+def likes_for_x():
+	type_of = request.args.get('page_type', None)
+	if_of = int(request.args.get('page_id', -1))
+	if type_of not in ["comment","blog_post","thing","profile"] or if_of < 0:
+		return jsonify({"status":"error", "message":"Invalid request."}), 404
+	likes = get_likes_for_x(type_of, if_of) or 0
+	user_liked_this = False
+	if current_user.is_authenticated:
+		user_liked_this = user_liked_x(current_user.id, "comment", if_of)
+	return jsonify({"status":"ok", "data":likes, "liked_by_you":user_liked_this})
+
+@app.route("/x_has_replies")
+def x_has_replies():
+	type_of = request.args.get('page_type', None)
+	if_of = int(request.args.get('page_id', -1))
+	if type_of not in ["comment","blog_post","thing"] or if_of < 0:
+		return jsonify({"status":"error", "message":"Invalid request."}), 404
+	likes = Comment.query.filter_by(target_type=type_of, target_id=if_of).count() or 0
+	return jsonify({"status":"ok", "data":likes})
