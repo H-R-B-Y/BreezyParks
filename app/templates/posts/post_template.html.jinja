@@ -1,14 +1,20 @@
-{% extends "nonzeta_template.html.jinja" %}
 {% set page_type = "blog_post" %}
+{% set page_id = post.id %}
+{% extends "main_template.html.jinja" %}
 {% if post is not defined %}
 	<h1 style="color:red;"> SEVERE ERROR! </h1>
 {% endif %}
-{% set page_id = post.id %}
 {% block extraHead%} <script src="{{ url_for('static', filename='bp_like_stuff.js') }}"></script> {% endblock %}
 {% block page_title%}
 <div class="w3-cell-row">
 	<div class="w3-cell"><h2 style="margin:15px 0px;">{{post.title}}</h2></div>
-	<div class="w3-cell w3-cell-top w3-right-align w3-small"><a id="post-{{post.id}}" href="javascript:bp_toggle_like_on_item('post-{{ post.id }}', '{{page_type}}', {{ post.id }})">{% if UserLikedThis(current_user.id, page_type, post.id) %}Unlike{% else %}Like{% endif%}</a></div>
+	{% if current_user.is_authenticated %}
+	<div class="w3-cell w3-cell-top w3-right-align w3-small">
+		<a id="post-{{post.id}}" href="javascript:bp_toggle_like_on_item('post-{{ post.id }}', '{{page_type}}', {{ post.id }})">
+			{% if UserLikedThis(current_user.id, page_type, post.id) %}Unlike{% else %}Like{% endif%}</a>
+		<a> { </a><a id="post-{{post.id}}-count">{{ getLikesForX(page_type, page_id)}}</a><a> }</a>
+	</div>
+	{% endif %}
 </div>
 {% endblock %}
 {% block body %}

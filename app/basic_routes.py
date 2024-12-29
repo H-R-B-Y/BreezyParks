@@ -1,7 +1,8 @@
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from app import app, db, google, loginman, socketio, zetaSocketIO, require_admin, write_to_extra, schema
+from app.jinja_template_addons import get_likes_for_x
 from app.schema import User, ThingPost, Comment, BlogPost
 from sqlalchemy import desc
 from flask import render_template, flash, redirect, url_for, request, jsonify
@@ -29,7 +30,6 @@ def secret_set(key : str, value : str):
 def flashme(text = "", flash_type = ""):
 	flash(text, flash_type)
 	return redirect(url_for("index"))
-
 
 @app.route("/things")
 def things_index():
@@ -113,21 +113,29 @@ def like_something(type, id):
 	if like:
 		db.session.delete(like)
 		db.session.commit()
-		return jsonify({"state":"unliked"}), 200
+		return jsonify({"state":"unliked", "count":get_likes_for_x(type, id)}), 200
 	new_like = schema.Like(user_id=current_user.id, target_type=type, target_id=id)
 	db.session.add(new_like)
 	db.session.commit()
-	return jsonify({"state":"liked"}), 200
+	return jsonify({"state":"liked", "count":get_likes_for_x(type, id)}), 200
 
 @app.route("/post_comment", methods=["POST"])
 @login_required 
 def post_a_comment():
+	if current_user.can_comment is False:
+		return jsonify({"status":"error", "message":"You are banned from commenting."}), 200
+	if Comment.query.filter_by(user_id = current_user.id).filter(Comment.created_date >= (datetime.utcnow() - timedelta(minutes = 10))).count() > 10:
+		return jsonify({"status":"error", "message":"Too many recent comments."}), 200
+	if Comment.query.filter_by(user_id = current_user.id).filter(Comment.created_date >= (datetime.utcnow() - timedelta(days = 1))).count() > 1000:
+		current_user.can_comment = False
+		db.session.commit()
+		return jsonify({"status":"error", "message":"You have been comment banned (rate limit exceeded)."}), 200
 	comment_body = request.form.get('comment_body')
 	comment_on_type = request.form.get('comment_on_type')
 	comment_on_id = request.form.get('comment_on_id')
 	# Validate the form data
 	if not comment_body or not comment_on_type or not comment_on_id or comment_on_type not in ('blog_post','comment','thing'):
-		return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
+		return jsonify({'status': 'error', 'message': 'Missing required fields'}), 200
 	new_comment = Comment(user_id = current_user.id, target_type = comment_on_type, target_id = comment_on_id, body = comment_body)
 	db.session.add(new_comment)
 	db.session.commit()

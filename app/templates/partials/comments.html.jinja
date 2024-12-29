@@ -28,7 +28,10 @@
 			<div class="w3-cell-row">
 				<div class="w3-cell"><a class="w3-small" href="{{Users.get_user_by_id(comment.user_id).username|e}}/profile">{{Users.get_user_by_id(comment.user_id).username|e}}</a></div>
 				{% if current_user.is_authenticated %}
-				<div class="w3-small w3-cell w3-right-align"><a id="comment-{{ comment.id }}" href="javascript:bp_toggle_like_on_item('comment-{{ comment.id }}', 'comment', {{ comment.id}})">{% if UserLikedThis(current_user.id, "comment", comment.id) %}Unlike{% else %}Like{% endif%}</a></div>
+					<div class="w3-small w3-cell w3-right-align">
+					<a id="comment-{{ comment.id }}" href="javascript:bp_toggle_like_on_item('comment-{{ comment.id }}', 'comment', {{ comment.id}})">{% if UserLikedThis(current_user.id, "comment", comment.id) %}Unlike{% else %}Like{% endif%}</a>
+					<a> { </a><a id="comment-{{comment.id}}-count">{{ getLikesForX("comment", comment.id)}}</a><a> }</a>
+					</div>
 				{% endif %}
 			</div>
 			<div class="w3-content">
@@ -47,6 +50,10 @@
 			<div class="w3-auto w3-center"><button class="w3-button my-hover-lilac" id="load-more" data-page="1">Load More</button></div>
 		</div>
 	</div>
+
+
+
+{% if current_user.is_authenticated %}
 <script>
 function show_add_comment_area()
 {
@@ -55,8 +62,6 @@ function show_add_comment_area()
 	{comment_area.style.display = "block";}
 	else {comment_area.style.display = "none";};
 };
-
-{% if current_user.is_authenticated %}
 document.getElementById("new_comment_form").addEventListener("submit", async function(event)
 {
 	console.log("Here");
@@ -88,12 +93,12 @@ document.getElementById("new_comment_form").addEventListener("submit", async fun
 		{
 			const result = await response.json();
 			if (result.status === "ok"){location.reload();}
-			else{error_container.style.display = "block";error_container.textContent = "Issue posting comment: " + result.status;};
+			else{error_container.style.display = "block";error_container.textContent = "Issue posting comment: " + (result.message ? result.message : result.status);};
 		}
 		else{throw new Error("Network response was not ok");};
 	}
 	catch (error){error_container.style.display = 'block';error_container.textContent = 'Error submitting the form: ' + error.message;}
 });
-{% endif %}
 </script>
+{% endif %}
 </div>

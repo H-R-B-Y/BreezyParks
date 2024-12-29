@@ -1,5 +1,6 @@
 from app import app, db, get_extra_data, schema
 from app.schema import User, Like, Comment
+from app.paper_note_routes import user_can_note
 from flask import request
 from sqlalchemy import desc
 import datetime
@@ -100,6 +101,8 @@ def comment_has_replies(comment_id : int):
 	return True if count > 0 else False
 
 app.jinja_env.globals.update(CommentHasReplies = comment_has_replies)
+
+app.jinja_env.globals.update(UserCanNote = user_can_note)
 
 # def get_replies_to_comment(comment_id : int):
 # 	if comment_id is None:

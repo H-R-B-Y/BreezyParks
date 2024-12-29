@@ -98,13 +98,12 @@ document.addEventListener("DOMContentLoaded", () => {
 		background : "#1f2122",
 		resizeTo: window
 	});
-
 	// Stack order for containers
 	app.stage.addChild(lobbyContainer);
 	app.stage.addChild(userContainer);
 	app.stage.addChild(uiContainer);
 	app.stage.sortableChildren = true;
-
+	
 	currentPlayer.loadSprite(userContainer);
 	document.addEventListener("click", (event) => {
 		// Should probably move this function into a method of the player?
@@ -114,13 +113,13 @@ document.addEventListener("DOMContentLoaded", () => {
 			socket.emit("moved", {"x":currentPlayer.sprite.x, "y":currentPlayer.sprite.y});
 		};
 	});
-
+	
 	socket.on("connect", () => {
 		console.log("Connected to room!");
 	});
-
+	
 	socket.on("joined", onJoined);
 	socket.on("left", onLeft);
 	socket.on("moved", onMove);
-
+	setTimeout( () => {document.getElementById("zetaCanvas").style.display = "block";}, 100);
 });

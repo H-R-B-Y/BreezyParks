@@ -2,6 +2,7 @@
 async function bp_toggle_like_on_item(callee, type_of_thing, id_of_thing)
 {
 	let callee_elem = document.getElementById(callee);
+	let callee_count = document.getElementById(callee+"-count");
 	let callee_origin = callee_elem.getAttribute("href");
 	callee_elem.setAttribute("href", "javascript:void(0);")
 	// potential to use set as it is more performant?
@@ -18,14 +19,20 @@ async function bp_toggle_like_on_item(callee, type_of_thing, id_of_thing)
 		{
 			throw new Error(`HTTP error! Status: ${resposne.status}`);
 		}
-		let liked_state = (await response.json()).state;
+		let resp_json = await response.json();
+		let liked_state = resp_json.state;
 		if (liked_state == "unliked")
 		{
 			callee_elem.innerText = "Like"; // Note: This should be changed to an icon in the future.
+			callee_count.innerText = parseInt(callee_count.innerText) - 1;
 		}
 		else if (liked_state == "liked")
 		{
 			callee_elem.innerText = "Unlike"; // Note: This should be changed to an icon in the future.
+		}
+		if (callee_count && resp_json.count)
+		{
+			callee_count.innerText = resp_json.count;
 		}
 	}
 	catch (error)

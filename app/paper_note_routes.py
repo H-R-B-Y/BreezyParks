@@ -1,7 +1,7 @@
 import base64
 from functools import wraps
 from datetime import datetime, timedelta
-from app import app, db, require_token, require_admin, get_extra_data, write_to_extra
+from app import app, db, require_token, require_admin, get_extra_data, write_to_extra, socketio, zetaSocketIO
 from app.schema import User, PaperNote, ThingPost
 from flask import Flask, redirect, url_for, request, render_template, flash, jsonify
 from sqlalchemy import desc, func
@@ -9,7 +9,7 @@ from authlib.integrations.flask_client import OAuth
 from flask_login import login_required, current_user
 
 def user_can_note(user : User):
-	if True: return True # WARN: delete after test
+	# if True: return True # WARN: delete after test
 	latest : PaperNote = PaperNote.query.filter_by(user_id = user.id).order_by(desc(PaperNote.created_date)).first()
 	if not latest:
 		return True
@@ -21,14 +21,12 @@ def require_able_to_post(func):
 	@wraps(func)
 	def wrapper(*args, **kwargs):
 		if not user_can_note(current_user):
-			flash("You are unable to send a note.")
-			return redirect(url_for("index"))
+			flash("You are unable to send a note.", "error")
 		return func(*args, **kwargs)
 	return wrapper
 
+socketio.on_namespace(zetaSocketIO.zeta("/zeta/paper_index"))
 @app.route("/paper_index")
-@login_required
-@require_able_to_post
 def paper_index():
 	return render_template("things/paper_index.html.jinja", thing_id=1, thing=ThingPost.query.filter_by(id=1).first())
 
@@ -36,7 +34,8 @@ def paper_index():
 @login_required
 @require_able_to_post
 def post_note():
-	if not user_can_note(current_user): return "Nope!", 400
+	if not user_can_note(current_user):
+		return jsonify({"status":"error", "message":"Already sent a note today."}), 400
 	if (request.headers.get("Content-Type") == "application/json"):
 		data = request.get_json()
 		data_type = data.get("data_type", "").strip().lower()

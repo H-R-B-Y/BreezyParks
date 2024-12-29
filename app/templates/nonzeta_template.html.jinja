@@ -15,7 +15,7 @@
 	<body class="w3-text-white " style="background:#1f2122;">
 		{% block background%}{% endblock %}
 		{% block foreground %}
-			<div class="foreground">
+			<div id="foreground" class="foreground">
 				{% include "partials/flash.html.jinja" %}
 				{% block header %} {% include "partials/header.html.jinja" %} {% endblock %}
 				<div class="bodyContent w3-container w3-card  zeta-hideable">

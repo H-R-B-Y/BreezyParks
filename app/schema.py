@@ -26,6 +26,8 @@ class User(UserMixin, db.Model):
 	github_id = db.Column(String(255), unique=True)
 	username_last_updated = db.Column(DateTime)
 
+	can_comment = db.Column(Boolean, default=True)
+
 	likes = db.relationship("Like", back_populates="user", cascade="all, delete-orphan")
 	comments = db.relationship("Comment", back_populates="user", cascade="all, delete-orphan")
 
