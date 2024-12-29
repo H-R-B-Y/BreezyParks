@@ -13,7 +13,6 @@ async function fetch_posts(page)
 function render_post(post)
 {
 	let new_rendered = loader_template.replace(/{{id}}/g, post.id).replace(/{{title}}/g, post.title).replace(/{{created_date}}/g, post.created_date);
-	console.log(new_rendered);
 	return new_rendered;
 };
 function create_new_row(container)
@@ -39,7 +38,16 @@ function render_posts(posts) {
 async function get_page()
 {
 	const posts = await fetch_posts(1);
-	render_posts(posts.data);
+	if (posts && posts.data.length > 0)
+	{
+		render_posts(posts.data);
+	}
+	if (!posts || posts.data.length === 0 || posts.last_page == true)
+	{
+		button.textContent = "No more posts";
+		button.disable = true;
+		button.classList.remove("my-hover-lilac");
+	}
 }
 document.getElementById("load-more").addEventListener("click", async function () 
 {
@@ -55,6 +63,7 @@ document.getElementById("load-more").addEventListener("click", async function ()
 	{
 		button.textContent = "No more posts";
 		button.disable = true;
+		button.classList.remove("my-hover-lilac");
 	}
 });
 get_page();
