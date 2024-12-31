@@ -11,6 +11,7 @@
 /* Style for the foreground content */
 .foreground {
 	position: relative;
+	max-width: 1536px;
 	z-index: 1; /* Places it above the canvas */
 	background-color: transparent; /* Adjust transparency here */
 	border-radius: 20px;
@@ -29,6 +30,62 @@
 	justify-content: center;
 	align-content: center;
 	background:#27292a;
+}
+
+.mainBar {
+	margin:10px 10%;
+	width:auto;
+	background:#27292a;
+	border-radius:15px;
+}
+
+.navBar {
+	margin:10px 10%;
+	background:#27292a;
+	border-radius:15px;
+	padding:15px 0px;
+}
+
+.footerBar {
+	margin:10px 10%;
+	border-radius:15px;
+	background:#27292a;
+	padding-top:15px;
+}
+
+@media screen and (max-width: 720px){
+	.bodyContent {
+		background-color: rgba(255, 255, 255, 0.692);
+		border-radius: 10px;
+		margin:10px 0px;
+		padding: 10px 25px;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-content: center;
+		background:#27292a;
+	}
+	
+	.mainBar {
+		margin:10px 0px;
+		width:auto;
+		background:#27292a;
+		border-radius:15px;
+	}
+	
+	.navBar {
+		margin:10px 0px;
+		background:#27292a;
+		border-radius:15px;
+		padding:15px 0px;
+	}
+	
+	.footerBar {
+		margin:10px 0px;
+		border-radius:15px;
+		background:#27292a;
+		padding-top:15px;
+	}
 }
 
 .my-text-lilac {
