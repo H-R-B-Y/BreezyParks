@@ -3,7 +3,7 @@ from functools import wraps
 from datetime import datetime, timedelta
 from app import app, db, require_token, require_admin, get_extra_data, write_to_extra, socketio, zetaSocketIO
 from app.schema import User, PaperNote, ThingPost
-from flask import Flask, redirect, url_for, request, render_template, flash, jsonify
+from flask import Flask, redirect, url_for, request, render_template, flash, jsonify, Response
 from sqlalchemy import desc, func
 from authlib.integrations.flask_client import OAuth
 from flask_login import login_required, current_user
@@ -72,9 +72,13 @@ def get_paper_note_admin():
 	random_record : PaperNote = PaperNote.query.order_by(func.random()).first()
 	if random_record == None:
 		return jsonify({"error": "There are no new notes"}), 404
-	return_data = {"data_type": random_record.type, "data_raw": random_record.data, "data_text": random_record.text, "from": User.query.filter_by(id=random_record.user_id).first().username}
-	db.session.delete(random_record)
-	db.session.commit()
+	return_data = {
+		"user_id" : random_record.user_id,
+		"username" : User.query.filter_by(id = random_record.user_id).first().username,
+		"format" : ["application/octet-stream", "application/json"][random_record.type],
+		"record_id" : random_record.id,
+		"created_date" : random_record.created_date.timestamp()
+	}
 	notes_read = get_extra_data("notes_read")
 	write_to_extra("notes_read", notes_read + 1 if notes_read else 1)
 	return jsonify(return_data), 200
@@ -88,13 +92,35 @@ def get_paper_note_token():
 	random_record : PaperNote = PaperNote.query.order_by(func.random()).first()
 	if random_record == None:
 		return jsonify({"error": "There are no new notes"}), 404
-	return_data = {"data_type": random_record.type,
-		"data_raw": base64.b64encode(random_record.data).decode("ascii"),
-		"data_text": random_record.text,
-		"from": User.query.filter_by(id=random_record.user_id).first().username,
-		"created_date": random_record.created_date.timestamp()}
+	# return_data = {"data_type": random_record.type,
+	# 	"data_raw": base64.b64encode(random_record.data).decode("ascii"),
+	# 	"data_text": random_record.text,
+	# 	"from": User.query.filter_by(id=random_record.user_id).first().username,
+	# 	"created_date": random_record.created_date.timestamp()}
 	#db.session.delete(random_record)
 	#db.session.commit()
+	return_data = {
+		"user_id" : random_record.user_id,
+		"username" : User.query.filter_by(id = random_record.user_id).first().username,
+		"format" : ["application/octet-stream", "application/json"][random_record.type],
+		"record_id" : random_record.id,
+		"created_date" : random_record.created_date.timestamp()
+	}
 	notes_read = get_extra_data("notes_read")
 	write_to_extra("notes_read", notes_read + 1 if notes_read else 1)
 	return jsonify(return_data), 200
+
+
+@app.route("/get_note_token/<int:note_id>")
+@require_token
+def get_paper_token_with_id(note_id):
+	blob_data : PaperNote = PaperNote.query.filter_by(id = note_id).first()
+	if blob_data:
+		if blob_data.type == 0:
+			res = Response(blob_data.data, content_type = "application/octet-stream")
+		else:
+			res = jsonify({"data": blob_data.text}), 200
+		# db.session.delete(blob_data)
+		# db.session.commit()
+		return res
+	return jsonify({"error":"Paper note doesn't exist!"}), 404

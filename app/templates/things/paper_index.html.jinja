@@ -6,7 +6,7 @@
 For more information please see <a href="/wip">this post.</a></p>
 Since setting this up I have recieved {{ getExtraData("notes_sent") }} notes and read {{ getExtraData("notes_read") }} notes
 </p>
-{% set canvas_width, canvas_height, canvas_color = 212, 104, 'black'%}
+{% set canvas_width, canvas_height, canvas_color = 212, 104, 'black' %}
 {% include "partials/drawable.html.jinja"%}
 <div class="w3-auto" style="width:200px">
 	{% if current_user.is_authenticated %}
