@@ -8,6 +8,8 @@ from flask_socketio import SocketIO
 from authlib.jose import JsonWebKey
 from authlib.integrations.flask_client import OAuth
 from functools import wraps
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 
 
 
@@ -23,6 +25,7 @@ if app.config["ENVIRONMENT_NAME"] == "development" or not app.config["ENVIRONMEN
 	app.config['SESSION_COOKIE_DOMAIN'] = None
 	app.config['SESSION_COOKIE_SECURE'] = False  # Enforce HTTPS for cookies
 if app.config["ENVIRONMENT_NAME"] == "production":
+	app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 	app.config['SESSION_COOKIE_DOMAIN'] = os.getenv("CANON_DOMAIN")
 	app.config['SESSION_COOKIE_SECURE'] = True  # Enforce HTTPS for cookies
 
@@ -139,69 +142,3 @@ from app import basic_routes
 from app import jinja_template_addons
 from app import login_auth_routes
 from app import paper_note_routes
-
-
-# # Delete this later.
-# @app.cli.command("create-db")
-# def create_db():
-# 	db.create_all()
-
-# github = oauth.register(
-# 	name="github",
-# 	client_id=os.environ.get("GITHUB_CLIENT_ID"),
-# 	client_secret=os.environ.get("GITHUB_CLIENT_SECRET"),
-# 	authorize_url="https://github.com/login/oauth/authorize",
-# 	access_token_url="https://github.com/login/oauth/access_token",
-# 	client_kwargs={"scope": "read:user user:email"},
-# )
-
-# example usage:
-# @app.route("/login")
-# def login():
-#     return google.authorize_redirect(redirect_uri=url_for("auth", _external=True))
-
-# @app.route("/auth")
-# def auth():
-#     token = google.authorize_access_token()
-#     user_info = google.parse_id_token(token)
-    
-#     # Create or retrieve the user
-#     user = users.get(user_info['email'])
-#     if not user:
-#         user = User(id=user_info['email'], email=user_info['email'])
-#         users[user.id] = user
-    
-#     login_user(user)
-#     return redirect(url_for("index"))
-
-# @app.route("/login/github")
-# def login_github():
-#     return github.authorize_redirect(redirect_uri=url_for("auth_github", _external=True))
-
-# @app.route("/auth/github")
-# def auth_github():
-#     token = github.authorize_access_token()
-#     user_info = github.get("user").json()
-
-#     # Create or retrieve the user
-#     user = users.get(user_info['login'])
-#     if not user:
-#         user = User(id=user_info['login'], email=user_info['email'])
-#         users[user.id] = user
-
-#     login_user(user)
-#     return redirect(url_for("index"))
-
-# @app.route("/logout")
-# @login_required
-# def logout():
-#     logout_user()
-#     return redirect(url_for("index")
-
-# reference:
-# Load the Google Platform Library
-# You must include the Google Platform Library on your web pages that integrate Google Sign-In.
-# <script src="https://apis.google.com/js/platform.js" async defer></script>
-# Specify your app's client ID
-# Specify the client ID you created for your app in the Google Developers Console with the google-signin-client_id meta element.
-# <meta name="google-signin-client_id" content="YOUR_CLIENT_ID.apps.googleusercontent.com">
