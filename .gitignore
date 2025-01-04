@@ -6,6 +6,7 @@ venv/pyvenv.cfg
 venv/
 instance/
 migrations/
+paper_tester.py/
 trash/
 extra_data.json
 .env

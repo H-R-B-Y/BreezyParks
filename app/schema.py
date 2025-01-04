@@ -92,6 +92,13 @@ class ThingPost(db.Model):
 
 
 class Comment(db.Model):
+	class comment_proto:
+		user_id = "${userid}"
+		username = "${username}"
+		body = "${commentBody}"
+		isreply = "${isreply}"
+		id = "${id}"
+	
 	__tablename__ = 'comments'
 
 	id = db.Column(Integer, primary_key=True, autoincrement=True)

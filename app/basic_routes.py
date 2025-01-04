@@ -157,7 +157,7 @@ def load_more_comments():
 	start = (page_to_load - 1) * per_page
 	end = start + per_page
 	things = Comment.query.filter_by(target_type=comments_for, target_id=comments_for_id).order_by(asc(Comment.created_date)).all()
-	data = [{"id":x.id, "user": x.user_id, "username":User.query.filter_by(id=x.user_id).first().username, "body":x.body} for x in things[start:end]]
+	data = [{"id":x.id, "user": x.user_id, "username": User.query.filter_by(id=x.user_id).first().username, "body":x.body} for x in things[start:end]]
 	return jsonify({
 			"status":"ok",
 			"data":data,

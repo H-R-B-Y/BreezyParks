@@ -80,6 +80,7 @@ google = oauth.register(
 	jwks_uri='https://www.googleapis.com/oauth2/v3/certs',
 )
 
+
 from app import schema
 
 # should probably move this stuff into its own file but whatever

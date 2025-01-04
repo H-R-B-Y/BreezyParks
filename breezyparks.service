@@ -1,0 +1,14 @@
+[Unit]
+Description=BreezyParks main website
+After=network.target
+
+[Service]
+ExecStart=/home/hurb/website/BreezyParks/run_target.sh
+WorkingDirectory=/home/hurb/website/BreezyParks
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+User=hurb
+Group=hurb
+
+[Install]
+WantedBy=multi-user.target

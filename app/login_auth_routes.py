@@ -7,10 +7,19 @@ from authlib.integrations.flask_client import OAuth, OAuthError
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
 
+
 # THIS NEEDS TO BE DONE BY BUTTONS ON THE LOGIN SCREEN
 @app.route("/login")
 def login():
+	if current_user.is_authenticated:
+		return redirect(url_for("profile"))
 	session['nonce'] = ""
+	return render_template("login_page.html.jinja", google_login_url=url_for("login_google_redirect"))
+
+@app.route("/login_google_redirect")
+def login_google_redirect():
+	if current_user.is_authenticated:
+		return redirect(url_for("profile"))
 	return google.authorize_redirect(redirect_uri=url_for("google_auth", _external=True, _scheme=app.config['PREFERRED_URL_SCHEME']))
 
 # @app.route("/login/github")

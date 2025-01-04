@@ -1,0 +1,14 @@
+{% extends "nonzeta_template.html.jinja" %}
+{% set title = "login"%}
+{% block body %}
+	<div id="main" class="w3-margin-bottom w3-auto">
+	<a>Only google login is setup currently, more login methods may be added in future.</a>
+		<div class="w3-content w3-padding w3-border my-hover-lilac" style="margin:20%;border-radius:15px;">
+			<a href="{{google_login_url}}">
+				<div class="clickable-div w3-center">
+					login with google
+				</div>
+			</a>
+		</div>
+	</div>
+{% endblock %}

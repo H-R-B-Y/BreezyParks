@@ -1,0 +1,19 @@
+
+<div id="{{ comment.id }}" class="w3-container" style="border-radius:15px;outline:solid #1f2122;margin-bottom:15px;box-shadow:0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);overflow:hidden;${ isreply ? 'padding: 0.01em 3px;' : ''}">
+	<div class="w3-cell-row">
+			<div class="w3-cell"><a id="comment-{{ comment.id }}-user" class="w3-small" href="{{ comment.username|e }}/profile">{{ comment.username|e }}</a></div>
+			<div class="w3-small w3-cell w3-right-align">
+					{% if current_user.is_authenticated %}<a id="comment-{{ comment.id }}-like" href="javascript:bp_toggle_like_on_item('comment-{{ comment.id }}-like', 'comment', {{ comment.id }}, 'comment-{{ comment.id }}-count')">Unlike</a>{% endif %}
+					<div> { <a id="comment-{{ comment.id }}-count">{{ getLikesForX('comment', comment.id) }}</a> }</div>
+			</div>
+	</div>
+	<div class="w3-content">
+			<p id="comment-{{ comment.id }}-body">{{ comment.body|e }}</p>
+	</div>
+	<div class="w3-cell-row" style="margin-bottom:5px;">
+			{% if current_user.is_authenticated %}<div class="w3-cell w3-small"><a href="javascript:show_add_comment_area('comment', '{{ comment.id }}');">reply</a></div>{% endif %}
+	<div id="comment-{{ comment.id }}-loadreplies" data-page="0" data-pagetype="comment" data-pageid="{{ comment.id }}" class="w3-cell w3-small w3-right-align w3-cell-bottom" style="display:none;">
+		<a href="javascript:load_more_replies({{ comment.id }});">Load replies</a>
+	</div>
+	</div>
+</div>

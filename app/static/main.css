@@ -54,6 +54,12 @@
 	padding-top:15px;
 }
 
+.flash-card {
+	margin:10px 10%;
+	background:#27292a;
+	border-radius:15px;
+}
+
 @media screen and (max-width: 720px){
 	.bodyContent {
 		background-color: rgba(255, 255, 255, 0.692);
@@ -86,6 +92,12 @@
 		border-radius:15px;
 		background:#27292a;
 		padding-top:15px;
+	}
+
+	.flash-card {
+		margin:10px 0px;
+		background:#27292a;
+		border-radius:15px;
 	}
 }
 

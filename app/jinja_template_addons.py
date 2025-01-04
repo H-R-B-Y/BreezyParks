@@ -63,9 +63,12 @@ def get_comments(type : str, id : int, page : int = 1):
 	per_page = 5
 	start = (page - 1) * per_page
 	end = start + per_page
-	return schema.Comment.query.filter_by(
+	comment = schema.Comment.query.filter_by(
 		target_type=type,
 		target_id = id).order_by(asc(Comment.created_date)).all()[start : end]
+	for c in comment:
+		c.username = User.query.get(c.user_id).username
+	return comment
 
 app.jinja_env.globals.update(getComments = get_comments)
 
@@ -103,6 +106,12 @@ def comment_has_replies(comment_id : int):
 app.jinja_env.globals.update(CommentHasReplies = comment_has_replies)
 
 app.jinja_env.globals.update(UserCanNote = user_can_note)
+
+def get_comment_proto():
+	return Comment.comment_proto()
+
+app.jinja_env.globals.update(GetCommentProto = get_comment_proto)
+
 
 # def get_replies_to_comment(comment_id : int):
 # 	if comment_id is None:
