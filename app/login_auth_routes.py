@@ -21,8 +21,9 @@ def login():
 def google_auth():
 	try:
 		token = google.authorize_access_token()
-	except OAuthError:
+	except OAuthError as e:
 		flash("There was an issue logging in.", "error")
+		print(f"login issue {e}")
 		return redirect(url_for("index"))
 	user_info = google.parse_id_token(token, nonce="")
 	# Create or retrieve the user
