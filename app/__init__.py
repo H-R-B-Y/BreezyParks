@@ -1,6 +1,6 @@
 import os, json
 from dotenv import load_dotenv, set_key
-from flask import Flask, request, abort, jsonify
+from flask import Flask, request, abort, jsonify, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, current_user
@@ -14,18 +14,28 @@ from functools import wraps
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
 load_dotenv()
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DBADDR")
-db = SQLAlchemy(app)
+
 
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+app.config["ENVIRONMENT_NAME"] = os.getenv("ENVIRONMENT_NAME")
+
+if app.config["ENVIRONMENT_NAME"] == "development" or not app.config["ENVIRONMENT_NAME"]:
+	app.config['SESSION_COOKIE_DOMAIN'] = None
+	app.config['SESSION_COOKIE_SECURE'] = False  # Enforce HTTPS for cookies
+if app.config["ENVIRONMENT_NAME"] == "production":
+	app.config['SESSION_COOKIE_DOMAIN'] = os.getenv("CANON_DOMAIN")
+	app.config['SESSION_COOKIE_SECURE'] = True  # Enforce HTTPS for cookies
+
+
 app.config["cfSiteKey"] = os.getenv("cfSiteKey")
 app.config["cfSecretKey"] = os.getenv("cfSecretKey")
 app.config["mailPassword"] = os.getenv("mailServerKey")
 app.config["mailAddress"] = os.getenv("mailAddress")
 app.config["loginAddress"] = os.getenv("loginAddress")
 app.config["googleclientid"] = os.getenv("googleclientid")
-# print(app.config["googleclientid"])
-# print(os.getenv("googleclientsecret"))
+
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DBADDR")
+db = SQLAlchemy(app)
 
 # Socket IO Stup
 socketio = SocketIO(app)
@@ -39,6 +49,15 @@ loginman.login_view = 'login'
 @loginman.user_loader
 def load_user(user_id):
 	return schema.User.get_user_by_id(user_id)
+
+
+@app.before_request
+def enforce_single_domain():
+	if app.config["ENVIRONMENT_NAME"] == "production":
+		if request.url.startswith('http://'):
+			# Redirect HTTP to HTTPS
+			url = request.url.replace('http://', 'https://', 1)
+			return redirect(url, code=301)
 
 # OAuth setup
 oauth = OAuth(app)
