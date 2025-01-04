@@ -13,7 +13,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 def login():
 	if current_user.is_authenticated:
 		return redirect(url_for("profile"))
-	session['nonce'] = ""
+	session['nonce'] = "" # WARN: what is this lol
 	return render_template("login_page.html.jinja", google_login_url=url_for("login_google_redirect"))
 
 @app.route("/login_google_redirect")

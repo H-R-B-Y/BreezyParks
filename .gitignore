@@ -10,3 +10,4 @@ paper_tester.py/
 trash/
 extra_data.json
 .env
+run.py
