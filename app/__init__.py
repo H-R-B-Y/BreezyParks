@@ -27,8 +27,10 @@ if app.config["ENVIRONMENT_NAME"] == "development" or not app.config["ENVIRONMEN
 if app.config["ENVIRONMENT_NAME"] == "production":
 	app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 	app.config['SESSION_COOKIE_DOMAIN'] = os.getenv("CANON_DOMAIN")
-	#app.config['SESSION_COOKIE_SECURE'] = True  # Enforce HTTPS for cookies
+	app.config['SESSION_COOKIE_SECURE'] = True  # Enforce HTTPS for cookies
 	app.config['PREFERRED_URL_SCHEME'] = 'https'
+	app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+	app.config['SESSION_COOKIE_HTTPONLY'] = True
 
 
 app.config["cfSiteKey"] = os.getenv("cfSiteKey")
