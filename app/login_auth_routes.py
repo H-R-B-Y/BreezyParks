@@ -19,9 +19,6 @@ def login():
 
 @app.route("/google_auth")
 def google_auth():
-	state_in_request = request.args.get('state')
-	state_in_session = session.get('_state')
-	print(f"state in req: {state_in_request} \n state in sess {state_in_session}")
 	try:
 		token = google.authorize_access_token()
 	except OAuthError as e:
