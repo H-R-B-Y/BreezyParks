@@ -33,7 +33,7 @@ class zeta(Namespace):
 			emit("joined", {"username":uName, "x":0, "y":0}, to=request.sid, broadcast=False)
 
 		# Broadcast that new user has joined here.
-		if current_user:
+		if current_user.is_authenticated:
 			emit("joined", {"username":current_user.username, "x":0, "y":0}, include_self=False, broadcast=True)
 		
 		# Add user details to the class (Done after broadcast such that no actions are dispatched for uninitialised users)
@@ -53,7 +53,7 @@ class zeta(Namespace):
 		if request.sid in self.activeSids:
 			self.activeSids.discard(request.sid)
 
-		if not current_user:
+		if not current_user.is_authenticated:
 			return
 		
 		# Code that needs to be executed IF and ONLY IF the disconnecting session is the last active session for the user.
