@@ -2,7 +2,7 @@
 	<canvas id="drawingCanvas" width="{{ canvas_width if canvas_width is defined else 300 }}" height="{{ canvas_height if canvas_height is defined else 300}}"
 		style="border: 1px solid black;background-color:{{ canvas_background if canvas_background is defined else 'white' }};"></canvas>
 		<br/>
-	{# <div class="w3-row"> need to give this a second pass?
+	<div class="w3-row"> <!-- need to give this a second pass? --> 
 		<div class="w3-half">
 			<button class="w3-button my-hover-lilac" style="width:100%;"
 			onclick="javascript:set_draw_mode();">draw</button>
@@ -11,7 +11,7 @@
 			<button class="w3-button my-hover-lilac" style="width:100%;"
 			onclick="javascript:set_erase_mode();">erase</button>
 		</div>
-	</div> #}
+	</div>
 	<div class="w3-row">
 		<div style="width:100%;">
 			<button class="w3-button my-hover-lilac" style="width:100%;"
