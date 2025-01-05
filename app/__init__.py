@@ -1,6 +1,6 @@
 import os, json
 from dotenv import load_dotenv, set_key
-from flask import Flask, request, abort, jsonify, redirect
+from flask import Flask, request, abort, jsonify, redirect 
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, current_user
@@ -9,9 +9,6 @@ from authlib.jose import JsonWebKey
 from authlib.integrations.flask_client import OAuth
 from functools import wraps
 from werkzeug.middleware.proxy_fix import ProxyFix
-
-
-
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
@@ -98,7 +95,6 @@ def require_admin(func):
 def require_token(func):
 	@wraps(func)
 	def wrapper(*args, **kwargs):
-		print(request.headers)
 		auth_header = request.headers.get('Authorization')
 		if not auth_header:
 			return jsonify({"error": "Missing Authorization header"}), 401
@@ -146,3 +142,6 @@ from app import basic_routes
 from app import jinja_template_addons
 from app import login_auth_routes
 from app import paper_note_routes
+from app import api_v1
+
+app.register_blueprint(api_v1.api_v1_bp, url_prefix="/api_v1")

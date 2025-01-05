@@ -92,13 +92,6 @@ def get_paper_note_token():
 	random_record : PaperNote = PaperNote.query.order_by(func.random()).first()
 	if random_record == None:
 		return jsonify({"error": "There are no new notes"}), 404
-	# return_data = {"data_type": random_record.type,
-	# 	"data_raw": base64.b64encode(random_record.data).decode("ascii"),
-	# 	"data_text": random_record.text,
-	# 	"from": User.query.filter_by(id=random_record.user_id).first().username,
-	# 	"created_date": random_record.created_date.timestamp()}
-	#db.session.delete(random_record)
-	#db.session.commit()
 	return_data = {
 		"user_id" : random_record.user_id,
 		"username" : User.query.filter_by(id = random_record.user_id).first().username,

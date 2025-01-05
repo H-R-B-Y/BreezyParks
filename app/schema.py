@@ -31,24 +31,6 @@ class User(UserMixin, db.Model):
 	likes = db.relationship("Like", back_populates="user", cascade="all, delete-orphan")
 	comments = db.relationship("Comment", back_populates="user", cascade="all, delete-orphan")
 
-	# def set_password (self, password) -> None :  
-	# 	""" Sets the passowrd for the current instance
-		
-	# 	Keyword arguments:
-	# 	password -- the unencrypted password.
-	# 	Return: None
-	# 	"""
-	# 	self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-
-	# def check_password(self, password) -> bool:
-	# 	""" Checks an unhashed password against the hashed password stored on user
-		
-	# 	Keyword arguments:
-	# 	password - the unhashed password you would like to check.
-	# 	Return: bool
-	# 	"""
-	# 	return bcrypt.checkpw(password.encode('utf-8'), self.password_hash)
-
 	@classmethod
 	def get_user_by_name(cls, name):
 		""" Gets a user from a given username
@@ -79,6 +61,10 @@ class BlogPost(db.Model):
 
 	CheckConstraint("body IS NOT NULL OR path_to_body IS NOT NULL", name="check_body_or_path")
 
+	@property
+	def likes(self):
+		return Like.likes_for(self)
+
 
 class ThingPost(db.Model):
 	__tablename__ = 'thing_posts'
@@ -90,12 +76,16 @@ class ThingPost(db.Model):
 	url_for = Column(Text)
 	created_date = Column(DateTime, nullable=False, default=datetime.utcnow())
 
+	@property
+	def likes(self):
+		return Like.likes_for(self)
+
 
 class Comment(db.Model):
 	class comment_proto:
 		user_id = "${userid}"
 		username = "${username}"
-		body = "${commentBody}"
+		body = "${comment_body}"
 		isreply = "${isreply}"
 		id = "${id}"
 	
@@ -116,7 +106,7 @@ class Comment(db.Model):
 	def comments_for(cls, target = None):
 		if (target == None or not type(target) in [BlogPost, Comment, ThingPost]):
 			return None
-		target_type = ['blog_post', 'comment', 'thing'][[BlogPost, Comment, ThingPost, User].index(type(target))]
+		target_type = ['blog_post', 'comment', 'thing'][[BlogPost, Comment, ThingPost].index(type(target))]
 		likes = cls.query.filter_by(target_type=target_type, target_id=target.id).order_by(desc(cls.created_date)).all()
 		return (likes)
 
@@ -124,7 +114,14 @@ class Comment(db.Model):
 		my_replies = Comment.query.filter_by(target_type="comment", target_id=self.id)\
 			.order_by(desc(Comment.created_date)).all()
 		return my_replies
-
+	
+	@property
+	def likes(self):
+		return Like.likes_for(self)
+	
+	@property
+	def username(self):
+		return self.user.username
 
 class Like(db.Model):
 	__tablename__ = 'likes'
@@ -164,3 +161,25 @@ class AccessToken(db.Model):
 	id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
 	token = Column(Text, nullable=False)
 
+
+
+"""
+def set_password (self, password) -> None :  
+	Sets the passowrd for the current instance
+	
+	Keyword arguments:
+	password -- the unencrypted password.
+	Return: None
+	
+	self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+def check_password(self, password) -> bool:
+	Checks an unhashed password against the hashed password stored on user
+	
+	Keyword arguments:
+	password - the unhashed password you would like to check.
+	Return: bool
+	
+	return bcrypt.checkpw(password.encode('utf-8'), self.password_hash)
+
+"""

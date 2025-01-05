@@ -66,8 +66,6 @@ def get_comments(type : str, id : int, page : int = 1):
 	comment = schema.Comment.query.filter_by(
 		target_type=type,
 		target_id = id).order_by(asc(Comment.created_date)).all()[start : end]
-	for c in comment:
-		c.username = User.query.get(c.user_id).username
 	return comment
 
 app.jinja_env.globals.update(getComments = get_comments)
