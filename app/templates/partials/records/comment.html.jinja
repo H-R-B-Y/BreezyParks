@@ -1,9 +1,11 @@
 
-<div id="{{ comment.id }}" class="w3-container" style="border-radius:15px;outline:solid #1f2122;margin-bottom:15px;box-shadow:0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);overflow:hidden;${ isreply ? 'padding: 0.01em 3px;' : ''}">
+<div id="comment-{{ comment.id }}" class="w3-container my-comment{% if comment.is_reply %}-reply{% elif comment.proto %}${ isreply ? '-reply' : '' }{%endif%}">
 	<div class="w3-cell-row">
 			<div class="w3-cell"><a id="comment-{{ comment.id }}-user" class="w3-small" href="{{ comment.username|e }}/profile">{{ comment.username|e }}</a></div>
 			<div class="w3-small w3-cell w3-right-align">
-					{% if current_user.is_authenticated %}<a id="comment-{{ comment.id }}-like" href="javascript:bp_toggle_like_on_item('comment-{{ comment.id }}-like', 'comment', {{ comment.id }}, 'comment-{{ comment.id }}-count')">Unlike</a>{% endif %}
+					{% if current_user.is_authenticated %}<a id="comment-{{ comment.id }}-like" href="javascript:bp_toggle_like_on_item('comment-{{ comment.id }}-like', 'comment', {{ comment.id }}, 'comment-{{ comment.id }}-count')">
+					{% if UserLikedThis(current_user.id, 'comment', comment.id) %}Unlike{% else %}Like{% endif%}
+					</a>{% endif %}
 					<div> { <a id="comment-{{ comment.id }}-count">{{ getLikesForX('comment', comment.id) }}</a> }</div>
 			</div>
 	</div>

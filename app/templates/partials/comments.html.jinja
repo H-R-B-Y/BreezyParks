@@ -2,7 +2,7 @@
 <div>
 <!-- Implement lazy loading here later for large comment bases? -->
 <!-- Move the JS on this page to a static file so cloudflare can cache it to reduce load on the server -->
-	<div class="w3-container w3-auto">
+	<div class="w3-auto">
 		<div class="w3-cell-row" style="margin-bottom:10px;border-bottom:solid #e6d7ff;">
 			<div class="w3-cell w3-left-align">
 				<a class="w3-large">Comments</a>
@@ -13,7 +13,7 @@
 			</div>
 			{% endif %}
 		</div>
-		<div id="comment_area" class="w3-container w3-content" data-page="1" data-pagetype="{{page_type}}" data-pageid="{{page_id}}">
+		<div id="comment_area" class="w3-content" data-page="1" data-pagetype="{{page_type}}" data-pageid="{{page_id}}">
 			{% if current_user.is_authenticated %}
 			<div id="add_comment_area" data-commenton="{{page_type}}" data-commentonid="{{page_id}}" class="w3-container"
 			style="display:none;border-radius:15px;outline:solid #1f2122;margin-bottom:15px;box-shadow:0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);">
@@ -31,6 +31,7 @@
 		</div>
 		<div class="w3-auto w3-center"><button class="w3-button my-hover-lilac" id="load-more-comments" onclick="load_more_comments()">Load More</button></div>
 	</div>
+<!-- DO NOT MOVE TO STATIC AS IT WOULD BREAK THE JINJA TEMPLATE!!!!!!!!! -->
 <script>
 {% if current_user.is_authenticated %}
 function show_add_comment_area(type, idofthing)
@@ -232,5 +233,4 @@ async function go_to_highlight(where)
 	}
 }
 </script>
-
 </div>

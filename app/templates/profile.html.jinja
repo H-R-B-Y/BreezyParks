@@ -3,6 +3,7 @@
 {% if user is not defined %}{% set user = current_user %}{% set myprofile = true %}{% endif %}
 {% set username = getUsername(user) %}
 {% set likedthings = getUserLikedCount(username)%}
+{% set page_type, page_id = "profile", user.id %}
 {% block body %}
 	<div id="main" class="w3-container w3-margin-bottom">
 		<div class="w3-cell-row"> 
@@ -15,15 +16,18 @@
 					</a>
 				{% else %}
 					{% if user.id != current_user.id %}
-					<a id="profile-{{ user.id }}" href="javascript:bp_toggle_like_on_item('profile-{{ user.id }}', 'profile', {{ user.id}})">{% if UserLikedThis(current_user.id, "profile", user.id) %}Unlike{% else %}Like{% endif%}</a>
+					<a id="profile-{{ user.id }}" href="javascript:bp_toggle_like_on_item('profile-{{ user.id }}', 'profile', {{ user.id}})">{% if UserLikedThis(current_user.id, "profile", user.id) %}Unlike{% else %}Like{% endif%}</a><a> { </a><a id="{{page_type}}-{{page_id}}-count">{{ getLikesForX(page_type, page_id)}}</a><a> }</a>
 					{% endif %}
 				{% endif %}
 			</div>
 		</div>
 		<p>More here soon!</p>
-		{# {% set canvas_width, canvas_height, canvas_color = 100, 100, 'blue'%}
-		{% include "partials/drawable.html.jinja"%} #}
-		{% if myprofile is true%}<a href="/profile/update">Edit Profile</a><br><a href="/logout">Logout</a>{% endif %}
+
+		{% if myprofile is true%}
+		<a href="/profile/update">Edit Profile</a>
+		<br/>
+		<br/>
+		<a href="/logout">Logout</a>{% endif %}
 
 	</div>
 {% endblock %}

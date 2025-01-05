@@ -60,12 +60,37 @@
 	border-radius:15px;
 }
 
+.my-comment-container {
+
+}
+
+.my-comment {
+	border-radius:15px;
+	outline:solid #1f2122;
+	margin-bottom:15px;
+	box-shadow:0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);
+	overflow:hidden;
+	/* {% if comment.is_reply == '1' %}padding: 0.01em 3px;{% endif %}
+	${ isreply ? 'padding: 0.01em 3px;' : ''} */
+}
+
+.my-comment-reply {
+	border-radius:15px;
+	outline:solid #1f2122;
+	margin-bottom:15px;
+	box-shadow:0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);
+	overflow:hidden;
+	padding: 0.01em 3px;
+	/*
+	${ isreply ? 'padding: 0.01em 3px;' : ''} */
+}
+
 @media screen and (max-width: 720px){
 	.bodyContent {
 		background-color: rgba(255, 255, 255, 0.692);
 		border-radius: 10px;
 		margin:10px 0px;
-		padding: 10px 25px;
+		padding: 10px 10px;
 		display: flex;
 		flex-direction: column;
 		justify-content: center;

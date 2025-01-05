@@ -83,6 +83,7 @@ class ThingPost(db.Model):
 
 class Comment(db.Model):
 	class comment_proto:
+		proto = True
 		user_id = "${userid}"
 		username = "${username}"
 		body = "${comment_body}"
