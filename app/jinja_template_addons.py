@@ -71,7 +71,7 @@ def get_comments(type : str, id : int, page : int = 1):
 app.jinja_env.globals.update(getComments = get_comments)
 
 def user_liked_x(user_id : int , type : str, id : int):
-	print(f"{user_id} {type} {id}")
+	# print(f"{user_id} {type} {id}")
 	if user_id is None or type is None or id is None:
 		return False
 	else:

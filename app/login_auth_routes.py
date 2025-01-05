@@ -32,7 +32,7 @@ def google_auth():
 		token = google.authorize_access_token()
 	except OAuthError as e:
 		flash("There was an issue logging in.", "error")
-		print(f"login issue {e}")
+		#print(f"login issue {e}")
 		return redirect(url_for("index"))
 	user_info = google.parse_id_token(token, nonce="")
 	# Create or retrieve the user
@@ -40,7 +40,7 @@ def google_auth():
 	if not user:
 		user = User.query.filter_by(email=user_info["email"]).first()
 		if not user:
-			print(user_info)
+			# print(user_info)
 			user = User(username=user_info.get("given_name") or user_info.get("name") or user_info["email"].split('@')[0])
 			user.email = user_info["email"]
 			user.google_id = user_info["sub"]
