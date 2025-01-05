@@ -11,3 +11,4 @@ trash/
 extra_data.json
 .env
 run.py
+*__pycache__/
