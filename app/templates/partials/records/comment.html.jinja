@@ -14,7 +14,8 @@
 	</div>
 	<div class="w3-cell-row" style="margin-bottom:5px;">
 			{% if current_user.is_authenticated %}<div class="w3-cell w3-small"><a href="javascript:show_add_comment_area('comment', '{{ comment.id }}');">reply</a></div>{% endif %}
-	<div id="comment-{{ comment.id }}-loadreplies" data-page="0" data-pagetype="comment" data-pageid="{{ comment.id }}" class="w3-cell w3-small w3-right-align w3-cell-bottom" style="display:none;">
+	<div id="comment-{{ comment.id }}-loadreplies" data-page="0" data-pagetype="comment" data-pageid="{{ comment.id }}" class="w3-cell w3-small w3-right-align w3-cell-bottom"
+		{% if comment.proto %}style="display:none;" {% elif CommentHasReplies(comment.id) %} {% else %} style="display:none;"{% endif %}>
 		<a href="javascript:load_more_replies({{ comment.id }});">Load replies</a>
 	</div>
 	</div>
