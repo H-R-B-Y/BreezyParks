@@ -1,6 +1,6 @@
 import os, json
 from dotenv import load_dotenv, set_key
-from flask import Flask, request, abort, jsonify, redirect 
+from flask import Flask, request, abort, jsonify, redirect, render_template, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, current_user
@@ -108,6 +108,28 @@ def require_token(func):
 		if schema.AccessToken.query.filter_by(token=token).first() != None:
 			return func(*args, **kwargs)
 		return jsonify({"error": "Invalid token"}), 403
+	return wrapper
+
+def render_page_failsafe(func):
+	@wraps(func)
+	def wrapper(*args, **kwargs):
+		try:
+			res = func(*args, **kwargs)
+			if isinstance(res, tuple):
+				body, status_code = res
+				if isinstance(body, dict) and body.get("status") == "error":
+					return render_template("default_error.html.jinja", status_code = str(status_code), **body), status_code
+				if isinstance(body, Response) and body.headers.get("Content-Type") == "application/json":
+					jsondata = body.get_json()
+					if jsondata.get("status") == "error":
+						if jsondata.get("message"):
+							return render_template("default_error.html.jinja", status_code = str(status_code), message = jsondata.get("message")), status_code
+						return render_template("default_error.html.jinja", status_code = str(status_code), message = "No message provided"), status_code
+				if isinstance(body, str) and status_code != 200:
+					return render_template("default_error.html.jinja", status_code = str(status_code), message = body), status_code
+			return res
+		except Exception as e:
+			return render_template("default_error.html.jinja", status_code = 500, message = e), 500
 	return wrapper
 
 def write_to_extra(key : str, value : str):

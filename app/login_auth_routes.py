@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta
-from app import app, db, google, loginman
+from app import app, db, google, loginman, render_page_failsafe
 from app.schema import User
 from flask import Flask, redirect, url_for, session, request, render_template, flash, jsonify, Blueprint
 from authlib.integrations.flask_client import OAuth, OAuthError
@@ -59,7 +59,7 @@ def google_auth():
 def check_username():
 	username = request.args.get('username').strip()
 	if not username:
-		return jsonify({'error': 'Username is required'}), 400
+		return jsonify({'status':"error", "message": 'Username is required'}), 400
 	# Query the database for the username
 	user_exists = db.session.query(User).filter_by(username=username).first() is not None
 	if user_exists:
@@ -69,12 +69,13 @@ def check_username():
 
 @app.route("/profile")
 @app.route("/<string:username>/profile")
+@render_page_failsafe
 def profile(username:str = None):
 	if not username and current_user.is_authenticated:
 		return render_template("profile.html.jinja")
 	else:
 		user = User.get_user_by_name(username)
-		if not user: return "Not found", 404
+		if not user: return jsonify({"status":"error","message":"User doesn't exist"}), 404
 		else: return render_template("profile.html.jinja", user=user)
 
 

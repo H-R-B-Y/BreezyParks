@@ -1,7 +1,7 @@
 import os
 import json
 from datetime import datetime, timedelta
-from app import app, db, google, loginman, socketio, zetaSocketIO, require_admin, write_to_extra, schema
+from app import app, db, google, loginman, socketio, zetaSocketIO, require_admin, write_to_extra, schema, render_page_failsafe
 from app.jinja_template_addons import get_likes_for_x, user_liked_x
 from app.schema import User, ThingPost, Comment, BlogPost, Like
 from sqlalchemy import desc, asc
@@ -76,6 +76,7 @@ def thing_pages():
 			"last_page": True if end >= len(things) else False,})
 
 @app.route("/thing/<int:id>")
+@render_page_failsafe
 def thing_id(id):
 	"""
 	Display a thing.
@@ -86,13 +87,13 @@ def thing_id(id):
 	"""
 	thing = ThingPost.query.filter_by(id=id).first()
 	if not thing:
-		return "Thing not found", 404
+		return jsonify({"status":"error", "message":"That page doesn't exist"}), 404
 	if thing.type == "url":
 		return redirect(url_for(thing.url_for))
 	elif thing.type == "template":
 		return render_template(thing.template_path, thing_id=id, thing=thing)
 	else:
-		return "Something went wrong", 404
+		return jsonify({"status":"error","status":"Internal error"}), 500
 	
 @app.route("/posts")
 def posts_index():
@@ -127,13 +128,14 @@ def post_pages():
 
 
 @app.route("/post/<int:id>")
+@render_page_failsafe
 def post_id(id):
 	"""
 	Display a blog post.
 	"""
 	thing = BlogPost.query.filter_by(id = id).first()
 	if not thing:
-		return "Thing not found", 404
+		return jsonify({"status":"error","message":"That post doesn't exist"}), 404
 	return render_template("posts/default.html.jinja", post=thing)
 
 
