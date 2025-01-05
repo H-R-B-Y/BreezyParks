@@ -163,6 +163,11 @@ from app import basic_routes
 from app import jinja_template_addons
 from app import login_auth_routes
 from app import paper_note_routes
+
 from app import api_v1
 
 app.register_blueprint(api_v1.api_v1_bp, url_prefix="/api_v1")
+
+from app import admin_area
+
+app.register_blueprint(admin_area.admin_area, url_prefix=os.getenv("ADMIN_PATH"))

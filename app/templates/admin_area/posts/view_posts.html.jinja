@@ -1,0 +1,34 @@
+{% extends "admin_area/admin_template.html.jinja" %}
+{% set page_type, page_id, title = "admin", 1, "Post view" %}
+
+{% block body %}
+
+<div class="w3-container">
+<table class="w3-card my-neat-table">
+	<tr>
+		<th>Title</th>
+		<th>Status</th>
+		<th>Created</th>
+		<th>Updated</th>
+		<th>Actions</th>
+	</tr>
+	{% for post in posts %}
+	<tr>
+		<td>{{ post.title }}</td>
+		<td>{{ post.status }}</td>
+		<td>{{ post.created }}</td>
+		<td>{{ post.updated }}</td>
+		<td class="w3-center">
+			<a href= "{{ url_for('admin_area.admin_area_edit_post', id=post.id) }}"
+			class="w3-button w3-lilac w3-hover-deep-purple">Edit</a>
+			<a href="{{ url_for('admin_area.admin_area_delete_post', id=post.id) }}"
+			class="w3-button w3-lilac w3-hover-deep-purple">Delete</a>
+		</td>
+	</tr>
+	{% endfor %}
+
+</table>
+</div>
+
+{% endblock %}
+

@@ -58,6 +58,7 @@ class BlogPost(db.Model):
 	path_to_body = db.Column(Text)
 	created_date = db.Column(DateTime, default=datetime.utcnow())
 	modified_date = db.Column(DateTime, default=datetime.utcnow(), onupdate=datetime.utcnow())
+	status = db.Column(Text, CheckConstraint("status IN ('draft', 'published', 'deleted')"), default='draft')
 
 	CheckConstraint("body IS NOT NULL OR path_to_body IS NOT NULL", name="check_body_or_path")
 

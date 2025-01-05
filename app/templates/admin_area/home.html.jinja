@@ -1,0 +1,49 @@
+{% extends "admin_area/admin_template.html.jinja" %}
+{% set page_type, page_id, title = "admin", 0, "Admin area" %}
+{% block body %}
+	<h2>Admin area (still in development so who cares what this looks like!)</h2>
+	<div class="w3-container w3-content">
+	<!-- Accordians for each sub area! -->
+		<div class=" w3-margin-bottom w3-border" style="border-radius:15px;">
+			<button class="w3-button w3-block w3-left-align my-hover-lilac" style="border-radius:15px;" onclick="toggle_accordian('admin-accordian-1')">Users</button>
+			<div id="admin-accordian-1" class="w3-hide w3-container">
+				<p>Users stuff here!</p>
+			</div>
+		</div>
+		<div class=" w3-margin-bottom w3-border" style="border-radius:15px;">
+			<button class="w3-button w3-block w3-left-align my-hover-lilac" style="border-radius:15px;" onclick="toggle_accordian('admin-accordian-2')">Posts</button>
+			<div id="admin-accordian-2" class="w3-hide w3-container">
+				<a href="{{url_for('admin_area.admin_area_post_view')}}" ><div class="w3-margin-bottom">View posts</div></a>
+				<a href="{{url_for('admin_area.admin_area_new_post')}}"><div class="w3-margin-bottom">New post</div></a>
+			</div>
+		</div>
+		<div class=" w3-margin-bottom w3-border" style="border-radius:15px;">
+			<button class="w3-button w3-block w3-left-align my-hover-lilac" style="border-radius:15px;" onclick="toggle_accordian('admin-accordian-5')">Things</button>
+			<div id="admin-accordian-5" class="w3-hide w3-container">
+				<p>Thing stuff here!</p>
+			</div>
+		</div>
+		<div class=" w3-margin-bottom w3-border" style="border-radius:15px;">
+			<button class="w3-button w3-block w3-left-align my-hover-lilac" style="border-radius:15px;" onclick="toggle_accordian('admin-accordian-3')">Comments</button>
+			<div id="admin-accordian-3" class="w3-hide w3-container">
+				<p>Comments stuff here!</p>
+			</div>
+		</div>
+		<div class=" w3-margin-bottom w3-border" style="border-radius:15px;">
+			<button class="w3-button w3-block w3-left-align my-hover-lilac" style="border-radius:15px;" onclick="toggle_accordian('admin-accordian-4')">Likes</button>
+			<div id="admin-accordian-4" class="w3-hide w3-container">
+				<p>Likes stuff here!</p>
+			</div>
+		</div>
+	</div>
+	<script>
+	function toggle_accordian(div_id){
+		const x = document.getElementById(div_id);
+		if (x.className.indexOf("w3-show") == -1) {
+			x.className += " w3-show";
+		} else { 
+			x.className = x.className.replace(" w3-show", "");
+		}
+	}
+	</script>
+{% endblock %}

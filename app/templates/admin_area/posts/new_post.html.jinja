@@ -1,0 +1,98 @@
+
+{% extends "admin_area/admin_template.html.jinja" %}
+{% set page_type, page_id= "admin", 1 %}
+{%if post%}
+{% set title = "Edit post" %}
+{% else %}
+{% set title = "New post" %}
+{% endif %}
+{% block body %}
+	<div id="preview-area" class="w3-container w3-border w3-content w3-margin-bottom w3-padding" style="border-radius:15px;">
+	<h2 id="preview-title" style="margin:15px 0px;">{% if post %}{{post.title}}{% else %}Preview{% endif %}</h2>
+	<div id="preview-body" class="w3-content">
+	{% if post %}{{post.body}}{% else %}body{% endif %}
+	</div>
+	<div><br/></div>
+	</div>
+	<div class="w3-container w3-content">
+		<form class="my-custom-form w3-card">
+			<div class="w3-row w3-margin-bottom">
+				<div class="w3-col">
+					<label for="title">Title</label>
+					<input type="text" id="title" name="title" class="w3-input" value="{% if post %}{{post.title}}{% else %}{% endif %}" required>
+				</div>
+			</div>
+			<div class="w3-row w3-margin-bottom">
+				<div class="w3-col">
+					<label for="status">Status</label>
+					<select id="status" name="status" class="w3-select" required>
+						<option value="draft">Draft</option>
+						<option value="published">Published</option>
+					</select>
+				</div>
+			</div>
+			<div class="w3-row w3-margin-bottom">
+				<div class="w3-col s12 m12 l12">
+					<label for="body">Body</label>
+					<textarea id="body" name="body" class="w3-input" style="height:500px" required>{% if post %}{{post.body}}{% else %} {% endif %}</textarea>
+				</div>
+			</div>
+			<div class="w3-row w3-margin-bottom">
+				<div class="w3-col s12 m12 l12">
+					<button id="submitbutton" type="submit" class="w3-button w3-block w3-lilac w3-hover-deep-purple">Submit</button>
+				</div>
+			</div>
+		</form>
+		<div style="color:red;" id="error-div"></div>
+	</div>
+
+<script>
+
+const preview_title = document.getElementById("preview-title");
+const preview_body = document.getElementById("preview-body");
+const title = document.getElementById("title");
+const body = document.getElementById("body");
+
+function populate_preview()
+{
+	preview_title.innerHTML = title.value;
+	preview_body.innerHTML = body.value;
+}
+
+document.getElementById("title").addEventListener("input", populate_preview);
+document.getElementById("body").addEventListener("input", populate_preview);
+
+async function send_post () {
+	const text_title = title.value;
+	const text_body = body.value;
+	const text_status = document.getElementById("status").value;
+	const error_div = document.getElementById("error-div");
+	const formData = new FormData();
+	formData.append("title", text_title);
+	formData.append("body", text_body);
+	formData.append("status", text_status);
+	try {
+		const response = await fetch("{{url_for('admin_area.admin_area_home')}}{% if post %}edit_post/{{post.id}}{% else %}new_post{% endif %}", {
+			method: "POST",
+			body: formData
+		});
+		const json = await response.json();
+		if (json.status === "success") {
+			window.location.href = "{{url_for('admin_area.admin_area_home')}}post_view";
+		} else {
+			error_div.innerText = `Server sent error ${json.message}`;
+		}
+	} catch (error) {
+		console.error("An error occurred", error);
+		error_div.innerText = `An error occurred: ${error}`;
+	}
+}
+
+document.getElementById("submitbutton").addEventListener("click", function(e){
+	e.preventDefault();
+	send_post();
+});
+
+</script>
+
+{% endblock %}

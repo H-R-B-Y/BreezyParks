@@ -1,0 +1,77 @@
+
+.my-custom-form {
+	background: #27292a;
+	border-radius: 15px;
+	padding: 15px;
+	margin: 10px 0px;
+
+	label {
+		color: #e6d7ff;
+	}
+
+	input {
+		background-color: #1f2122;
+		border-bottom: none;
+		color: white;
+	}
+
+	input:focus {
+		outline: none;
+		border: none;
+	}
+
+	textarea {
+		font-size: 12px;
+		background-color: #1f2122;
+		border: 1px solid #1f2122;
+		resize: vertical;
+		width: 100%;
+		color: white;
+		border-radius: 15px;
+	}
+
+	textarea:focus {
+		outline: none;
+		border: 1px solid #1f2122;
+	}
+
+	select {
+		background-color: #1f2122;
+		border: none;
+		color: white;
+	}
+	 
+	option {
+		background-color: #1f2122;
+		color: white;
+	}
+}
+
+.my-neat-table {
+	width : 100%;
+	border-radius: 15px;
+	padding: 15px;
+
+	th {
+		background-color: #27292a;
+		color: #e6d7ff;
+		border-bottom: #1f2122 1px solid;
+		padding: 10px;
+		text-align: left;
+	}
+
+	td {
+		padding: 10px;
+		text-align: left;
+		border-right: #1f2122 1px solid;
+	}
+
+	td:last-child {
+		border-right: none;
+	}
+
+	tr:nth-child(odd) {
+		background-color: #1f2122;
+	}
+
+}

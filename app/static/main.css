@@ -1,3 +1,11 @@
+/*
+ * Main CSS file for the application
+ * 
+ * The use of camelcase and underscores is just because i cannot be bothered to refactor the code. 
+ * Original code was written in camelcase, but i have since switched to underscores through working with 42 XD
+ * outside of this CSS camel case is reserved for JINJA2 template globals
+ */
+
 /* Style for the background canvas */
 .background {
 	position: fixed;

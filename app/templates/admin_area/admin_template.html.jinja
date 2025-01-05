@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	{% block head %}
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>{% block title %} {{ title }} {% endblock %}</title>
+		<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+		<link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}"/>
+		<link rel="stylesheet" href="{{ url_for('static', filename='admin_area.css') }}"/>
+	{% endblock %}
+	{% set page_type = "admin"%}
+	<script>
+		const user_loggedin = {{ current_user.is_authenticated|lower }};
+		const username = "{{current_user.username}}";
+		const userid = "{{current_user.id}}";
+	</script>
+</head>
+{% block page %}
+	<body class="w3-text-white " style="background:#1f2122;">
+		{% block background%}{% endblock %}
+		{% block foreground %}
+			<div id="foreground" class="foreground">
+				{% include "partials/flash.html.jinja" %}
+				{% block header %} {% include "partials/header.html.jinja" %} {% endblock %}
+				<div class="bodyContent w3-container w3-card">
+					<div id="main" class="w3-container w3-margin-bottom">
+					{% block page_title%}
+						<h2 style="margin:15px 0px;">{{title}}</h2>
+					{% endblock %}
+					{% block body %}
+							<div id="main">
+								<p>Hello World</p>
+							</div>
+					{% endblock %}
+					</div>
+				</div>
+				{% block footer %} {% include "partials/footer.html.jinja" %}  {% endblock %}
+				<div id="main" class="w3-container w3-margin-bottom"></div>
+			</div> 
+		{% endblock %}
+	</body>
+{% endblock %}
+</html>

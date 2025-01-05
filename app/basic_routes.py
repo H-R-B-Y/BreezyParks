@@ -118,7 +118,7 @@ def post_pages():
 	per_page = 6
 	start = (page - 1) * per_page
 	end = start + per_page
-	things = BlogPost.query.order_by(desc(BlogPost.created_date)).all()
+	things = BlogPost.query.filter_by(status = "published").order_by(desc(BlogPost.created_date)).all()
 	data = [{"id":x.id, "title": x.title, "path":"/thing/"+str(x.id)} for x in things[start:end]]
 	return jsonify({
 			"status":"ok",
@@ -133,7 +133,7 @@ def post_id(id):
 	"""
 	Display a blog post.
 	"""
-	thing = BlogPost.query.filter_by(id = id).first()
+	thing = BlogPost.query.filter_by(id = id, status = "published").first()
 	if not thing:
 		return jsonify({"status":"error","message":"That post doesn't exist"}), 404
 	return render_template("posts/default.html.jinja", post=thing)
@@ -162,7 +162,7 @@ def like_something(type, id):
 	if not item_ref:
 		return jsonify({"status":"error", "message":"refrenced item does not exist"}), 404
 	# check if a like record exists
-	like = schema.Like.query.filter_by(user_id=current_user.id,target_type=type,target_id=id).first()
+	like = schema.Like.query.filter_by(user_id=current_user.id, target_type=type,target_id=id).first()
 	if like:
 		db.session.delete(like)
 		db.session.commit()
