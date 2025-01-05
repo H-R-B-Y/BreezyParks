@@ -161,6 +161,7 @@ class AccessToken(db.Model):
 
 	id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
 	token = Column(Text, nullable=False)
+	token_name = Column(Text, nullable=True)
 
 
 
