@@ -48,7 +48,7 @@ def google_auth():
 	user.last_login_date = datetime.utcnow()
 	db.session.add(user)
 	db.session.commit()
-	login_user(user)
+	login_user(user, remember=True)
 	if prev:
 		return redirect(url_for("profile"))
 	else:

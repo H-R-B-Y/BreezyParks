@@ -23,7 +23,6 @@ if app.config["ENVIRONMENT_NAME"] == "development" or not app.config["ENVIRONMEN
 	app.config['SESSION_COOKIE_SECURE'] = False  # Enforce HTTPS for cookies
 if app.config["ENVIRONMENT_NAME"] == "production":
 	app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-	app.config['SESSION_COOKIE_DOMAIN'] = os.getenv("CANON_DOMAIN")
 	app.config['SESSION_COOKIE_SECURE'] = True  # Enforce HTTPS for cookies
 	app.config['PREFERRED_URL_SCHEME'] = 'https'
 	app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -51,7 +50,7 @@ loginman.login_view = 'login'
 # Define the user loader function
 @loginman.user_loader
 def load_user(user_id):
-	return schema.User.get_user_by_id(user_id)
+	return schema.User.query.get(int(user_id))
 
 
 @app.before_request
