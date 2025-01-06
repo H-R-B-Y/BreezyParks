@@ -14,13 +14,14 @@ def admin_area_home():
 def admin_area_new_post():
 	if request.method == "POST":
 		title = request.form.get("title")
-		content = request.form.get("content")
+		content = request.form.get("body")
+		status = request.form.get("status")
 		if not title or not content:
 			return jsonify({"status":"error", "message":"Title and content are required"}), 400
-		post = schema.BlogPost(title=title, content=content, author=current_user)
+		post = schema.BlogPost(title=title, status=status, body=content)
 		schema.db.session.add(post)
 		schema.db.session.commit()
-		return jsonify({"status":"ok", "message":"Post created", "id":post.id}), 201
+		return jsonify({"status":"success", "message":"Post created", "id":post.id}), 201
 	return render_template("admin_area/posts/new_post.html.jinja")
 
 @admin_area.route("/edit_post/<int:id>", methods=["GET", "POST"])

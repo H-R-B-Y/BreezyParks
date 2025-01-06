@@ -13,7 +13,7 @@
 		<th>Actions</th>
 	</tr>
 	{% for post in posts %}
-	<tr>
+	<tr id="post-{{ post.id }}">
 		<td>{{ post.title }}</td>
 		<td>{{ post.status }}</td>
 		<td>{{ post.created }}</td>
@@ -21,7 +21,7 @@
 		<td class="w3-center">
 			<a href= "{{ url_for('admin_area.admin_area_edit_post', id=post.id) }}"
 			class="w3-button w3-lilac w3-hover-deep-purple">Edit</a>
-			<a href="{{ url_for('admin_area.admin_area_delete_post', id=post.id) }}"
+			<a href="javascript:delete_post('{{post.id}}');"
 			class="w3-button w3-lilac w3-hover-deep-purple">Delete</a>
 		</td>
 	</tr>
@@ -29,6 +29,27 @@
 
 </table>
 </div>
+<script>
 
+async function delete_post(post_id)
+{
+	const response = await fetch(`{{ url_for('admin_area.admin_area_home') }}delete_post/${post_id}`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		}
+	});
+	const data = await response.json();
+	if (data.status == 'success')
+	{
+		document.getElementById(`post-${post_id}`).remove();
+	}
+	else
+	{
+		console.error(data.message);
+	}
+}
+
+</script>
 {% endblock %}
 

@@ -40,22 +40,37 @@
 	<div style="color:red;" id="error-div"></div>
 </div>
 
-<script>
+<div>
+	<iframe id="preview" sandbox="allow-scripts allow-same-origin" style="width:100%"></iframe>
+</div>
 
-const preview_title = document.getElementById("preview-title");
-const preview_body = document.getElementById("preview-body");
+<script>
 const title = document.getElementById("title");
 const body = document.getElementById("body");
+document.getElementById("status").value = {% if post %} "{{post.status}}" {% else %} "draft" {% endif %};
 
-function populate_preview()
+async function populate_doc()
 {
-preview_title.innerHTML = title.value;
-preview_body.innerHTML = body.value;
+	head = '<head><link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"><link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}"/></head><body class="w3-text-white " style="background:#1f2122;"><div id="foreground" class="foreground"><div class="bodyContent w3-container w3-card  zeta-hideable"><div id="main" class="w3-container w3-margin-bottom">';
+	tail = '</div></div></div></body>';
+	const iframeDocument = previewIframe.contentDocument || previewIframe.contentWindow.document;
+	iframeDocument.open();
+	iframeDocument.write(head);
+	iframeDocument.write('<h2 style="margin:15px 0px;">');
+	iframeDocument.write(title.value);
+	iframeDocument.write('</h2>');
+	iframeDocument.write(body.value);
+	iframeDocument.write(tail);
+	iframeDocument.close();
 }
 
-document.getElementById("title").addEventListener("input", populate_preview);
-document.getElementById("body").addEventListener("input", populate_preview);
-document.getElementById("status").value = {% if post %} "{{post.status}}" {% else %} "draft" {% endif %};
+const previewIframe = document.getElementById('preview');
+	// Update the iframe with the HTML from the textarea
+
+title.addEventListener('input', () => {populate_doc();});	
+body.addEventListener('input', () => {populate_doc();});
+
+populate_doc();
 
 async function send_post () {
 const text_title = title.value;
@@ -89,11 +104,7 @@ send_post();
 });
 
 </script>
-<div id="preview-area" class="w3-container w3-border w3-content w3-margin-bottom w3-padding" style="border-radius:15px;">
-<h2 id="preview-title" style="margin:15px 0px;">{% if post %}{{post.title}}{% else %}Preview{% endif %}</h2>
-<div id="preview-body" class="w3-content">
-{% if post %}{{post.body}}{% else %}body{% endif %}
-</div>
+
 <div><br/></div>
 </div>
 {% endblock %}
