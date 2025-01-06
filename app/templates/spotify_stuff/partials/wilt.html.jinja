@@ -1,0 +1,22 @@
+{% if user is defined and user.is_authenticated and user.wilt_enabled and user.spotify_token is defined %}
+	{% set spotify = user.spotify_token %}
+	{% set track = GetCurrentPlayingTrack(user) %}
+	{% set track_uri = GetCurrentPlayingTrackUri(user) %}
+	{% if track_uri is not none %}
+		<script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
+		<div id="wilt-embed-iframe"></div>
+		<script>
+			window.onSpotifyIframeApiReady = (IFrameAPI) => {
+				const element = document.getElementById('wilt-embed-iframe');
+				const options = {
+						uri: '{{track_uri}}',
+						theme: 'black',
+						width: '100%',
+						height: '100',
+					};
+				const callback = (EmbedController) => {};
+				IFrameAPI.createController(element, options, callback);
+			};
+		</script>
+	{%endif%}
+{% endif %}

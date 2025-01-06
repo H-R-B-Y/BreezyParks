@@ -111,6 +111,46 @@ def get_comment_proto():
 app.jinja_env.globals.update(GetCommentProto = get_comment_proto)
 
 
+def get_current_playing_track(user : schema.User):
+	if not user or not user.is_authenticated:
+		return None
+	if not user.spotify_token or not user.wilt_enabled:
+		return None
+	if user.spotify_token.expired:
+		if not user.spotify_token.refresh_my_token():
+			return None
+	track = user.spotify_token.current_track_info
+	if not track:
+		return None
+	return track
+
+app.jinja_env.globals.update(GetCurrentPlayingTrack = get_current_playing_track)
+
+def get_current_playing_track_uri(user : schema.User):
+	track = get_current_playing_track(user)
+	if not track:
+		return None
+	device = track.get("device")
+	if track.get("is_playing") == False:
+		return None
+	if device:
+		if device.get("is_active") == False or device.get("is_private_session") == True:
+			return None
+	track_item = track.get("item")
+	if not track_item:
+		return None
+	track_type = track.get("current_playing_type") or track_item.get("type")
+	if not track_type:
+		return None
+	if track_type == "track":
+		return track_item.get("uri")
+	if track_type == "episode":
+		return track_item.get("uri")
+	return None
+
+app.jinja_env.globals.update(GetCurrentPlayingTrackUri = get_current_playing_track_uri)
+
+
 # def get_replies_to_comment(comment_id : int):
 # 	if comment_id is None:
 # 		return []

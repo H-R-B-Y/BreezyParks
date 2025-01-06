@@ -68,6 +68,10 @@
 	border-radius:15px;
 }
 
+.wilt-container {
+	width: 75%;
+}
+
 .my-comment {
 	border-radius:15px;
 	outline:solid #1f2122;
@@ -128,6 +132,11 @@
 		background:#27292a;
 		border-radius:15px;
 	}
+
+	.wilt-container {
+		width: 100%;
+	}
+	
 }
 
 .my-text-lilac {

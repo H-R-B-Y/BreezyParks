@@ -1,13 +1,17 @@
 import bcrypt
 import json
-from datetime import datetime
+import base64
+import requests
+from datetime import datetime, timedelta
 from sqlalchemy import (
 	BLOB, Column, Integer, String, Boolean, Text, ForeignKey,
 	DateTime, UniqueConstraint, CheckConstraint, desc
 )
-from app import db
+from app import db, app
+from flask import url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin
+from flask_login import UserMixin, current_user
+from functools import wraps
 
 # so autocomplete works
 db : SQLAlchemy = db
@@ -27,9 +31,11 @@ class User(UserMixin, db.Model):
 	username_last_updated = db.Column(DateTime)
 
 	can_comment = db.Column(Boolean, default=True)
+	wilt_enabled = db.Column(Boolean, default=False)
 
 	likes = db.relationship("Like", back_populates="user", cascade="all, delete-orphan")
 	comments = db.relationship("Comment", back_populates="user", cascade="all, delete-orphan")
+	spotify_token = db.relationship("SpotifyToken",  uselist=False, back_populates="user", cascade="all, delete-orphan")
 
 	@classmethod
 	def get_user_by_name(cls, name):
@@ -125,6 +131,7 @@ class Comment(db.Model):
 	def username(self):
 		return self.user.username
 
+
 class Like(db.Model):
 	__tablename__ = 'likes'
 
@@ -164,6 +171,105 @@ class AccessToken(db.Model):
 	token = Column(Text, nullable=False)
 	token_name = Column(Text, nullable=True)
 
+
+class SpotifyToken(db.Model):
+	__tablename__ = 'spotify_tokens'
+
+	id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+	access_token = Column(Text, nullable=False)
+	refresh_token = Column(Text, nullable=False)
+	access_expires = Column(DateTime, nullable=False)
+	user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+	updated_at = Column(DateTime, default=datetime.utcnow())
+
+	user = db.relationship("User", back_populates="spotify_token")
+
+	def make_spotify_request(self, url, method="GET", body=None, headers=None):
+		if headers is None:
+			headers = {}
+		if body is None:
+			body = {}
+		if self.access_expires < datetime.utcnow():
+			if not self.refresh_my_token():
+				return {"error": "Unauthorized"}, 401
+		headers["Authorization"] = "Bearer " + self.access_token
+		if method == "GET":
+			response = requests.get(url, headers=headers)
+		elif method == "POST":
+			response = requests.post(url, headers=headers, data=body)
+		elif method == "PUT":
+			response = requests.put(url, headers=headers, data=body)
+		elif method == "DELETE":
+			response = requests.delete(url, headers=headers)
+		else:
+			return {"error": "Invalid method"}, 400
+		if response.status_code != 200:
+			return {"error": "Failed to make request"}, 500
+		json = response.json()
+		if json.get("error"):
+			return {"error": json.get("error")}, 400
+		if json.get("refresh_token"):
+			self.refresh_token = json.get("refresh_token")
+			db.session.add(self)
+			db.session.commit()
+		return json
+
+	@property
+	def expired(self):
+		return self.access_expires < datetime.utcnow()
+	
+	@property
+	def current_track_info(self):
+		if self.expired:
+			if not self.refresh_token():
+				return None
+		url = "https://api.spotify.com/v1/me/player/currently-playing"
+		data = self.make_spotify_request(url)
+		return data
+
+	def refresh_my_token(self):
+		if self.refresh_token is None:
+			if current_user:
+				flash(f" It appears we cannot authenticate your spotify account. Please re-link spotify here {url_for('spotify_routes.spotify_register')}", "error")
+			return False
+		credentails = app.config["spotify_client_id"] + ":" + app.config["spotify_client_secret"]
+		headers = {
+			"Authorization": "Basic " + base64.b64encode(credentails.encode()).decode(),
+			"Content-Type": "application/x-www-form-urlencoded"
+		}
+		body = {
+			"grant_type": "refresh_token",
+			"refresh_token": self.refresh_token
+		}
+		url = "https://accounts.spotify.com/api/token"
+		response = requests.post(url, headers=headers, data=body)
+		if response.status_code != 200:
+			print("Failed to refresh token")
+			return False
+		self.access_token = response.json().get("access_token")
+		self.refresh_token = response.json().get("refresh_token")
+		self.access_expires = datetime.utcnow() + timedelta(seconds=response.json().get("expires_in"))
+		self.updated_at = datetime.utcnow()
+		db.session.add(self)
+		db.session.commit()
+		return True
+
+	@staticmethod
+	def validate_access(func):
+		@wraps(func)
+		def wrapper(*args, **kwargs):
+			if not current_user.is_authenticated or not current_user.wilt_enabled:
+				return {"error": "Unauthorized"}, 401
+			if not current_user.spotify_token:
+				return url_for("spotify_routes.spotify_register")
+			if current_user.spotify_token.access_expires < datetime.utcnow():
+				if not current_user.spotify_token.refresh_my_token():
+					return {"error": "Unauthorized"}, 401
+			return func(*args, **kwargs)
+		return wrapper
+	
+	def __repr__(self):
+		return f"<SpotifyToken {self.id}>"
 
 
 """

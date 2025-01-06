@@ -67,16 +67,18 @@ def check_username():
 	else:
 		return jsonify({'available': True}), 200
 
+#@render_page_failsafe
 @app.route("/profile")
 @app.route("/<string:username>/profile")
-@render_page_failsafe
 def profile(username:str = None):
 	if not username and current_user.is_authenticated:
 		return render_template("profile.html.jinja")
 	else:
 		user = User.get_user_by_name(username)
-		if not user: return jsonify({"status":"error","message":"User doesn't exist"}), 404
-		else: return render_template("profile.html.jinja", user=user)
+		if not user:
+			return jsonify({"status":"error","message":"User doesn't exist"}), 404
+		else:
+			return render_template("profile.html.jinja", user=user)
 
 
 @app.route("/profile/update", methods=["GET", "POST"])

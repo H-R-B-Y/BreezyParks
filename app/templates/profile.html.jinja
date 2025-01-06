@@ -15,12 +15,22 @@
 						Profile likes recieved: {{ getLikesForX("profile", user.id) }}
 					</a>
 				{% else %}
-					{% if user.id != current_user.id %}
+					{% if user.id != current_user.id and current_user.is_authenticated %}
 					<a id="profile-{{ user.id }}" href="javascript:bp_toggle_like_on_item('profile-{{ user.id }}', 'profile', {{ user.id}})">{% if UserLikedThis(current_user.id, "profile", user.id) %}Unlike{% else %}Like{% endif%}</a><a> { </a><a id="{{page_type}}-{{page_id}}-count">{{ getLikesForX(page_type, page_id)}}</a><a> }</a>
+					{% elif not current_user.is_authenticated%}
+						<a> { </a><a id="{{page_type}}-{{page_id}}-count">{{ getLikesForX(page_type, page_id)}}</a><a> }</a>
 					{% endif %}
 				{% endif %}
 			</div>
 		</div>
+		{% if user.wilt_enabled and user.spotify_token is not none%}
+			<div class="w3-border-bottom w3-margin-bottom">Currently listening to:</div>
+			<div id="wilt-container" class="w3-cell-row w3-margin-bottom w3-auto">
+				<div class="w3-cell wilt-container">
+					{% include "spotify_stuff/partials/wilt.html.jinja"%}
+				</div>
+			</div>
+		{% endif %}
 		<p>More here soon!</p>
 
 		{% if myprofile is true%}

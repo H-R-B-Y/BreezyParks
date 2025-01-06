@@ -1,5 +1,5 @@
 {% extends "nonzeta_template.html.jinja" %}
-{% set title = "Error " + status_code %}
+{% set title = "Error " + status_code|string %}
 {% block body %}
 <p>It appears that there was an error:</p>
 <p>{{ message }}</p>

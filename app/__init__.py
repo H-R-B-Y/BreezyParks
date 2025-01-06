@@ -36,6 +36,9 @@ app.config["mailAddress"] = os.getenv("mailAddress")
 app.config["loginAddress"] = os.getenv("loginAddress")
 app.config["googleclientid"] = os.getenv("googleclientid")
 
+app.config["spotify_client_id"] = os.getenv("spotifyAppId")
+app.config["spotify_client_secret"] = os.getenv("spotifyAppSecret")
+
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DBADDR")
 db = SQLAlchemy(app)
 
@@ -43,6 +46,8 @@ db = SQLAlchemy(app)
 socketio = SocketIO(app)
 
 loginman = LoginManager(app)
+
+from app import schema
 
 # Need to double check this later.
 # deal with schema here: 
@@ -77,7 +82,6 @@ google = oauth.register(
 )
 
 
-from app import schema
 
 # should probably move this stuff into its own file but whatever
 def require_admin(func):
@@ -171,3 +175,7 @@ app.register_blueprint(api_v1.api_v1_bp, url_prefix="/api_v1")
 from app import admin_area
 
 app.register_blueprint(admin_area.admin_area, url_prefix=os.getenv("ADMIN_PATH"))
+
+from app import spotify_stuff
+
+app.register_blueprint(spotify_stuff.spotify_routes, url_prefix="/spotify")
