@@ -16,7 +16,7 @@ For token holders:
 
 api_v1_bp = Blueprint("api_v1", __name__)
 
-def _add_api_version_header(response):
+def _add_api_version_header(*response):
 	"""
 	Helper function to add the API-Version header to the response.
 	"""

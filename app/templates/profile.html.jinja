@@ -6,6 +6,9 @@
 {% set page_type, page_id = "profile", user.id %}
 {% block body %}
 	<div id="main" class="w3-container w3-margin-bottom">
+		{% if current_user.is_authenticated and current_user.is_admin %}
+			{% include "admin_area/partials/admin_profile_header.html.jinja" %}
+		{% endif %}
 		<div class="w3-cell-row"> 
 			<div class="w3-cell"><h2>{{ username }}</h2></div>
 			<div class="w3-cell w3-cell-top w3-right-align">
@@ -22,10 +25,7 @@
 				{% endif %}
 			</div>
 		</div>
-		{% if user.wilt_enabled and user.spotify_token is not none%}
-					{% include "spotify_stuff/partials/wilt.html.jinja"%}
-
-		{% endif %}
+		{% if user.wilt_enabled and user.spotify_token is not none and not user.spotify_token.expired %}{% include "spotify_stuff/partials/wilt.html.jinja"%}{% endif %}
 		<p>More here soon!</p>
 		{% if myprofile is true%}
 		<a href="/profile/update">Edit Profile</a>

@@ -30,7 +30,7 @@ def spotify_register():
 	"""
 	if current_user.spotify_token \
 		and current_user.spotify_token.refresh_token \
-		and current_user.spotify_token.epired == False:
+		and current_user.spotify_token.expired == False:
 		flash("Spotify account already linked", "info")
 		return redirect(url_for("profile"))
 	return render_template("spotify_stuff/spotify_stuff.html.jinja", auth_url=get_auth_route())

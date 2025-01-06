@@ -1,0 +1,151 @@
+{% if current_user.is_authenticated and current_user.is_admin and user is defined and user.is_authenticated %}
+
+<div id="profile-admin-header" class="w3-container w3-auto w3-card w3-margin-bottom w3-padding" style="max-width: 600px;border-radius: 15px;">
+	<div class="w3-cell-row w3-border-bottom">
+		<div class="w3-cell"><a>Admin header</a></div>
+		<div class="w3-cell w3-red w3-center" onclick="unfold_something('profile-admin-header')">X</div>
+	</div>
+	<div class="w3-cell-row w3-border-bottom">
+		<div class="w3-cell">Email: </div>
+		<div class="w3-cell w3-right-align">{{ user.email }}</div>
+	</div>
+
+	<div class="w3-cell-row w3-border-bottom">
+		<div class="w3-cell">Account created: </div>
+		<div class="w3-cell w3-right-align">{{ user.created_date }}</div>
+	</div>
+
+	<div class="w3-cell-row w3-border-bottom">
+		<div class="w3-cell">Last logged in (manual): </div>
+		<div class="w3-cell w3-right-align">{{ user.last_login_date }}</div>
+	</div>
+
+	<div class="w3-cell-row w3-border-bottom">
+		<div class="w3-cell">Account type: </div>
+		{% if user.google_id%}
+				<div class="w3-cell w3-right-align">google</div>
+		{% elif user.github_id %}
+				<div class="w3-cell w3-right-align">github</div>
+		{% else %}
+				<div class="w3-cell w3-right-align">local</div>
+		{% endif %}
+	</div>
+
+	<div class="w3-cell-row w3-border-bottom">
+		<div class="w3-cell">Username last updated: </div>
+		<div class="w3-cell w3-right-align">{{ user.username_last_updated }}</div>
+	</div>
+
+	<div class="w3-cell-row w3-border-bottom">
+		<div class="w3-cell">Admin: </div>
+		<div class="w3-cell w3-right-align">{% if user.is_admin %}Yes.{% else %}No.{% endif %}</div>
+	</div>
+	<br/>
+
+
+	<div id="wilt-header" class="w3-cell-row w3-border-bottom" onclick="unfold_something('spotify-info-accordian')">
+		<div class="w3-cell">Wilt enabled: </div>
+		<div id="wilt-toggle-text" class="w3-cell w3-right-align">{{ user.wilt_enabled }}</div>
+	</div>
+
+		<div id="spotify-info-accordian" class="w3-hide">
+			{% if user.wilt_enabled and user.spotify_token %}
+				<div class="w3-cell-row w3-border-bottom">
+					<div class="w3-cell">Last updated: </div>
+					<div class="w3-cell w3-right-align">{{ user.spotify_token.updated_at }}</div>
+				</div>
+				<div class="w3-cell-row w3-border-bottom">
+					<div class="w3-cell">Token expires at: </div>
+					<div class="w3-cell w3-right-align">{{ user.spotify_token.access_expires }}</div>
+				</div>
+			{% endif %}
+			<div class="w3-border-bottom w3-auto w3-center">
+				<a href="javascript:toggle_wilt();"
+				class="w3-button w3-margin-top">
+					<div id="wilt_toggle_button" class="my-hover-lilac">
+						{% if user.wilt_enabled %}
+						Disable wilt
+						{% else %}
+						Enable wilt
+						{% endif %}
+					</div>
+				</a>
+			</div>
+		</div>
+	<br/>
+	<div class="w3-border-bottom">
+	<div class="w3-cell-row" onclick="unfold_something('ban-comment-accordian')">
+		<div class="w3-cell">Comment banned: </div>
+		<div id="ban-comment-text" class="w3-cell w3-right-align">{% if user.can_comment%}No.{% else %}Yes.{% endif %}</div>
+	</div>
+	<div id="ban-comment-accordian" style="max-width:200px;" class="w3-auto w3-center w3-hide">
+		<a href="javascript:ban_comment();"
+		class="w3-button w3-margin-top">
+			<div id="ban-comment-button" class="my-hover-lilac">
+			{% if user.can_comment %}
+				Ban comment
+			{% else %}
+				Unban comment
+			{% endif %}
+			</div>
+		</a>
+	</div>
+	</div>
+</div>
+<script>
+	async function unfold_something(id_to_unfold)
+	{
+		const unfoldable = document.getElementById(id_to_unfold);
+		if (unfoldable.classList.contains("w3-hide"))
+		{
+			unfoldable.classList.remove("w3-hide");
+		}
+		else
+		{
+			unfoldable.classList.add("w3-hide");
+		}
+	}
+	async function ban_comment()
+	{
+		const user_id = {{ user.id }};
+		try {
+			const response = await fetch("{{ url_for('api_v1.api_v1_user_ban_comment', id=user.id) }}", {
+				method: "POST"
+			});
+			if (!response.ok)
+			{
+				throw new Error("Error banning comment: ", response);
+			}
+			const data = await response.json();
+			if (data.status === "success")
+			{
+				document.getElementById("ban-comment-button").innerText = data.banned ? "Unban comment" : "Ban comment";
+				document.getElementById("ban-comment-text").innerText = data.banned ? "Yes." : "No.";
+			}
+		} catch (error) {
+			console.error("Error banning comment: ", error);
+		}
+	}
+	async function toggle_wilt()
+	{
+		const user_id = {{ user.id }};
+		try {
+			const response = await fetch("{{ url_for('api_v1.api_v1_user_toggle_wilt', id=user.id) }}", {
+				method: "POST"
+			});
+			if (!response.ok)
+			{
+				throw new Error("Error toggling wilt: ", response);
+			}
+			const data = await response.json();
+			if (data.status === "success")
+			{
+				document.getElementById("wilt_toggle_button").innerText = data.wilt_enabled ? "Disable wilt" : "Enable wilt";
+				document.getElementById("wilt-toggle-text").innerText = data.wilt_enabled;
+			}
+		} catch (error) {
+			console.error("Error toggling wilt: ", error);
+		}
+	}
+</script>
+{% endif %}

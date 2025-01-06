@@ -184,3 +184,22 @@ def api_v1_user_id(id):
 		data["last_login_date"] = user.last_login_date.timestamp()
 	return jsonify(data), 200
 
+@api_v1_bp.route("/user/<int:id>/ban_comment", methods=["POST"])
+@require_admin
+def api_v1_user_ban_comment(id):
+	user = schema.User.query.filter_by(id = id).first()
+	if not user:
+		return jsonify({"status":"error", "message":"User not found", "version":1}), 404
+	user.can_comment = not user.can_comment
+	schema.db.session.commit()
+	return _add_api_version_header(jsonify({"status":"success", "message":"Comment ban toggled", "banned": True if not user.can_comment else False, "version":1}), 200)
+
+@api_v1_bp.route("/user/<int:id>/toggle_wilt", methods=["POST"])
+@require_admin
+def api_v1_user_toggle_wilt(id):
+	user = schema.User.query.filter_by(id = id).first()
+	if not user:
+		return jsonify({"status":"error", "message":"User not found", "version":1}), 404
+	user.wilt_enabled = not user.wilt_enabled
+	schema.db.session.commit()
+	return _add_api_version_header(jsonify({"status":"success", "message":"Wilt toggled", "wilt_enabled": True if user.wilt_enabled else False, "version":1}), 200)

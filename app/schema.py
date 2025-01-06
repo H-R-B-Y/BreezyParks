@@ -247,7 +247,8 @@ class SpotifyToken(db.Model):
 			print("Failed to refresh token")
 			return False
 		self.access_token = response.json().get("access_token")
-		self.refresh_token = response.json().get("refresh_token")
+		refresh_token = response.json().get("refresh_token")
+		self.refresh_token = refresh_token if refresh_token else self.refresh_token
 		self.access_expires = datetime.utcnow() + timedelta(seconds=response.json().get("expires_in"))
 		self.updated_at = datetime.utcnow()
 		db.session.add(self)
