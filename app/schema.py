@@ -226,7 +226,9 @@ class SpotifyToken(db.Model):
 				return None
 		url = "https://api.spotify.com/v1/me/player/currently-playing"
 		data = self.make_spotify_request(url)
-		return data
+		if isinstance(data, dict):
+			return data
+		return None
 
 	def refresh_my_token(self):
 		if self.refresh_token is None:

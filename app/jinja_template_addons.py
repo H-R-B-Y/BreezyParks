@@ -120,7 +120,7 @@ def get_current_playing_track(user : schema.User):
 		if not user.spotify_token.refresh_my_token():
 			return None
 	track = user.spotify_token.current_track_info
-	if not track:
+	if not track or isinstance(track, dict) == False:
 		return None
 	return track
 
