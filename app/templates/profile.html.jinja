@@ -23,12 +23,8 @@
 			</div>
 		</div>
 		{% if user.wilt_enabled and user.spotify_token is not none%}
-			<div class="w3-border-bottom w3-margin-bottom">Currently listening to:</div>
-			<div id="wilt-container" class="w3-cell-row w3-margin-bottom w3-auto">
-				<div class="w3-cell wilt-container">
 					{% include "spotify_stuff/partials/wilt.html.jinja"%}
-				</div>
-			</div>
+
 		{% endif %}
 		<p>More here soon!</p>
 		{% if myprofile is true%}
