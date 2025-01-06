@@ -161,6 +161,7 @@ class PaperNote(db.Model):
 	data = Column(BLOB, nullable=True)
 	text = Column(Text, nullable=True)
 	created_date = Column(DateTime, default=datetime.utcnow())
+	status = Column(Text, CheckConstraint("status IN ('pending', 'completed', 'deleted')"), default='pending')
 	type = Column(Integer, CheckConstraint('type IN (0, 1)'), nullable=False)
 
 

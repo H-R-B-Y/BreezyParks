@@ -69,7 +69,7 @@ def get_paper_note_admin():
 	# check if there are any notes to actually get
 	if len(PaperNote.query.all()) == 0:
 		return jsonify({"error": "There are no new notes"}), 404
-	random_record : PaperNote = PaperNote.query.order_by(func.random()).first()
+	random_record : PaperNote = PaperNote.query.filter_by(status = 'pending').order_by(func.random()).first()
 	if random_record == None:
 		return jsonify({"error": "There are no new notes"}), 404
 	return_data = {
@@ -89,7 +89,7 @@ def get_paper_note_token():
 	# check if there are any notes to actually get
 	if len(PaperNote.query.all()) == 0:
 		return jsonify({"error": "There are no new notes"}), 404
-	random_record : PaperNote = PaperNote.query.order_by(func.random()).first()
+	random_record : PaperNote = PaperNote.query.filter_by(status = 'pending').order_by(func.random()).first()
 	if random_record == None:
 		return jsonify({"error": "There are no new notes"}), 404
 	return_data = {
@@ -113,7 +113,21 @@ def get_paper_token_with_id(note_id):
 			res = Response(blob_data.data, content_type = "application/octet-stream")
 		else:
 			res = jsonify({"data": blob_data.text}), 200
-		# db.session.delete(blob_data)
-		# db.session.commit()
+		blob_data.status = "completed"
+		db.session.commit()
+		return res
+	return jsonify({"error":"Paper note doesn't exist!"}), 404
+
+@app.route("/get_note_admin/<int:note_id>")
+@require_admin
+def get_paper_admin_with_id(note_id):
+	blob_data : PaperNote = PaperNote.query.filter_by(id = note_id).first()
+	if blob_data:
+		if blob_data.type == 0:
+			res = Response(blob_data.data, content_type = "application/octet-stream")
+		else:
+			res = jsonify({"data": blob_data.text}), 200
+		blob_data.status = "completed"
+		db.session.commit()
 		return res
 	return jsonify({"error":"Paper note doesn't exist!"}), 404

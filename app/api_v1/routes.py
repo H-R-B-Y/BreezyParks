@@ -1,14 +1,19 @@
 from .. import schema, require_admin
 from . import api_v1_bp, api_v1_validation, _add_api_version_header
 
-from flask import jsonify, request, Response
+from flask import jsonify, request, Response, url_for
 from flask_login import login_required, current_user
 
 
 @api_v1_bp.route("/paper_note_count", methods=["GET"])
 @api_v1_validation
 def api_v1_paper_note_count():
-	count = schema.PaperNote.query.count()
+	status = request.args.get("status", None)
+	filter = {}
+	if status in ["pending", "completed", "deleted"]:
+		status = request.args.get("status")
+		filter["status"] = status
+	count = schema.PaperNote.query.filter_by(**filter).count()
 	return jsonify({"status":"ok", "count":count, "version":1}), 200
 
 @api_v1_bp.route("/paper_notes_page", methods=["POST"])
@@ -16,17 +21,22 @@ def api_v1_paper_note_count():
 def api_v1_paper_note_page():
 	page = int(request.json.get("page",1))
 	per_page = int(request.json.get("per_page", 6))
+	filter = {}
+	status = request.json.get("status", None)
+	if status in ["pending", "completed", "deleted"]:
+		filter["status"] = status
 	if (page < 1 or per_page < 1):
 		return jsonify({"status":"error", "message":"Page doesn't exist", "version":1}), 404
 	start = (page - 1) * per_page
 	end = start + per_page
-	notes = schema.PaperNote.query.order_by(schema.PaperNote.created_date).all()
-	data = [{"id":x.id, "title": x.title, "path":"api_v1/paper_note/"+str(x.id)} for x in notes[start:end]]
+	notes = schema.PaperNote.query.filter_by(**filter).order_by(schema.PaperNote.created_date).all()
+	data = [{"id":x.id, "title": x.title, "status":x.status, "path":url_for("api_v1.api_v1_paper_note_id", id=x.id)} for x in notes[start:end]]
 	return jsonify({
 			"status":"ok",
 			"data":data,
 			"page":page,
 			"last_page": True if end >= len(notes) else False,
+			"filter": filter,
 			"version":1}), 200
 
 @api_v1_bp.route("/paper_note/<int:id>", methods=["GET"])
