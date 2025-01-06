@@ -202,7 +202,7 @@ def api_v1_user_ban_comment(id):
 		return jsonify({"status":"error", "message":"User not found", "version":1}), 404
 	user.can_comment = not user.can_comment
 	schema.db.session.commit()
-	return _add_api_version_header(jsonify({"status":"success", "message":"Comment ban toggled", "banned": True if not user.can_comment else False, "version":1}), 200)
+	return _add_api_version_header((jsonify({"status":"success", "message":"Comment ban toggled", "banned": True if not user.can_comment else False, "version":1}), 200))
 
 @api_v1_bp.route("/user/<int:id>/toggle_wilt", methods=["POST"])
 @require_admin
@@ -212,4 +212,4 @@ def api_v1_user_toggle_wilt(id):
 		return jsonify({"status":"error", "message":"User not found", "version":1}), 404
 	user.wilt_enabled = not user.wilt_enabled
 	schema.db.session.commit()
-	return _add_api_version_header(jsonify({"status":"success", "message":"Wilt toggled", "wilt_enabled": True if user.wilt_enabled else False, "version":1}), 200)
+	return _add_api_version_header((jsonify({"status":"success", "message":"Wilt toggled", "wilt_enabled": True if user.wilt_enabled else False, "version":1}), 200))
