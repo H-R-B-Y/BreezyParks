@@ -141,7 +141,7 @@
 			if (data.status === "success")
 			{
 				document.getElementById("wilt_toggle_button").innerText = data.wilt_enabled ? "Disable wilt" : "Enable wilt";
-				document.getElementById("wilt-toggle-text").innerText = data.wilt_enabled;
+				document.getElementById("wilt-toggle-text").innerText = data.wilt_enabled ? "True" : "False";
 			}
 		} catch (error) {
 			console.error("Error toggling wilt: ", error);
