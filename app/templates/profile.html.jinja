@@ -8,7 +8,6 @@
 	<div id="main" class="w3-container w3-margin-bottom">
 		<div class="w3-cell-row"> 
 			<div class="w3-cell"><h2>{{ username }}</h2></div>
-			{# <div class="w3-cell w3-cell-top w3-right-align"><a class="w3-small">Liked: {{ likedthings[0] }} posts {{ likedthings[1] }} comments</a></div> #}
 			<div class="w3-cell w3-cell-top w3-right-align">
 				{% if myprofile is true %}
 					<a class="w3-small">
@@ -32,12 +31,10 @@
 			</div>
 		{% endif %}
 		<p>More here soon!</p>
-
 		{% if myprofile is true%}
 		<a href="/profile/update">Edit Profile</a>
 		<br/>
 		<br/>
 		<a href="/logout">Logout</a>{% endif %}
-
 	</div>
 {% endblock %}
