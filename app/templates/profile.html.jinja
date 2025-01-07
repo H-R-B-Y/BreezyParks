@@ -1,5 +1,5 @@
 {% extends "nonzeta_template.html.jinja" %}
-{% block extraHead%} <script src="{{ url_for('static', filename='bp_like_stuff.js') }}"></script> {% endblock %}
+{% block extraHead%} <script src="/static/scripts/bp_like_stuff.js"></script> {% endblock %}
 {% if user is not defined %}{% set user = current_user %}{% set myprofile = true %}{% endif %}
 {% set username = getUsername(user) %}
 {% set likedthings = getUserLikedCount(username)%}

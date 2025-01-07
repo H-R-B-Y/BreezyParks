@@ -17,7 +17,7 @@ drawable_drawcol = "{{canvas_color}}";
 	{% if current_user.is_authenticated %}
 		{% if UserCanNote(current_user) == true%}
 			<button id="post_button" class="w3-button my-hover-lilac w3-ripple" onclick="post_paper_note()" style="width:200px"> Post </button>
-			<script src="static/paper_note_handler.js"></script>
+			<script src="static/scripts/paper_note_handler.js"></script>
 		{% else %}
 			<div style="color:red;"> Already sent a note today! </div>
 		{% endif %}

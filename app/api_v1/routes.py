@@ -213,3 +213,13 @@ def api_v1_user_toggle_wilt(id):
 	user.wilt_enabled = not user.wilt_enabled
 	schema.db.session.commit()
 	return _add_api_version_header((jsonify({"status":"success", "message":"Wilt toggled", "wilt_enabled": True if user.wilt_enabled else False, "version":1}), 200))
+
+@api_v1_bp.route("/user/<int:id>/ban_user", methods=["POST"])
+@require_admin
+def api_v1_user_ban_user(id):
+	user = schema.User.query.filter_by(id = id).first()
+	if not user:
+		return jsonify({"status":"error", "message":"User not found", "version":1}), 404
+	user.is_banned = not user.is_banned
+	schema.db.session.commit()
+	return _add_api_version_header((jsonify({"status":"success", "message":"User ban toggled", "banned": True if user.is_banned else False, "version":1}), 200))

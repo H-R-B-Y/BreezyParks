@@ -19,8 +19,8 @@ class Player {
 			this.sprite = PIXI.Sprite.from(data.sprite);
 		}).catch(async error => {
 			console.log(error);
-			var texture = await PIXI.Assets.load("/static/generichamster.png");
-			this.sprite = PIXI.Sprite.from("/static/generichamster.png");
+			var texture = await PIXI.Assets.load("/static/images/generichamster.png");
+			this.sprite = PIXI.Sprite.from("/static/images/generichamster.png");
 		}).then(() => {
 			this.sprite.width = 64;
 			this.sprite.height = 64;

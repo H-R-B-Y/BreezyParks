@@ -1,9 +1,9 @@
 import os, json
 from dotenv import load_dotenv, set_key
-from flask import Flask, request, abort, jsonify, redirect, render_template, Response
+from flask import Flask, request, abort, jsonify, redirect, render_template, Response, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from flask_login import LoginManager, current_user
+from flask_login import LoginManager, current_user, login_user, logout_user
 from flask_socketio import SocketIO
 from authlib.jose import JsonWebKey
 from authlib.integrations.flask_client import OAuth
@@ -66,6 +66,12 @@ def enforce_single_domain():
 			url = request.url.replace('http://', 'https://', 1)
 			return redirect(url, code=301)
 
+@app.before_request
+def banned_user_wrapper():
+	if current_user.is_authenticated and current_user.is_banned:
+		flash("Your account has been banned. You have been logged out.", "error")
+		logout_user()
+
 # OAuth setup
 oauth = OAuth(app)
 google = oauth.register(
@@ -81,6 +87,12 @@ google = oauth.register(
 	jwks_uri='https://www.googleapis.com/oauth2/v3/certs',
 )
 
+@app.cli.command("create_db")
+def create_db():
+	if app.config["ENVIRONMENT_NAME"] == "development":
+		db.create_all()
+	else:
+		print("Not in development mode, not creating database.")
 
 
 # should probably move this stuff into its own file but whatever

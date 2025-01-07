@@ -7,7 +7,7 @@
 	<div class="w3-container w3-card flash-card">
     <ul class=flashes>
     {% for category, message in messages %}
-      <li class="flash-{{category}}">{% if category == "error" %}<img src="/static/oops.gif" style="margin-right:5px;"/>{% endif %}{{ message }}</li>
+      <li class="flash-{{category}}">{% if category == "error" %}<img src="/static/images/oops.gif" style="margin-right:5px;"/>{% endif %}{{ message }}</li>
     {% endfor %}
     </ul>
 	</div>

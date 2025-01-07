@@ -1,26 +1,28 @@
 {% if current_user.is_authenticated and current_user.is_admin and user is defined and user.is_authenticated %}
 
 <div id="profile-admin-header" class="w3-container w3-auto w3-card w3-margin-bottom w3-padding" style="max-width: 600px;border-radius: 15px;">
-	<div class="w3-cell-row w3-border-bottom">
+	<div class="w3-cell-row w3-border-bottom w3-margin-bottom" onclick="unfold_something('full-admin-header-accordian')">
 		<div class="w3-cell"><a>Admin header</a></div>
 		<div class="w3-cell w3-red w3-center" onclick="unfold_something('profile-admin-header')">X</div>
 	</div>
-	<div class="w3-cell-row w3-border-bottom">
+
+<div id = "full-admin-header-accordian" class="w3-hide">
+
+	<div class="w3-cell-row w3-border-bottom w3-margin-bottom">
 		<div class="w3-cell">Email: </div>
 		<div class="w3-cell w3-right-align">{{ user.email }}</div>
 	</div>
-
-	<div class="w3-cell-row w3-border-bottom">
+	<div class="w3-cell-row w3-border-bottom w3-margin-bottom">
 		<div class="w3-cell">Account created: </div>
 		<div class="w3-cell w3-right-align">{{ user.created_date }}</div>
 	</div>
 
-	<div class="w3-cell-row w3-border-bottom">
+	<div class="w3-cell-row w3-border-bottom w3-margin-bottom">
 		<div class="w3-cell">Last logged in (manual): </div>
 		<div class="w3-cell w3-right-align">{{ user.last_login_date }}</div>
 	</div>
 
-	<div class="w3-cell-row w3-border-bottom">
+	<div class="w3-cell-row w3-border-bottom w3-margin-bottom">
 		<div class="w3-cell">Account type: </div>
 		{% if user.google_id%}
 				<div class="w3-cell w3-right-align">google</div>
@@ -31,35 +33,33 @@
 		{% endif %}
 	</div>
 
-	<div class="w3-cell-row w3-border-bottom">
+	<div class="w3-cell-row w3-border-bottom w3-margin-bottom">
 		<div class="w3-cell">Username last updated: </div>
 		<div class="w3-cell w3-right-align">{{ user.username_last_updated }}</div>
 	</div>
 
-	<div class="w3-cell-row w3-border-bottom">
+	<div class="w3-cell-row w3-border-bottom w3-margin-bottom">
 		<div class="w3-cell">Admin: </div>
 		<div class="w3-cell w3-right-align">{% if user.is_admin %}Yes.{% else %}No.{% endif %}</div>
 	</div>
-	<br/>
 
-
-	<div id="wilt-header" class="w3-cell-row w3-border-bottom" onclick="unfold_something('spotify-info-accordian')">
-		<div class="w3-cell">Wilt enabled: </div>
-		<div id="wilt-toggle-text" class="w3-cell w3-right-align">{{ user.wilt_enabled }}</div>
-	</div>
-
+	<div id="spotify-header-container" class="w3-border-bottom w3-margin-bottom">
+		<div class="w3-cell-row" onclick="unfold_something('spotify-info-accordian')">
+			<div class="w3-cell">Wilt enabled: </div>
+			<div id="wilt-toggle-text" class="w3-cell w3-right-align">{{ user.wilt_enabled }}</div>
+		</div>
 		<div id="spotify-info-accordian" class="w3-hide">
 			{% if user.wilt_enabled and user.spotify_token %}
-				<div class="w3-cell-row w3-border-bottom">
+				<div class="w3-cell-row w3-border-bottom w3-margin-bottom">
 					<div class="w3-cell">Last updated: </div>
 					<div class="w3-cell w3-right-align">{{ user.spotify_token.updated_at }}</div>
 				</div>
-				<div class="w3-cell-row w3-border-bottom">
+				<div class="w3-cell-row w3-border-bottom w3-margin-bottom">
 					<div class="w3-cell">Token expires at: </div>
 					<div class="w3-cell w3-right-align">{{ user.spotify_token.access_expires }}</div>
 				</div>
 			{% endif %}
-			<div class="w3-border-bottom w3-auto w3-center">
+			<div class="w3-auto w3-center">
 				<a href="javascript:toggle_wilt();"
 				class="w3-button w3-margin-top">
 					<div id="wilt_toggle_button" class="my-hover-lilac">
@@ -72,25 +72,48 @@
 				</a>
 			</div>
 		</div>
-	<br/>
-	<div class="w3-border-bottom">
-	<div class="w3-cell-row" onclick="unfold_something('ban-comment-accordian')">
-		<div class="w3-cell">Comment banned: </div>
-		<div id="ban-comment-text" class="w3-cell w3-right-align">{% if user.can_comment%}No.{% else %}Yes.{% endif %}</div>
 	</div>
-	<div id="ban-comment-accordian" style="max-width:200px;" class="w3-auto w3-center w3-hide">
-		<a href="javascript:ban_comment();"
-		class="w3-button w3-margin-top">
-			<div id="ban-comment-button" class="my-hover-lilac">
-			{% if user.can_comment %}
-				Ban comment
-			{% else %}
-				Unban comment
-			{% endif %}
-			</div>
-		</a>
+
+
+	<div id="comment-ban-header-container" class="w3-border-bottom w3-margin-bottom">
+		<div class="w3-cell-row" onclick="unfold_something('ban-comment-accordian')">
+			<div class="w3-cell">Comment banned: </div>
+			<div id="ban-comment-text" class="w3-cell w3-right-align">{% if user.can_comment%}No.{% else %}Yes.{% endif %}</div>
+		</div>
+
+		<div id="ban-comment-accordian" style="max-width:200px;" class="w3-auto w3-center w3-hide">
+			<a href="javascript:ban_comment();"
+			class="w3-button w3-margin-top">
+				<div id="ban-comment-button" class="my-hover-lilac">
+				{% if user.can_comment %}
+					Ban comment
+				{% else %}
+					Unban comment
+				{% endif %}
+				</div>
+			</a>
+		</div>
 	</div>
+
+	<div id="banned-header-container" class="w3-border-bottom w3-margin-bottom">
+		<div id="user-banned-header" class="w3-cell-row" onclick="unfold_something('banned-info-accordian')">
+			<div class="w3-cell">Banned: </div>
+			<div id="user-banned-text" class="w3-cell w3-right-align">{% if user.is_banned %}Yes.{% else %}No.{% endif %}</div>
+		</div>
+		<div id="banned-info-accordian" style="max-width:200px;" class="w3-auto w3-center w3-hide">
+			<a href="javascript:ban_user();"
+			class="w3-button w3-margin-top">
+				<div id="ban-user-button" class="my-hover-lilac">
+				{% if user.is_banned %}
+					Unban user
+				{% else %}
+					Ban user
+				{% endif %}
+				</div>
+			</a>
+		</div>
 	</div>
+</div>
 </div>
 <script>
 	async function unfold_something(id_to_unfold)
@@ -105,8 +128,7 @@
 			unfoldable.classList.add("w3-hide");
 		}
 	}
-	async function ban_comment()
-	{
+	async function ban_comment() {
 		const user_id = {{ user.id }};
 		try {
 			const response = await fetch("{{ url_for('api_v1.api_v1_user_ban_comment', id=user.id) }}", {
@@ -145,6 +167,28 @@
 			}
 		} catch (error) {
 			console.error("Error toggling wilt: ", error);
+		}
+	}
+	async function ban_user()
+	{
+		const user_id = {{ user.id }};
+		try {
+			const response = await fetch("{{ url_for('api_v1.api_v1_user_ban_user', id=user.id) }}", {
+				method: "POST"
+			});
+			if (!response.ok)
+			{
+				throw new Error("Error banning user: ", response);
+			}
+			const data = await response.json();
+			console.log(data);
+			if (data.status === "success")
+			{
+				document.getElementById("ban-user-button").innerText = data.banned ? "Unban user" : "Ban user";
+				document.getElementById("user-banned-text").innerText = data.banned ? "Yes." : "No.";
+			}
+		} catch (error) {
+			console.error("Error banning user: ", error);
 		}
 	}
 </script>

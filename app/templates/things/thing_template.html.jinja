@@ -1,7 +1,7 @@
 {% set page_type = "thing" %}
 {% set page_id = thing.id %}
 {% extends "main_template.html.jinja" %}
-{% block extraHead%} <script src="{{ url_for('static', filename='bp_like_stuff.js') }}"></script> {% endblock %}
+{% block extraHead%} <script src="/static/scripts/bp_like_stuff.js"></script> {% endblock %}
 {% block page_title%}
 <div class="w3-cell-row">
 	<div class="w3-cell"><h2 style="margin:15px 0px;">{{title}}</h2></div>
