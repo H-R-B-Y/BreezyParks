@@ -2,6 +2,9 @@
 {% extends "admin_area/admin_template.html.jinja" %}
 {% set page_type, page_id, title = "admin.user", user.id, user.username %}
 
+{% block page_title %}
+<a href="{{user.url()}}"><h2 style="margin:15px 0px;">{{user.username}}</h2></a>
+{% endblock %}
 
 {% block body %}
 	<div id="main" class="w3-container w3-margin-bottom">

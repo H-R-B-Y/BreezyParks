@@ -3,8 +3,8 @@
 	{% set track = GetCurrentPlayingTrack(user) %}
 	{% set track_uri = GetCurrentPlayingTrackUri(user) %}
 	{% if track_uri is not none %}
-			<div id="wilt-container" class="w3-cell-row w3-auto">
-				<div class="w3-cell wilt-container w3-card w3-padding" style="border-radius:15px;">
+			<div id="wilt-container" class="w3-cell-row w3-auto wilt-container">
+				<div class="w3-cell w3-card w3-padding" style="border-radius:15px;">
 					<script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
 					<div class="w3-border-bottom w3-margin-bottom">Currently listening to:</div>
 					<div id="wilt-embed-iframe"></div>
