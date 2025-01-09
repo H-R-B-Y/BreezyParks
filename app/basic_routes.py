@@ -133,10 +133,10 @@ def post_id(id):
 	"""
 	Display a blog post.
 	"""
-	thing = BlogPost.query.filter_by(id = id, status = "published").first()
-	if not thing:
+	post = BlogPost.query.filter_by(id = id, status = "published").first()
+	if not post:
 		return jsonify({"status":"error","message":"That post doesn't exist"}), 404
-	return render_template("posts/default.html.jinja", post=thing)
+	return render_template("posts/default.html.jinja", post=post)
 
 
 @app.route("/like/<string:type>/<int:id>", methods=["POST"])

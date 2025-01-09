@@ -1,0 +1,108 @@
+
+
+{% extends "admin_area/admin_template.html.jinja" %}
+{% set page_type, page_id, title = "admin", 1, "Users" %}
+
+{% block body %}
+
+<div class="w3-container w3-card w3-margin-bottom w3-padding" style="border-radius:15px;">
+	<div class="w3-cell-row">
+		<div class="w3-cell">Search: </div>
+		<div class="w3-cell w3-right-align"><input id="user-search-box" class="my-input" oninput="debounced_search()"> </input></div>
+	</div>
+</div>
+
+<div class="w3-container w3-card" style="border-radius:15px;">
+	<table class="my-neat-table" id="user-table">
+		<tr>
+			<th>Username</th>
+			<th>Created date</th>
+			<th>Last login</th>
+			<th>Admin</th>
+			<th>Banned</th>
+			<th>Can comment</th>
+			<th>Wilt enabled</th>
+		</tr>
+		<tbody id="user-table-body">
+		</tbody>
+	</table>
+	<div class="w3-auto w3-center">
+		<button class="w3-button my-hover-lilac" id="load-more-users" data-page="0" onclick="load_more_users()">
+		Load More
+		</button>
+	</div>
+</div>
+<script>
+
+const load_more_button = document.getElementById("load-more-users");
+const user_table = document.getElementById("user-table-body");
+const search_box = document.getElementById("user-search-box");
+const admin_area_path = "{{url_for('admin_area.admin_area_home')}}";
+
+function render_template(user)
+{
+	{% set user = GetUserProto %}
+	const template = `{% include 'admin_area/partials/records/user_row.html.jinja' %}`;
+	return template;
+}
+
+async function add_rows(userdata)
+{
+	for (let i = 0; i < userdata.length; i++)
+	{
+		let rendered  = render_template(userdata[i].user);
+		user_table.insertAdjacentHTML("beforeend", rendered);
+		user_table.lastChild.addEventListener("click", () => {
+			window.open(`${admin_area_path}user_details/${userdata[i].user.id}`, '_blank');
+		})
+	}
+}
+
+async function load_more_users()
+{
+	var page = parseInt(load_more_button.dataset.page) + 1;
+	var query_string = search_box.value.trim();
+	try {
+		const response = await fetch(`{{ url_for('api_v1.api_v1_user_page') }}`,
+			{
+				headers:{"Content-Type": "application/json",},
+				method:"POST",
+				body:JSON.stringify({"page":page,"query":query_string})}
+		)
+		if (!response.ok){throw new Error("Server sent not ok", response.status);};
+		const data = await response.json();
+		if (data.status === "success")
+		{
+			add_rows(data.data);
+			if (data.last_page === true)
+			{	
+				load_more_button.style.display = "none";
+			}
+			load_more_button.dataset.page = page;
+		}
+	}
+	catch (error) {
+		console.log("failed to load more users: ", error);
+	}
+}
+
+function delete_table_rows()
+{
+	user_table.innerHTML = "";
+}
+
+let timer;
+function debounced_search(){
+	clearTimeout(timer);
+	timer = setTimeout(() => {
+		load_more_button.dataset.page = "0";
+		load_more_button.style.display = "block";
+		delete_table_rows();
+		load_more_users();
+	}, 300)
+}
+
+load_more_users();
+</script>
+{% endblock %}
+

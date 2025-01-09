@@ -5,6 +5,9 @@
 			<a href="/" class="w3-bar-item w3-button w3-padding-large">breezyparks</a>
 			<a href="/posts" class="w3-bar-item w3-button w3-padding-large w3-hide-small">posts</a>
 			<a href="/things" class="w3-bar-item w3-button w3-padding-large w3-hide-small">things</a>
+			{% if current_user.is_authenticated and current_user.is_admin %}
+				<a href="{{url_for('admin_area.admin_area_home')}}" class="w3-bar-item w3-button w3-padding-large w3-hide-small">admin</a>
+			{% endif %}
 			{# <a href="/wip" class="w3-bar-item w3-button w3-padding-large w3-hide-small">about</a> #}
 			{# <div class="w3-dropdown-hover w3-hide-small">
 				<button class="w3-padding-large w3-button" title="More">more<i class="fa fa-caret-down"></i></button>
@@ -30,6 +33,9 @@
 <div id="navBarPhones" class="w3-bar-block w3-hide w3-hide-large w3-hide-medium navBar">
 			<a href="/posts" class="w3-bar-item w3-button w3-padding-large">posts</a>
 			<a href="/things" class="w3-bar-item w3-button w3-padding-large">things</a>
+			{% if current_user.is_authenticated and current_user.is_admin %}
+				<a href="{{url_for('admin_area.admin_area_home')}}" class="w3-bar-item w3-button w3-padding-large">admin</a>
+			{% endif %}
 			{# <a href="/wip" class="w3-bar-item w3-button w3-padding-large">about</a> #}
 			{% if hideable_content is defined and hideable_content == true %}
 				<a class="w3-bar-item w3-button w3-padding-large" href="javascript:zeta_toggle_content()"> toggle </a>

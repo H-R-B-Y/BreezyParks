@@ -49,6 +49,7 @@
 
 .my-neat-table {
 	width : 100%;
+	table-layout: fixed;
 	border-radius: 15px;
 	padding: 15px;
 
@@ -64,6 +65,9 @@
 		padding: 10px;
 		text-align: left;
 		border-right: #1f2122 1px solid;
+		word-wrap: break-word; /* Legacy */
+		overflow-wrap: break-word; /* Modern browsers */
+		white-space: normal; /* Allow text wrapping */
 	}
 
 	td:last-child {

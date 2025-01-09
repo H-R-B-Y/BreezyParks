@@ -1,0 +1,50 @@
+
+{% if user is defined and current_user.is_admin %}
+<div id="data-accordian">
+<table class="my-neat-table">
+	<tr>
+		<th>Name</th>
+		<th>Value</th>
+		<th>Action</th>
+	</tr>
+	<tbody>
+		<tr><td id="user-data-id-label">id</td>
+		<td id="user-data-id-data">{{user.id}}</td>
+		<td id="user-data-id-action"></td></tr>
+		<tr><td id="user-data-username-label">username</td>
+		<td id="user-data-username-data">{{user.username}}</td>
+		<td id="user-data-username-action"></td></tr>
+		<tr><td id="user-data-is_admin-label">is_admin</td>
+		<td id="user-data-is_admin-data">{{user.is_admin}}</td>
+		<td id="user-data-is_admin-action"></td></tr>
+		<tr><td id="user-data-created_date-label">created_date</td>
+		<td id="user-data-created_date-data">{{user.created_date}}</td>
+		<td id="user-data-created_date-action"></td></tr>
+		<tr><td id="user-data-last_login_date-label">last_login_date</td>
+		<td id="user-data-last_login_date-data">{{user.last_login_date}}</td>
+		<td id="user-data-last_login_date-action"></td></tr>
+		<tr><td id="user-data-email-label">email</td>
+		<td id="user-data-email-data">{{user.email}}</td>
+		<td id="user-data-email-action"></td></tr>
+		<tr><td id="user-data-google_id-label">google_id</td>
+		<td id="user-data-google_id-data">{{user.google_id}}</td>
+		<td id="user-data-google_id-action"></td></tr>
+		<tr><td id="user-data-github_id-label">github_id</td>
+		<td id="user-data-github_id-data">{{user.github_id}}</td>
+		<td id="user-data-github_id-action"></td></tr>
+		<tr><td id="user-data-username_last_updated-label">username_last_updated</td>
+		<td id="user-data-username_last_updated-data">{{user.username_last_updated}}</td>
+		<td id="user-data-username_last_updated-action"></td></tr>
+		<tr><td id="user-data-is_banned-label">is_banned</td>
+		<td id="user-data-is_banned-data">{{user.is_banned}}</td>
+		<td id="user-data-is_banned-action"></td></tr>
+		<tr><td id="user-data-can_comment-label">can_comment</td>
+		<td id="user-data-can_comment-data">{{user.can_comment}}</td>
+		<td id="user-data-can_comment-action"></td></tr>
+		<tr><td id="user-data-wilt_enabled-label">wilt_enabled</td>
+		<td id="user-data-wilt_enabled-data">{{user.wilt_enabled}}</td>
+		<td id="user-data-wilt_enabled-action"></td></tr>
+	</tbody>
+</table>
+</div>
+{% endif %}

@@ -7,7 +7,6 @@ from flask_login import login_required, current_user
 def admin_area_home():
 	return render_template("admin_area/home.html.jinja")
 
-
 # Right now we just need to worry about post authoring 
 
 @admin_area.route("/new_post", methods=["GET", "POST"])
@@ -56,3 +55,11 @@ def admin_area_delete_post(id : int):
 def admin_area_post_view():
 	posts = schema.BlogPost.query.all()
 	return render_template("admin_area/posts/view_posts.html.jinja", posts=posts)
+
+@admin_area.route("/user_view")
+def admin_area_user_view():
+	return render_template("admin_area/users/view_users.html.jinja")
+
+@admin_area.route("/user_details/<int:id>")
+def admin_area_user_details(id):
+	return render_template("admin_area/users/user_details.html.jinja", user=schema.User.query.get(id))

@@ -17,6 +17,18 @@ from functools import wraps
 db : SQLAlchemy = db
 
 class User(UserMixin, db.Model):
+	class user_proto():
+		id = "${user.id}"
+		username = "${user.username}"
+		is_admin = "${user.is_admin}"
+		created_date = "${user.created_date}"
+		last_login_date = "${user.last_login_date}"
+		username_last_updated = "${user.username_last_updated}"
+		email = "${user.email}"
+		is_banned = "${user.is_banned}"
+		can_comment = "${user.can_comment}"
+		wilt_enabled = "${user.wilt_enabled}"
+
 	__tablename__ = 'users'
 
 	id = db.Column(Integer, primary_key=True, autoincrement=True)
@@ -54,6 +66,26 @@ class User(UserMixin, db.Model):
 	@classmethod
 	def get_user_by_id(cls, user_id):
 		return cls.query.get(user_id)
+	
+	def data(self):
+		return {
+			"id": self.id,
+			"username": self.username,
+			"is_admin": self.is_admin,
+			"created_date": self.created_date,
+			"last_login_date": self.last_login_date,
+			"username_last_updated": self.username_last_updated,
+			"email": self.email,
+			"is_banned": self.is_banned,
+			"can_comment": self.can_comment,
+			"wilt_enabled": self.wilt_enabled
+		}
+	
+	def all_comments(self):
+		return Comment.query.filter_by(user_id = self.id).order_by(desc(Comment.created_date)).all()
+		
+	def url(self):
+		return url_for("profile", username=self.username)
 
 
 class BlogPost(db.Model):
@@ -73,6 +105,9 @@ class BlogPost(db.Model):
 	def likes(self):
 		return Like.likes_for(self)
 
+	def url(self):
+		return url_for("post_id", id=self.id)
+
 
 class ThingPost(db.Model):
 	__tablename__ = 'thing_posts'
@@ -87,6 +122,9 @@ class ThingPost(db.Model):
 	@property
 	def likes(self):
 		return Like.likes_for(self)
+	
+	def url(self):
+		return url_for("thing_id", id=self.id)
 
 
 class Comment(db.Model):
@@ -116,8 +154,8 @@ class Comment(db.Model):
 		if (target == None or not type(target) in [BlogPost, Comment, ThingPost]):
 			return None
 		target_type = ['blog_post', 'comment', 'thing'][[BlogPost, Comment, ThingPost].index(type(target))]
-		likes = cls.query.filter_by(target_type=target_type, target_id=target.id).order_by(desc(cls.created_date)).all()
-		return (likes)
+		comments = cls.query.filter_by(target_type=target_type, target_id=target.id).order_by(desc(cls.created_date)).all()
+		return (comments)
 
 	def get_replies(self):
 		my_replies = Comment.query.filter_by(target_type="comment", target_id=self.id)\
@@ -131,6 +169,18 @@ class Comment(db.Model):
 	@property
 	def username(self):
 		return self.user.username
+
+	@property
+	def true_parent(self):
+		try:
+			target = self
+			while target.target_type == 'comment':
+				target = Comment.query.get(target.target_id)
+			target_type = [BlogPost, ThingPost][['blog_post', 'thing'].index(target.target_type)]
+			return target_type.query.get(target.target_id)
+		except Exception as e:
+			print(f"Error getting true parent: {e}")
+			return None
 
 
 class Like(db.Model):
@@ -153,6 +203,11 @@ class Like(db.Model):
 		likes = cls.query.filter_by(target_type=target_type, target_id=target.id).order_by(desc(cls.created_date)).all()
 		return (likes)
 
+	@property
+	def target(self):
+		target_class = [BlogPost, Comment, ThingPost, User][['blog_post', 'comment', 'thing', 'profile'].index(self.target_type)]
+		out = target_class.query.get(self.target_id)
+		return out
 
 class PaperNote(db.Model):
 	__tablename__ = 'paper_notes'

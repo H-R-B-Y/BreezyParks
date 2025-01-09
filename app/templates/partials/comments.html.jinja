@@ -102,7 +102,7 @@ document.getElementById("new_comment_form").addEventListener("submit", async fun
 });
 {% endif %}
 function renderComment(id, username, comment_body, isreply) {
-		{% set comment = GetCommentProto() %}
+		{% set comment = GetCommentProto %}
 		const template = `{% include "partials/records/comment.html.jinja" %}`;
 		return template;
 };

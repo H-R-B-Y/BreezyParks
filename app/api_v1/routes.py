@@ -1,4 +1,4 @@
-from .. import schema, require_admin
+from .. import schema, require_admin, db
 from . import api_v1_bp, api_v1_validation, _add_api_version_header
 
 from flask import jsonify, request, Response, url_for
@@ -14,7 +14,7 @@ def api_v1_paper_note_count():
 		status = request.args.get("status")
 		filter["status"] = status
 	count = schema.PaperNote.query.filter_by(**filter).count()
-	return jsonify({"status":"ok", "count":count, "version":1}), 200
+	return jsonify({"status":"success", "count":count, "version":1}), 200
 
 @api_v1_bp.route("/paper_notes_page", methods=["POST"])
 @api_v1_validation
@@ -32,7 +32,7 @@ def api_v1_paper_note_page():
 	notes = schema.PaperNote.query.filter_by(**filter).order_by(schema.PaperNote.created_date).all()
 	data = [{"id":x.id, "title": x.title, "status":x.status, "path":url_for("api_v1.api_v1_paper_note_id", id=x.id)} for x in notes[start:end]]
 	return jsonify({
-			"status":"ok",
+			"status":"success",
 			"data":data,
 			"page":page,
 			"last_page": True if end >= len(notes) else False,
@@ -59,7 +59,7 @@ def api_v1_paper_note_delete(id):
 		return jsonify({"status":"error", "message":"Note not found", "version":1}), 404
 	schema.db.session.delete(paper_note)
 	schema.db.session.commit()
-	return _add_api_version_header(jsonify({"status":"ok", "message":"Note deleted", "version":1}), 200)
+	return _add_api_version_header(jsonify({"status":"success", "message":"Note deleted", "version":1}), 200)
 
 """
 Following for comments and for likes
@@ -81,7 +81,7 @@ def api_v1_get_comment_count():
 	if requested_user and requested_user.isnumeric():
 		filter["user_id"] = requested_user
 	count = schema.Comment.query.filter_by(**filter).count()
-	return jsonify({"status":"ok", "count":count, "version":1}), 200
+	return jsonify({"status":"success", "count":count, "version":1}), 200
 
 @api_v1_bp.route("/comment_page", methods=["POST"])
 @api_v1_validation
@@ -108,7 +108,7 @@ def api_v1_comment_page():
 	comments = schema.Comment.query.filter_by(**filter).order_by(schema.Comment.created_date).all()
 	data = [{"id":x.id, "username":x.user.username, "body": x.body, "path":"api_v1/comment/"+str(x.id)} for x in comments[start:end]]
 	return jsonify({
-			"status":"ok",
+			"status":"success",
 			"data":data,
 			"page":page,
 			"last_page": True if end >= len(comments) else False,
@@ -121,7 +121,7 @@ def api_v1_comment_id(id):
 	if not comment:
 		return jsonify({"status":"error", "message":"Comment not found", "version":1}), 404
 	return jsonify({
-			"status":"ok",
+			"status":"success",
 			"username":comment.user.username,
 			"body":comment.body,
 			"created_date":comment.created_date.timestamp(),
@@ -144,7 +144,7 @@ def api_v1_get_like_count():
 	if requested_user and requested_user.isnumeric():
 		filter["user_id"] = requested_user
 	count = schema.Like.query.filter_by(**filter).count()
-	return jsonify({"status":"ok", "count":count, "version":1}), 200
+	return jsonify({"status":"success", "count":count, "version":1}), 200
 
 """
 Following for users
@@ -154,24 +154,25 @@ Following for users
 @api_v1_validation
 def api_v1_get_user_count():
 	count = schema.User.query.count()
-	return jsonify({"status":"ok", "count":count, "version":1}), 200
+	return jsonify({"status":"success", "count":count, "version":1}), 200
 
 @api_v1_bp.route("/user_page", methods=["POST"])
 @api_v1_validation
 def api_v1_user_page():
 	page = int(request.json.get("page",1))
 	per_page = int(request.json.get("per_page", 6))
+	query = request.json.get("query", '')
 	if (page < 1 or per_page < 1):
 		return jsonify({"status":"error", "message":"Page doesn't exist", "version":1}), 404
-	start = (page - 1) * per_page
-	end = start + per_page
-	users = schema.User.query.order_by(schema.User.username).all()
-	data = [{"id":x.id, "username": x.username, "path":"api_v1/user/"+str(x.id)} for x in users[start:end]]
+	users = schema.User.query.filter((schema.User.username.like(f"%{query}%")) | (schema.User.id.cast(db.String).like(f"%{query}%")))
+	users = users.order_by(schema.User.username).paginate(page = page, per_page = per_page, error_out=False)
+	users = users.items
+	data = [{"id":x.id, "user": x.data(), "path":"api_v1/user/"+str(x.id)} for x in users]
 	return jsonify({
-			"status":"ok",
+			"status":"success",
 			"data":data,
 			"page":page,
-			"last_page": True if end >= len(users) else False,
+			"last_page": True if len(users) < per_page else False,
 			"version":1}), 200
 
 @api_v1_bp.route("/user/<int:id>", methods=["GET"])
@@ -181,7 +182,7 @@ def api_v1_user_id(id):
 	if not user:
 		return jsonify({"status":"error", "message":"User not found", "version":1}), 404
 	data = {
-		"status":"ok",
+		"status":"success",
 		"username":user.username,
 		"created_date":user.created_date.timestamp(),
 		"version":1}

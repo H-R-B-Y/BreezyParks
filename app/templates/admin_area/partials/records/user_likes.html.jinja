@@ -1,0 +1,34 @@
+
+<div class="w3-padding w3-hide" id="likes-accordian">
+	<table class="my-neat-table">
+		<tr>
+			<th>target type</th>
+			<th>target id</th>
+			<th>target info</th>
+			<th>created date</th>
+		</tr>
+		<tbody>
+		{% for like in user.likes%}
+			<tr id="like-{{like.id}}">
+				<td id="like-{{like.id}}-target_type">{{like.target_type}}</td>
+				<td id="like-{{like.id}}-target_id">{{like.target_id}}</td>
+				{% set target = like.target%}
+				<td id="like-{{like.id}}-info">
+				{% if target.__tablename__ == "comments"%}
+					Comment from {{target.user.username}} on {{target.true_parent.title}}
+				{% elif target.__tablename__ == "blog_posts"%}
+					Blog post {{target.title}}
+				{% elif target.__tablename__ == "thing_posts"%}
+					Thing {{target.title}}
+				{% elif target.__tablename__ == "users"%}
+					{{target.username}}'s profile
+				{% else %}
+					{{ target }}
+				{% endif %}
+				</td>
+				<td id="like-{{like.id}}-created_date">{{like.created_date}}</td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+</div>

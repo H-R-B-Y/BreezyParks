@@ -1,0 +1,46 @@
+
+{% extends "admin_area/admin_template.html.jinja" %}
+{% set page_type, page_id, title = "admin.user", user.id, user.username %}
+
+
+{% block body %}
+	<div id="main" class="w3-container w3-margin-bottom">
+		
+		<div class="w3-container w3-card  w3-margin-bottom w3-padding" style="border-radius:15px;">
+			<div class="w3-border-bottom" onclick="unfold_something('data-accordian')">Data:</div>
+			{% include "admin_area/partials/records/user_data_table.html.jinja"%}
+		</div>
+
+		{% if user.wilt_enabled %}
+		<div class="w3-container w3-card  w3-margin-bottom w3-padding" style="border-radius:15px;">
+			<div class="w3-border-bottom" onclick="unfold_something('spotify-accordian')">Spotify data:</div>
+		</div>
+		{% endif%}
+		
+		<div class="w3-container w3-card  w3-margin-bottom w3-padding" style="border-radius:15px;">
+			<div class="w3-border-bottom" onclick="unfold_something('comment-accordian')">Comments:</div>
+			{% include "admin_area/partials/records/user_comments.html.jinja" %}
+		</div>
+
+		<div class="w3-container w3-card  w3-margin-bottom w3-padding" style="border-radius:15px;">
+			<div class="w3-border-bottom" onclick="unfold_something('likes-accordian')">Likes:</div>
+			{% include "admin_area/partials/records/user_likes.html.jinja"%}
+		</div>
+		
+	</div>
+
+<script>
+async function unfold_something(id_to_unfold)
+{
+	const unfoldable = document.getElementById(id_to_unfold);
+	if (unfoldable.classList.contains("w3-hide"))
+	{
+		unfoldable.classList.remove("w3-hide");
+	}
+	else
+	{
+		unfoldable.classList.add("w3-hide");
+	}
+}
+</script>
+{%endblock%}

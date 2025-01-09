@@ -162,6 +162,16 @@
 	background-color: grey;
 	border-bottom: 1px solid #1f2122;
 }
+.my-input {
+	background-color: grey;
+	border: none;
+}
+.my-input:focus {
+	background-color: grey;
+	border: none;
+	outline: none;
+}
+
 
 .simple_textarea {
 	background-color: #27292a;

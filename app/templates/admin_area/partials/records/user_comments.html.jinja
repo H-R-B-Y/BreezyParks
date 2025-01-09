@@ -1,0 +1,28 @@
+
+{% if user is defined and current_user.is_admin%}
+
+<div class="w3-padding w3-hide" id="comment-accordian">
+	<table class="my-neat-table">
+		<tr>
+			<th>body</th>
+			<th>target type</th>
+			<th>target id</th>
+			<th>true parent table</th>
+			<th>true parent id</th>
+		</tr>
+		<tbody>
+		{% for comment in user.all_comments()%}
+			<tr id="comment-{{comment.id}}">
+				<td id="comment-{{comment.id}}-body">{{comment.body}}</td>
+				<td id="comment-{{comment.id}}-target_type">{{comment.target_type}}</td>
+				<td id="comment-{{comment.id}}-target_id">{{comment.target_id}}</td>
+				<td id="comment-{{comment.id}}-target_id">{{comment.true_parent.__tablename__}}</td>
+				<td id="comment-{{comment.id}}-target_id"
+				class="my-hover-lilac"><a href="{{comment.true_parent.url()}}">{{comment.true_parent.id}}</a></td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+</div>
+
+{% endif %}

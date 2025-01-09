@@ -105,10 +105,10 @@ app.jinja_env.globals.update(CommentHasReplies = comment_has_replies)
 
 app.jinja_env.globals.update(UserCanNote = user_can_note)
 
-def get_comment_proto():
-	return Comment.comment_proto()
 
-app.jinja_env.globals.update(GetCommentProto = get_comment_proto)
+
+app.jinja_env.globals.update(GetCommentProto = Comment.comment_proto())
+app.jinja_env.globals.update(GetUserProto = User.user_proto())
 
 
 def get_current_playing_track(user : schema.User):
