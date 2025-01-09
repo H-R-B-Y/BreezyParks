@@ -83,6 +83,12 @@ class User(UserMixin, db.Model):
 	
 	def all_comments(self):
 		return Comment.query.filter_by(user_id = self.id).order_by(desc(Comment.created_date)).all()
+	
+	def comment_count(self):
+		return len(self.comments)
+	
+	def like_count(self):
+		return len(self.likes)
 		
 	def url(self):
 		return url_for("profile", username=self.username)

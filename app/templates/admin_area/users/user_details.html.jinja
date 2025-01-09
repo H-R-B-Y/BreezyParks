@@ -21,12 +21,12 @@
 		{% endif%}
 		
 		<div class="w3-container w3-card  w3-margin-bottom w3-padding" style="border-radius:15px;">
-			<div class="w3-border-bottom" onclick="unfold_something('comment-accordian')">Comments:</div>
+			<div class="w3-border-bottom" onclick="unfold_something('comment-accordian')">Comments: {{user.comment_count()}}</div>
 			{% include "admin_area/partials/records/user_comments.html.jinja" %}
 		</div>
 
 		<div class="w3-container w3-card  w3-margin-bottom w3-padding" style="border-radius:15px;">
-			<div class="w3-border-bottom" onclick="unfold_something('likes-accordian')">Likes:</div>
+			<div class="w3-border-bottom" onclick="unfold_something('likes-accordian')">Likes: {{user.like_count()}}</div>
 			{% include "admin_area/partials/records/user_likes.html.jinja"%}
 		</div>
 		
