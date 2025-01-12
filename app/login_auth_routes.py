@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime, timedelta
 from app import app, db, google, loginman, render_page_failsafe
 from app.schema import User
@@ -6,7 +7,7 @@ from flask import Flask, redirect, url_for, session, request, render_template, f
 from authlib.integrations.flask_client import OAuth, OAuthError
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
-
+forbidden_chars = r'[?&=/#;%+"\'()<>\\\[\]{}]'
 
 # THIS NEEDS TO BE DONE BY BUTTONS ON THE LOGIN SCREEN
 @app.route("/login")
@@ -63,9 +64,10 @@ def check_username():
 	# Query the database for the username
 	user_exists = db.session.query(User).filter_by(username=username).first() is not None
 	if user_exists:
-		return jsonify({'available': False}), 200
-	else:
-		return jsonify({'available': True}), 200
+		return jsonify({"status":"error",'available': False}), 200
+	if bool(re.search(forbidden_chars, username)):
+		return jsonify({"status":"error",'available': False}), 200
+	return jsonify({"status":"success",'available': True}), 200
 
 @app.route("/profile")
 @app.route("/<string:username>/profile")
@@ -90,6 +92,10 @@ def update_profile():
 			flash("Username cannot be empty.", "error")
 			return render_template("edit_profile.html.jinja")
 
+		if bool(re.search(forbidden_chars, new_username)):
+			flash("Username cannot contain certain symbols.", "error")
+			return render_template("edit_profile.html.jinja")
+		
 		if User.query.filter_by(username=new_username).count() > 0:
 			flash("Username is currently in use, please choose another one.", "error")
 			return render_template("edit_profile.html.jinja")

@@ -18,16 +18,22 @@
 <script>
 let timeout;
 document.getElementById('username').addEventListener('input', function () {
+		const forbiddenCharsRegex = /[?&=\/#;%+\"\'\(\)<>\[\]{}\\]/;
 		const username = this.value.trim(); // Trim to remove extra spaces
 		const error_text = document.getElementById('error-text');
 		const my_username = document.getElementById('update-form').dataset.userid;
 		const send_button = document.getElementById('send-button');
 		clearTimeout(timeout);
 		if (!username) {
-				error_text.style.display = "block";
-				error_text.firstChild.innerText = "Username cannot be blank."
-				send_button.disabled = true;
-				return;
+			error_text.style.display = "block";
+			error_text.firstChild.innerText = "Username cannot be blank."
+			send_button.disabled = true;
+			return;
+		} else if (forbiddenCharsRegex.test(username)) {
+			error_text.style.display = "block";
+			error_text.firstChild.innerText = "Username cannot contain characters: ?&=/#;%+\"'()<>[]{}\\"
+			send_button.disabled = true;
+			return;
 		} else {
 			error_text.style.display = "none";
 			send_button.disabled = false;
