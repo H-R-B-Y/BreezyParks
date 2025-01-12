@@ -1,25 +1,26 @@
 {% extends "things/thing_template.html.jinja" %}
-{% set title = "Send a Paper Note"%}
-{% set thing_id = "1" %}
+{% set title = "Paper Note"%}
+{% set thing_id = thing.id %}
 {% block sub_body %}
-<a style="text-decoration: none;" href="#what-is-papernote"><h2 id="what-is-papernote" class="w3-border-bottom">What is PaperNote?</h2></a>
+
+<a style="text-decoration: none;" href="#what-is-papernote"><h3 id="what-is-papernote" class="w3-border-bottom">What is PaperNote?</h2></a>
 <p>PaperNote is the pilot project in a series of interactive experiences I plan to create for BreezyParks. These projects are designed to help me explore and learn technologies that intrigue me while also (hopefully) sparking some interest in people who may come across this site.</p>
 <p>At the bottom of this page, you&#39;ll find a small canvas where you can draw. Once you&#39;ve created something, you can click &quot;Post&quot; to send the image to my server, where it will be stored. On my end, a Raspberry Pi connected to a small e-paper display will retrieve a random image from the server once a day and showcase it on the display.</p>
 <div class="w3-card" style="border-radius:15px;overflow:hidden;"><img src="static/images/paper_note_hello.jpg" style="width:100%;"></img></div>
-<a style="text-decoration: none;" href="#why-papernote"><h2 id="why-papernote" class="w3-border-bottom">Why PaperNote?</h2></a>
+<a style="text-decoration: none;" href="#why-papernote"><h3 id="why-papernote" class="w3-border-bottom">Why PaperNote?</h2></a>
 <p>Over the years, I&#39;ve gathered a variety of fascinating tech gadgets, but many of them have ended up gathering dust after a bit of tinkering. The e-paper display, in particular, inspired me to repurpose it for something meaningful. Since it consumes no power to maintain a still image, it felt perfect for becoming a platform for communication and creativity. PaperNote transforms this technology into a collaborative project that I invite you to contribute to.</p>
-<a style="text-decoration: none;" href="#technical-aspects"><h2 id="technical-aspects" class="w3-border-bottom">Technical Aspects</h2></a>
+<a style="text-decoration: none;" href="#technical-aspects"><h3 id="technical-aspects" class="w3-border-bottom">Technical Aspects</h2></a>
 <p>For each project I publish here, I plan to delve into the technical aspects to document the journey and share what I’ve learned along the way.</p>
 <p>One of the key constraints of my current server and website configuration is storage and bandwidth. Image data, being relatively large compared to other types of data, posed a challenge, so I spent considerable time thinking about the best way to send, receive, and store it.</p>
 <p>Initially, I considered encoding the image data in Base64 and sending it as a string in a JSON payload to the server. While this was a useful starting point, I quickly realized it wasn’t the most efficient solution. Reflecting on my experience in the C Piscine at 42 Bangkok—particularly the projects involving base conversions—I decided to abstract the problem further.</p>
 <p>Since the image is black and white, each pixel could represent either a <code>1</code> or a <code>0</code>. Grouping these pixels into chunks of four, I could encode them as a single hexadecimal character and send the resulting hex string in a JSON payload.</p>
 <p>However, I soon discovered a flaw in this approach: a single hexadecimal character in a JSON payload uses between 8 and 32 bits, yet it only encodes 4 bits of data. This meant I was wasting between 4 and 28 bits for every four pixels of information.</p>
 <p>The key insight I was missing was that I could send raw byte data over HTTP. In hindsight, I’m not sure how I overlooked this, but once I learned about the <code>application/octet-stream</code> content type, everything changed. This discovery allowed me to significantly improve the efficiency of both data transfer and storage. I could now pack 8 pixels into a single byte, send this raw byte data to the server, and store it as a <code>BLOB</code> in my database.</p>
-<a style="text-decoration: none;" href="#closing-thoughts"><h2 id="closing-thoughts" class="w3-border-bottom">Closing Thoughts</h2></a>
+<a style="text-decoration: none;" href="#closing-thoughts"><h3 id="closing-thoughts" class="w3-border-bottom">Closing Thoughts</h2></a>
 <p>Ultimately, I recognize that these efficiency improvements don’t provide a significant tangible benefit. The image size is only 212 × 104 pixels (22,048 pixels), and given the bandwidth and storage available in my setup, sending the image data as-is wouldn’t be an issue.</p>
 <p>However, I saw this as an opportunity to challenge myself to be more mindful and disciplined about efficiency. It’s easy to rely on the power of modern computing to mask inefficient design, but I want to avoid falling into that trap. While I know I’ve written some poorly designed software in the past, I’m committed to improving and developing better habits as I continue to learn.</p>
 <br/>
-<a style="text-decoration: none;" href="#the-canvas"><h2 id="the-canvas" class="w3-border-bottom">The canvas</h2></a>
+<a style="text-decoration: none;" href="#the-canvas"><h3 id="the-canvas" class="w3-border-bottom">The Canvas</h2></a>
 {% set canvas_width, canvas_height, canvas_color = 212, 104, '#000' %}
 <script>
 drawable_width = {{canvas_width}};
