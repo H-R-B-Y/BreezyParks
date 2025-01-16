@@ -24,7 +24,7 @@ class Player {
 		}).then(() => {
 			this.sprite.width = 64;
 			this.sprite.height = 64;
-			this.sprite.anchor.set(0.5,0.6);
+			this.sprite.anchor.set(0.5,0.5);
 			this.setPosition(parseInt(window.innerWidth/2), parseInt(window.innerHeight/2));
 			this.sprite.zindex = 5; // why do we set it to 5?
 			drawContainer.addChild(this.sprite);
@@ -44,7 +44,6 @@ class Player {
 			this.usernameText.y = y - parseInt(this.sprite.height/2);
 		}
 	}
-
 }
 
 const initialPath = new URL(window.location.href).pathname;
@@ -89,6 +88,12 @@ function onMove(data){
 	players[data.username].setPosition(data.x, data.y);
 };
 
+function resizecallback() {
+	new_width = document.documentElement.scrollWidth;
+	new_height = document.documentElement.scrollHeight;
+	app.renderer.resize(new_width, new_height);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
 	currentPlayer = new Player(document.getElementById("zetaCanvas").dataset.userid);
 
@@ -96,8 +101,15 @@ document.addEventListener("DOMContentLoaded", () => {
 	app.init({
 		canvas : document.getElementById("zetaCanvas"),
 		background : "#1f2122",
-		resizeTo: window
+		width : document.documentElement.scrollWidth,
+		height : document.documentElement.scrollHeight,
 	});
+	
+	document.getElementById("zetaCanvas").style.position = 'absolute';
+	document.getElementById("zetaCanvas").style.top = '0';
+	document.getElementById("zetaCanvas").style.left = '0';
+	new ResizeObserver(resizecallback).observe(document.documentElement);
+	window.addEventListener("resize", resizecallback)
 	// Stack order for containers
 	app.stage.addChild(lobbyContainer);
 	app.stage.addChild(userContainer);
@@ -108,7 +120,9 @@ document.addEventListener("DOMContentLoaded", () => {
 	document.addEventListener("click", (event) => {
 		// Should probably move this function into a method of the player?
 		// Should also probably just use PIXI js event handling so we can know what was clicked, I.E. to bring up user profiles.
-		currentPlayer.setPosition(parseInt(event.clientX), parseInt(event.clientY));
+		x = parseInt(event.pageX);
+		y = parseInt(event.pageY);
+		currentPlayer.setPosition(x, y);
 		if (socket.connected){
 			socket.emit("moved", {"x":currentPlayer.sprite.x, "y":currentPlayer.sprite.y});
 		};

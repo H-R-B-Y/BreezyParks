@@ -1,0 +1,7 @@
+{% extends "main_template.html.jinja" %}
+{% block foreground %}
+<div id="foreground" class="foreground">
+	{% include "partials/flash.html.jinja" %}
+	{% block header %} {% include "partials/header.html.jinja" %} {% endblock %}
+</div>
+{% endblock %}

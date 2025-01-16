@@ -191,3 +191,7 @@ app.register_blueprint(admin_area.admin_area, url_prefix=os.getenv("ADMIN_PATH")
 from app import spotify_stuff
 
 app.register_blueprint(spotify_stuff.spotify_routes, url_prefix="/spotify")
+
+if app.config["ENVIRONMENT_NAME"] != "production":
+	from app import scrabble_ge
+	app.register_blueprint(scrabble_ge.scrabble_bp, url_prefix="/distinct_word_game")
