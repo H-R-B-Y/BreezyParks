@@ -1,3 +1,13 @@
+// This code may be shifted to a greater library after development as they might be useful
+
+function prepend_array(array, item) {
+	let new_array = array.slice();
+	new_array.unshift(item);
+	return new_array;
+}
+
+// endblock
+
 class Player {
 	constructor(username){
 		this.username = username;
@@ -108,15 +118,18 @@ class Grid {
 	}
 
 	highlightSquare(square) {
+		if (this.game.block_action){return};
 		square.tint = 0xAAAAAA; // Highlight color
 		this.game.dropContext = square;
 	}
 
 	unhighlightSquare(square) {
+		if (this.game.block_action){return};
 		square.tint = 0xFFFFFF; // Default color
 	}
 
 	selectSquare(square) {
+		if (this.game.block_action){return};
 		square.fill(0xFF0000).rect(0, 0, this.squareSize, this.squareSize); // Change to red
 	}
 
@@ -138,13 +151,20 @@ class Grid {
 		else if (square.containsTile !== tile) {console.error("Attempted to remove tile from a square that doesn't parent it.")}
 		else {console.error(`Attempted to remove a tile that has already been played.`)}
 	}
+
+	getSquare ( x, y ) {
+		if (x < 0 || y < 0){return null;}
+		if (x >= this.grid.size || y >= this.grid.size){return null;}
+		return this.grid[y][x];
+	}
 }
 
 class Tile {
-	constructor (game, parentContainer, identity, score, parentWord) {
+	constructor (game, parentContainer, identity, score, parentWord, uuid) {
 		this.game = game;
 		this.parentContainer = parentContainer;
 
+		this.uuid = uuid;
 		this.identity = identity;
 		this.score = score;
 
@@ -164,17 +184,13 @@ class Tile {
 			this.is_played = false;
 			this.played_score = false;
 			this.played_by = null;
+			self.parentWord = parentWord
 		// end 
 
 		this.onSquare = false;
 		this.position = null;
 
-		this.onGlobalMouseMove = this.onDragTile.bind(this);
-		this.onGlobalMouseUp = this.onReleased.bind(this);
-
 		parentContainer.addChild(this.container);
-
-		this.parentWord = parentWord || null;
 	}
 
 	createGraphic (tileSize, color) {
@@ -193,10 +209,27 @@ class Tile {
 		this.container.addChild(this.graphic);
 		this.container.addChild(this.text);
 		
-		// On mouse down "pickup" the tile.
-		this.container.on("pointerdown", this.onClicked.bind(this));
-		this.container.on("pointerenter", this.addToContext.bind(this))
-		this.container.on("pointerleave", this.removeFromContext.bind(this))
+
+	}
+
+	setHandEvents (val) {
+		if (val === true)
+		{
+			this.onGlobalMouseMove = this.onDragTile.bind(this);
+			this.onGlobalMouseUp = this.onReleased.bind(this);
+			// On mouse down "pickup" the tile.
+			this.container.on("pointerdown", this.onClicked.bind(this));
+			this.container.on("pointerenter", this.addToContext.bind(this));
+			this.container.on("pointerleave", this.removeFromContext.bind(this));
+		}
+		else {
+			this.onGlobalMouseMove = ()=>{};
+			this.onGlobalMouseUp = ()=>{};
+			// On mouse down "pickup" the tile.
+			this.container.off("pointerdown");
+			this.container.off("pointerenter");
+			this.container.off("pointerleave");
+		}
 	}
 
 	setPosition (x,y) {
@@ -211,13 +244,14 @@ class Tile {
 	}
 
 	changeParent (newParent) {
-		console.log(newParent);
+		if (this.game.block_action){return};
 		this.parentContainer.removeChild(this.container);
 		this.parentContainer = newParent;
 		this.parentContainer.addChild(this.container);
 	}
 
 	onClicked (event) { // Click event is unique as it should only trigger in the context of the tile, while drag and release are in the context of the window.
+		if (this.game.block_action){return};
 		this.isPickedUp = true;
 		this.game.holdingTile = true;
 		if (this.is_placed) {			
@@ -234,9 +268,11 @@ class Tile {
 		this.container.interactiveChildren = false;
 		window.addEventListener("pointermove", this.onGlobalMouseMove);
 		window.addEventListener("pointerup", this.onGlobalMouseUp);
+		this.game.ui.orderTilesInHand();
 	}
-
+ 
 	onDragTile (event) {
+		if (this.game.block_action){return};
 		// Update position
 		const rect = this.game.app.canvas.getBoundingClientRect();
 		const mouseX = event.clientX - rect.left;
@@ -246,6 +282,7 @@ class Tile {
 	}
 
 	updateGlobalDropContext (what) {
+		if (this.game.block_action){return};
 		what = what || this;
 		if (!this.isPickedUp) {
 			this.game.dropContext = what;
@@ -263,6 +300,7 @@ class Tile {
 	}
 
 	onReleased (event) {
+		if (this.game.block_action){return};
 		this.isPickedUp = false;
 		this.game.holdingTile = false;
 		// Stop tracking the tile globally
@@ -274,7 +312,16 @@ class Tile {
 		this.game.handleTilePlacement(this);
 	}
 
+	_placeOnSquare ( square ) {
+		this.is_placed = true;
+		this.changeParent(square.parentContainer);
+		this.setPosition(square.x, square.y);
+		this.position = square.gridPosition;
+		this.onSquare = square;
+	}
+
 	placeOnSquare ( square ) {
+		if (this.game.block_action){return};
 		if (this.is_played) {throw new Error("Cannot place a tile that is already played.")}
 		this.is_placed = true;
 		this.changeParent(square.parentContainer);
@@ -285,15 +332,18 @@ class Tile {
 	}
 
 	returnToHandOnRightClick () {
+		if (this.game.block_action){return};
 		if (this.onSquare)
 		{
 			this.game.removeTileFromGrid( this, this.onSquare);
+			this.game.resetWordCheckerTimer();
 		} else {
 			this.returnToHand();
 		}
 	}
 
 	returnToHand (  ) {
+		if (this.game.block_action){return};
 		if (this.is_played) {throw new Error("Cannot return a tile to hand that is not part of your hand.")}
 		this.is_placed = false;
 		this.changeParent(this.game.ui.handContainer);
@@ -309,12 +359,33 @@ class Word {
 	A word is a collection of tiles THAT HAS BEEN PLAYED,
 	they will be sent from the server in some form
 	*/
-	constructor (game, tiles, word) {
+	constructor (game, tiles, word, uuid, axis, owner) {
 		this.game = game;
 		this.board = game.board;
+		this.owner = owner;
 		this.tiledata = tiles;
+		this.tiles = {}
+		this.uuid = uuid;
 		this.word = word;
 		this.meaning = null;
+		this.superseeded_by = null;
+		this.axis = axis;
+	}
+
+	drawWord () {
+		let t = null;
+		for (let i = 0; i < this.tiledata.length; i++) {
+			t = this.tiledata[i];
+			let newt = new Tile(this.game, this.game.board.container, t.identity, 0, this, t.id);
+			newt.is_played = true;
+			newt.played_by = t.owner;
+			newt.createGraphic(50, 0x252525);
+			let sq = this.game.board.getSquare(t.pos.x, t.pos.y);
+			newt._placeOnSquare(sq);
+			this.game.board.assignTileToSquare(newt, sq);
+			this.tiles[newt.uuid] = newt;
+		}
+		console.log(this);
 	}
 }
 
@@ -335,6 +406,7 @@ class UI {
 		this.handContainer.y = game.app.screen.height - this.handGraphic.height;
 		this.handContainer.x = (game.app.screen.width - this.handGraphic.width)/ 2;
 		
+		this.submitButtonEnabled = false;
 		this.submitButton = new PIXI.Container();
 		this.drawSubmitButton();
 		this.submitButton.y = this.handContainer.y - this.submitButtonGraphic.height;
@@ -385,36 +457,46 @@ class UI {
 
 	updateHand (handData) {
 		// update the hand graphics here.
-		let checked = []
 		this.handData = handData;
+		console.log(this.handData);
+		let t = [];
 		if (this.hand.length != 0){
-		for (let i = 0; i < this.handData.length; i++){ // loop through all the hand tiles sent from server
-			let c = this.handData[i].identity;
-			for (let p = 0; p < this.hand.length; i++){ // loop through tiles currently in hand so we can create the new tiles
-				if (this.hand[i] in checked){continue;}
-				if (this.hand[i].identity == c){
-					checked.push(this.hand[i]);
+			for (let dataTile in this.handData) {
+				let inhand = false;
+				for (let handTile in this.hand) {
+					if (this.hand[handTile].uuid == this.handData[dataTile].id) {
+						inhand = true;
+					}
 				}
-				else {
-					this.hand.push(new Tile(this.game, this.handContainer, c, this.handData[i].score));
+				if (!inhand) {
+					t = new Tile(this.game, this.handContainer, this.handData[dataTile].identity, this.handData[dataTile].score, null, this.handData[dataTile].id);
+					t.setHandEvents(true);
+					this.hand.push(t);
 				}
 			}
-		}}
+		}
 		else {
 			for (let i = 0; i < this.handData.length; i++){
 				let c = this.handData[i].identity;
-				this.hand.push(new Tile(this.game, this.handContainer, c, this.handData[i].score));
+				t = new Tile(this.game, this.handContainer, c, this.handData[i].score, null, this.handData[i].id);
+				t.setHandEvents(true);
+				this.hand.push(t);
 			}
 		}
 		this.orderTilesInHand();
 	}
 
 	orderTilesInHand () {
+		// NOTE: THIS NEXT !!!!!
+		/*
+			Tiles should be evenly spaced within the hand.
+			and the hand should resize when there are extra tiles in it.
+		*/
 		var x_pos = this.tMargin;
 		for (let i = 0; i < this.hand.length; i++) 
 		{
 			let t = this.hand[i];
-			if (t.is_placed){
+			if (t.is_placed || t.isPickedUp){
 				continue;
 			}
 			if (!t.graphic){t.createGraphic(this.tSize)};
@@ -431,19 +513,58 @@ class UI {
 	}
 
 	enableSubmitButton () {
+		if (this.submitButtonEnabled){return;}
+		this.submitButtonEnabled = true;
 		this.submitButton.cursor = 'pointer';
 		this.submitButton.on("pointerup", this.submitButtonPressed.bind(this));
 	}
 
 	submitButtonPressed () {
+		if (!this.submitButtonEnabled){return;}
 		console.log("submitting words!")
+		this.game.submitWord();
 	}
 
 	disableSubmitButton () {
+		if (!this.submitButtonEnabled){return;}
+		this.submitButtonEnabled = false;
 		this.submitButton.cursor = 'not-allowed';
 		this.submitButton.off("pointerup");
 	}
 }
+
+
+class WordProto {
+	constructor (){
+		this.is_parent_word = null;
+		this.word = '';
+		this.new_tile_positions = {};
+		this.new_tiles = [];
+		this.all_tiles = [];
+		this.axis = null;
+	}
+
+	append_tile (tile) {
+		//  Check if tile is in hand?
+		if (tile.is_placed && !tile.is_played && !tile.played_by) {
+			this.new_tiles.push(tile.uuid);
+			this.new_tile_positions[tile.uuid] = tile.position;
+		}
+		this.word = this.word + tile.identity;
+		this.all_tiles.push(tile.uuid);
+	}
+
+	prepend_tile (tile) {
+		// check if tile is in hand?
+		if (tile.is_placed && !tile.is_played && !tile.played_by) {
+			this.new_tiles = prepend_array(this.new_tiles, tile.uuid);
+			this.new_tile_positions[tile.uuid] = tile.position;
+		}
+		this.word = tile.identity + this.word;
+		this.all_tiles = prepend_array(this.all_tiles, tile.uuid);
+	}
+}
+
 
 class GameState {
 	constructor (namespace, username, canvas) {
@@ -465,6 +586,9 @@ class GameState {
 		this.currentPlayer = new Player(username);
 		//this.currentPlayer.loadSprite(this.gameContainer); // will just leave the player in the corner for now.
 
+		this.block_action = false;
+
+		this.words = {};
 		this.ui = null;
 		this.board = null;
 
@@ -481,9 +605,12 @@ class GameState {
 		this.dropContext = null;
 
 		this.wordCheckTimeout = null;
+
+		this.submittable_word_data = null;
 	}
 
 	onUpdateGameState (data) {
+		console.log(data);
 		if (!this.board && !data.board_size){
 			throw new Error("No board size returned from server");
 		}
@@ -497,6 +624,10 @@ class GameState {
 			this.ui = new UI(this, this.uiContainer);
 		}
 
+		if (data.words_played) {
+			this.drawWords(data.words_played);
+		}
+		
 		setTimeout((() => {if (this.ui.hand.length < 7) {this.socket.emit("request_hand", {"timestamp" : null})};}).bind(this), 100);
 	}
 
@@ -510,12 +641,24 @@ class GameState {
 		}else{throw new Error("No Score Provided")}
 	}
 
+	onPlayedWordResponse (data) {
+		console.log(data);
+		if (!this.expectingResponse) {return}
+	}
+
+	onNewWord (data) {
+		console.log(data);
+		return ;
+	}
+
 	onSocketConnected () {
 		if (this.socket_initial_recv) {return;}
 		this.socket_initial_recv = 1;
 		this.socket.on("board_state", this.onUpdateGameState.bind(this));
 		this.socket.on("player_state", this.onUpdatePlayerState.bind(this));
 		this.socket.emit("request_game_state", {"timestamp" : null});
+		this.socket.on("played_word_response", this.onPlayedWordResponse.bind(this));
+		this.socket.on("new_word", this.onNewWord.bind(this));
 	}
 
 	onSocketDisconnected () {
@@ -526,6 +669,18 @@ class GameState {
 	onResize () {
 		for (let i = 0; i < this.resizeEvents.length; i++) {this.resizeEvents[i]()};
 	}
+
+	drawWords (words) {
+		let word = null;
+		for (let i = 0; i < words.length; i++) {
+			word = words[i];
+			console.log(word);
+			let neww = new Word(this, word.tiles, word.word, word.id, word.axis, word.owner);
+			this.words[word.id] = neww;
+			neww.drawWord();
+		}
+	}
+
 
 	placeTileOnGrid ( tile, square ) {
 		if (square.containsTile && square.containsTile !== tile) {throw new Error("Square already contains a letter.")}
@@ -540,18 +695,24 @@ class GameState {
 		tile.returnToHand();
 	}
 
+	resetWordCheckerTimer() {
+		clearTimeout(this.wordCheckTimeout);
+		this.wordCheckTimeout = setTimeout(this.checkWords.bind(this), 300);
+	}
+
 	handleTilePlacement ( tile ) {
+		if (this.block_action){return};
 		var context = this.dropContext;
 		if (context && this.board.grid.some(innerArray => innerArray.some(obj => obj === context))){
 			this.placeTileOnGrid( tile, this.dropContext );
-			clearTimeout(this.wordCheckTimeout);
-			this.wordCheckTimeout = setTimeout(this.checkWords.bind(this), 300);
+			this.resetWordCheckerTimer();
 		} else if ( context && this.ui.hand.includes(context) && context.is_placed != true) {
 			if (tile.is_placed){this.removeTileFromGrid( tile, tile.onSquare )};
 			this.ui.swapTilesInHand(tile, context);
 		} else {
 			if (tile.onSquare) {
 				this.removeTileFromGrid(tile, tile.onSquare);
+				this.resetWordCheckerTimer();
 			} else {
 				tile.returnToHand();
 			}
@@ -561,14 +722,14 @@ class GameState {
 	async wordIsLegal( word ){
 		try {
 			// load word list on server side
-			let addr = 0; // https://github.com/dwyl/english-words 
+			let addr = word_dictionary_endpoint.replace("{{word}}", word);
 			console.log("checking word: ", addr)
 			const response = await fetch(addr);
 			if (response.status == 404) {return false;}
 			else {
 				let jsn = await response.json();
 				//word.meaning = jsn;
-				console.log(jsn);
+				//console.log(jsn);
 				return true;
 			}
 		} catch (error) {
@@ -579,22 +740,37 @@ class GameState {
 	}
 
 	async processWords ( words ) {
-		const result = await Promise.all(words.map(word => this.wordIsLegal(word)));
+		console.log(words);
+		const result = await Promise.all(words.map(word => this.wordIsLegal(word.word)));
 		const allSame = result.every(result => result === true);
 		if (allSame) {
 			console.log("Words are ok!");
+			this.ui.enableSubmitButton();
 		}
 		else {
 			console.log("One or more word is not ok!");
+			this.ui.disableSubmitButton();
 		}
+	}
+
+	submitWord (  ) {
+		this.block_action = true;
+		console.log(this.submittable_word_data);
+		this.socket.emit("played_word", {
+			words : this.submittable_word_data
+		});
+
 	}
 
 	checkWords (  ) {
 		let tilesToCheck = [];
 		for (let i = 0; i < this.ui.hand.length; i++){if (this.ui.hand[i].is_placed){tilesToCheck.push(this.ui.hand[i])}};
-		// validate that any and all tile placements are valid
 		//console.log(tilesToCheck);
-		let primary_word = '';
+
+		let primary_word = new WordProto();
+		primary_word.is_parent_word = true;
+
+
 		let rows = new Set();
 		let cols = new Set();
 		tilesToCheck.forEach(t => {
@@ -602,9 +778,29 @@ class GameState {
 			cols.add(t.position.x);
 		});
 		if (rows.size !== 1  && cols.size !== 1) {return ;}
+
+
 		let is_horiz = rows.size === 1;
-		//console.log(`is horiz: ${is_horiz}`);
+
+		// If both rows and cols are 1 then we need to check for aligned tiles
+		// Because an extension takes precident over a single letter
+
+		if (rows.size === 1 && cols.size === 1)
+		{
+			if (this.board.getSquare([...cols][0], [...rows][0] + 1).containsTile)
+			{
+				is_horiz = false;
+			}
+			else if (this.board.getSquare([...cols][0], [...rows][0] - 1).containsTile)
+			{
+				is_horiz = false;
+			}
+		}
+		
+		//primary_word_data.axis = is_horiz ? "h" : "v";
+		//this counts the tiles played in order to get the word information.
 		if ( is_horiz ) {
+			primary_word.axis = 'h';
 			let row = [...rows][0]; // This is so foul lol
 			// ... is spread (converts iterable to array)
 			// then index 0 ;
@@ -616,91 +812,133 @@ class GameState {
 			for (let col = min_col; col < max_col + 1; col++) {
 				let tile = this.board.grid[row][col].containsTile;
 				//console.log(`Tile ${tile}`);
-				if (tile){primary_word += tile.identity}
+				if (tile){
+					primary_word.append_tile(tile);
+				}
 				else {break};
 			}
+			// Check if tile is superseeding.
+			if (min_col > 0){
+				if (this.board.grid[row][min_col - 1].containsTile){
+					for (let col = min_col - 1; col >= 0; col--) {
+						let t = this.board.grid[row][col].containsTile;
+						if (t) {
+							primary_word.prepend_tile(t);
+						} else {
+							break;
+						}
+					}
+				}
+			}
+			if (max_col < this.board.grid.length - 1) {
+				if (this.board.grid[row][max_col + 1].containsTile) {
+					for (let col = max_col + 1; col < this.board.grid.length; col++) {
+						let t = this.board.grid[row][col].containsTile;
+						if (t) {
+							primary_word.append_tile(t);
+						} else {
+							break;
+						}
+					}
+				}
+			}
 		} else {
+			primary_word.axis = 'v';
 			let col = [...cols][0]; 
 			let rows_to_check = tilesToCheck.map(t => t.position.y);
 			let min_row = Math.min(...rows_to_check);
 			let max_row = Math.max(...rows_to_check);
 			for (let row = min_row; row < max_row + 1; row++) {
 				let tile = this.board.grid[row][col].containsTile;
-				if (tile){primary_word += tile.identity}
+				if (tile){
+					primary_word.append_tile(tile);
+				}
 				else {break};
 			}
+			// Check if tile is superseeding.
+			if (min_row > 0){
+				if (this.board.grid[min_row - 1][col].containsTile){
+					for (let row = min_row - 1; row >= 0; row--) {
+						let t = this.board.grid[row][col].containsTile;
+						if (t) {
+							primary_word.prepend_tile(t);
+						} else {
+							break;
+						}
+					}
+				}
+			}
+			if (max_row < this.board.grid.length - 1) {
+				if (this.board.grid[max_row + 1][col].containsTile) {
+					for (let row = max_row + 1; row < this.board.grid.length; row++) {
+						let t = this.board.grid[row][col].containsTile;
+						if (t) {
+							primary_word.append_tile(t);
+						} else {
+							break;
+						}
+					}
+				}
+			}
 		}
+
 		let words = []
-		console.log(primary_word);
+		//console.log(primary_word);
 		words.push(primary_word);
-
-
 		// Check for adjacent words:
-		this.getAdjacentWords(tilesToCheck, is_horiz).forEach((str) => {
-			words.push(str);
-		});
-
-		console.log(words);
-		// create an async pool to check each word is a word in the dictionary
-		// See dict api: 
-		// https://api.dictionaryapi.dev/api/v2/entries/en/<word>
+		this.getAdjacentWords(tilesToCheck, is_horiz,).forEach(
+			w => 
+			words.push(w)
+		);
+		this.submittable_word_data = words;
 		this.processWords(words);
 	}
 
-	getAdjacentWords( placedTiles, is_horiz ) {
+	getAdjacentWords( placedTiles, is_horiz,) {
 		let words = [];
-		let board = this.board.grid;
-		placedTiles.forEach(({position : {y : r, x: c}, identity: char}) => {
-			// NOTE: if tiles store the words they are part of when places this should be reduced.
-			let adjWord = "";
-			//console.log(`col ${c} and row ${r} with tile ${char}`);
-			if (is_horiz) {
-				let topPart = "";
-				for (let row = r; row >= 0; row--){ // loop UPWARDS from the character to 0;
-					if(board[row][c].containsTile && row !== r){ // this check comes first as it wil occur most often
-						topPart = board[row][c].containsTile.identity + topPart;
-					} else if (row == r) {
-						topPart = char + topPart;
-					} else {
-						break;
-					};
-				};
-				let bottomPart = "";
-				for (let row = r + 1; row < board.length; row++) { // Loop downwards from the square under 0 to max board;
-					if (board[row][c].containsTile) {
-						bottomPart += board[row][c].containsTile.identity
-					} else {
-						break;
+		let tile = null;
+		for (let i = 0; i < placedTiles.length; i++) {
+			let adjword = new WordProto();
+			tile = placedTiles[i];
+			if (is_horiz) { 
+				adjword.axis = 'v';
+				let col = tile.position.x;
+				let start_row = tile.position.y;
+				if (start_row > 0) {
+					for (let row = start_row -1; row >= 0; row--) {
+						if (this.board.grid[row][col].containsTile){
+							adjword.prepend_tile(this.board.grid[row][col].containsTile);
+							// update primary word data
+						} else {break;}
 					}
 				}
-				adjWord = topPart + bottomPart;
-				//console.log(`horiz ${is_horiz} with word ${adjWord}`)
+				for (let row = start_row; row < this.board.grid.length; row++) 
+				{
+					if (this.board.grid[row][col].containsTile){
+						adjword.append_tile(this.board.grid[row][col].containsTile);
+					} else {break;}
+				}
 			} else {
-				let leftPart = "";
-				for (let col = c; col >= 0; col--) { // loop through columns right to left until 0
-					if (board[r][col].containsTile && col !== c) { // this check comes first as it wil occur most often
-						leftPart += board[r][col].containsTile.identity + leftPart;
-					} else if (col === c) {
-						leftPart = char + leftPart;
-					} else {
-						break ;
+				adjword.axis = 'h';
+				let row = tile.position.y;
+				let start_col = tile.position.x;
+				if (start_col > 0) {
+					for (let col = start_col -1; col >= 0; col--) {
+						if (this.board.grid[row][col].containsTile){
+							adjword.prepend_tile(this.board.grid[row][col].containsTile);
+							// update primary word data
+						} else {break;}
 					}
 				}
-				let rightPart = "";
-				for (let col = c + 1; col < board[0].length; col++) { // loop through column left to right from the right of the tile until max board
-					if (board[r][col].containsTile) {
-						rightPart += board[r][col].identity;
-					} else {
-						break ;
-					}
+				for (let col = start_col; col < this.board.grid.length; col++) 
+				{
+					if (this.board.grid[row][col].containsTile){
+						adjword.append_tile(this.board.grid[row][col].containsTile);
+					} else {break;}
 				}
-				adjWord = leftPart + rightPart;
-				//console.log(`horiz ${is_horiz} with word ${adjWord}`)
 			}
-			if (adjWord.length > 1) {
-				words.push(adjWord);
-			}
-		});
+			if (adjword.word !== "" && adjword.word.length > 1){words.push(adjword);};
+		}
 		return words;
 	}
 }

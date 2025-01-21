@@ -2,8 +2,9 @@ from .. import schema
 import random
 from threading import Lock
 from datetime import datetime
+import uuid
 
-class tile():
+class Tile():
 	faces = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"]
 	scores = {
 		'a': 1,
@@ -42,8 +43,14 @@ class tile():
 	}
 
 	vowels = set(["a","e","i","o","u"])
-	def __init__(self, identity):
+
+	tiles_by_uuid = {}
+
+	def __init__(self, identity, owner):
 		assert identity in self.faces
+		self.uuid = uuid.uuid4()
+		self.id = str(self.uuid)
+		self.owner = owner
 		self.identity = identity
 		self.score = self.scores[identity]
 		self.is_vowel = identity in self.vowels
@@ -51,24 +58,33 @@ class tile():
 		self.is_placed = False
 		self.position = None
 		self.is_played = False
+		self.played_word = None
 		self.played_by = None
 		self.played_score = self.score
+		
+		Tile.tiles_by_uuid[str(self.id)] = self
 	
 	def __str__(self):
 		return self.identity
 	
 	def data(self):
 		return {
+			"id" : str(self.id),
 			"identity" : self.identity,
 			"score" : self.score,
 			"pos" : self.position or 'hand',
 			"is_placed" : self.is_placed,
 			"is_played" : self.is_played,
 			"played_by" : self.played_by,
-			"played_score" : self.played_score
+			"played_score" : self.played_score,
+			"played_word" : str(self.played_word.id) if self.played_word else None
 		}
+	
+	@classmethod
+	def get_by_uuid(cls, id):
+		return cls.tiles_by_uuid.get(id, None)
 
-class hand():
+class Hand():
 	def __init__(self, owner : schema.User):
 		self.tiles = []
 		self.score = 0
@@ -81,15 +97,63 @@ class hand():
 			"username" : self.owner.username
 		}
 
-class word():
-	def __init__(self, owner : schema.User, tiles=[], start=[0,0], end = [0,0], score = 0):
-		self.tiles = tiles
-		self.word = [str(t) for t in tiles] or ''
+class Word():
+	words_by_uuid = {}
+	def __init__(self, owner : str, tiles=[], unique_tiles = [], score = 0, axis = None):
+		self.uuid = uuid.uuid4()
+		self.id = str(self.uuid)
+		self.tiles = unique_tiles
+		self.word = ''.join([str(t) for t in tiles]) or ''
 		self.score = 0
 		self.owner = owner
 		self.init_time = datetime.utcnow()
+		self.extends = list(set([(tile.played_word.id if tile.played_word else self.id) for tile in tiles]))
+		self.extends.remove(self.id)
+		self.axis = axis
+		Word.words_by_uuid[str(self.id)] = self
+		for tile in tiles:
+			tile.is_placed = True
+			tile.is_played = True
+			tile.played_by = self.owner
+			tile.played_word = self
 
-class board():
+	def data(self):
+		return {
+			"id" : str(self.id),
+			"word" : self.word,
+			"tiles" : [t.data() for t in self.tiles],
+			"score" : self.score,
+			"owner" : self.owner if self.owner else None,
+			"extends" : self.extends,
+			"axis" : self.axis
+		}
+	
+	@classmethod
+	def validate_axis(cls, tiledata, axis):
+		if not axis in ["h", "v"]:
+			return False
+		x = set()
+		y = set()
+
+		for t in tiledata:
+			p = t["position"]
+			x.add(p["x"])
+			y.add(p["y"])
+		
+		if len(x) != 1 or len(y) != 1:
+			return False
+		
+		is_horiz = True if len(y) == 1 else False
+
+		if is_horiz and axis != "h":
+			return False
+		elif not is_horiz and axis != "v":
+			return False
+		
+		return True
+
+
+class Board():
 	# need some way to remember what tiles are special tiles.
 	def __init__(self, size=15):
 		self.grid_lock = Lock()
@@ -97,7 +161,8 @@ class board():
 		self.size = [size, size]
 		self.words = set()
 		self.special_tiles = self.init_special()
-		self.tile_occurance = {t : 0 for t in tile.faces}
+		self.tile_occurance = {t : 0 for t in Tile.faces}
+		self.played_tiles = set()
 
 	def init_special(self):
 		return []
@@ -113,7 +178,7 @@ class board():
 		
 	def calculate_tile_weigths(self):
 		weights = {}
-		for t, base_freq in tile.base_distribution.items():
+		for t, base_freq in Tile.base_distribution.items():
 			weights[t] = base_freq / (1 + self.tile_occurance[t])
 		return weights
 
@@ -121,12 +186,30 @@ class board():
 		total_weight = sum(weights.values())
 		return {t : weight / total_weight for t, weight in weights.items()}
 
-	def create_new_tile(self):
+	def create_new_tile(self, owner = None):
 		weigths = self.calculate_tile_weigths()
 		prob = self.normailse_tile_weights(weights=weigths)
 		t, probs = zip(*prob.items())
 		identity = random.choices(t, probs)[0]
 		self.tile_occurance[identity] += 1
-		return tile(identity=identity)
+		return Tile(identity=identity, owner=owner)
+	
+	def place_tiles(self, tiles):
+		print(tiles)
+		with self.grid_lock:
+			for tile in tiles:
+				x = tiles[tile].get("x")
+				y = tiles[tile].get("y")
+				if tile.id in self.played_tiles:
+					return False
+				# check there is not already a tile in position
+				if self.grid[x][y] != None:
+					return False
+			for tile in tiles:
+				self.grid[x][y] = tile
+				self.played_tiles.add(tile.id)
+			print(self.grid)
+			return True
+			
 		
 

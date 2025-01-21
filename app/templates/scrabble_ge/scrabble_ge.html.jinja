@@ -1,2 +1,6 @@
 {% set zeta_script = "/static/scripts/word_game/zeta_word_game_2.js"%}
+<script>
+
+const word_dictionary_endpoint = decodeURIComponent('{{ url_for("scrabble_ge.scrabble_validate_word", word="{{word}}") }}');
+</script>
 {% extends "simple_template.html.jinja" %}

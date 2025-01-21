@@ -1,0 +1,7 @@
+-- database: ./word_list.db
+CREATE TABLE words  (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+    word TEXT UNIQUE NOT NULL,
+    definition TEXT
+);
+CREATE INDEX idx_word ON words(word);
