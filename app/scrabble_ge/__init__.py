@@ -173,12 +173,12 @@ class zeta_word_game(zetaSocketIO.zeta):
 		emit("player_state", self.get_player_state(username), to=sid, broadcast=False)
 
 	def on_request_game_state(self, data):
-		print("recieved game state request")
+		# print("recieved game state request")
 		timestamp = None
 		if data.get("timestamp", None):
 			timestamp = data["timestamp"]
 		words = self.board.words_after_timestamp(timestamp)
-		print("sending game state")
+		# print("sending game state")
 		emit("board_state", {
 				"board_size":self.board.size,
 				"special_tiles":list(self.board.special_tile_vector),
@@ -263,14 +263,11 @@ class zeta_word_game(zetaSocketIO.zeta):
 		self.emit("board_resized", {"size":self.board.size, "special_tiles":list(self.board.special_tile_vector)})
 
 	def calculate_score(self, words):
-		print(f"hello world: {words}")
-		print(words)
 		score = 0
 		user = words[0].owner
 		for word in words:
 			word.calculate_score()
 			score += word.score
-		print(score)
 		self.hands[user].score += score
 		self.emit("score_updated", {"username" : user, "score" : self.hands[user].score})
 

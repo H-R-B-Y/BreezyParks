@@ -111,7 +111,7 @@ class Word():
 			tile.played_word = self
 		for tile in self.all_tiles:
 			self.score_mult *= tile.word_mult
-		print(f"word created with score_mult: {self.score_mult}")
+		# print(f"word created with score_mult: {self.score_mult}")
 
 	def data(self):
 		return {
@@ -153,7 +153,7 @@ class Word():
 		tile : Tile
 		for tile in self.all_tiles:
 			tile.played_score = tile.score * tile.tile_mult * self.score_mult
-			print(f"tile {tile.identity} with mult: {tile.tile_mult} with score: {tile.score}")
+			# print(f"tile {tile.identity} with mult: {tile.tile_mult} with score: {tile.score}")
 			score += tile.score * tile.tile_mult
 		score *= self.score_mult
 		self.score = score
@@ -187,7 +187,7 @@ class Board():
 
 	def print_words(self):
 		words = '\n'.join(str(x) for x in self.words)
-		print(words)
+		# print(words)
 
 	def create_tile_special_squares(self, range_min, range_max, max_mult):
 		axis = random.choice(['n','e','s','w'])
@@ -225,7 +225,7 @@ class Board():
 			return self._size
 
 	def words_after_timestamp(self, timestamp):
-		print(self.primaryWords)
+		# print(self.primaryWords)
 		if timestamp:
 			time = datetime.fromtimestamp(timestamp)
 			if time > datetime.utcnow():
@@ -269,7 +269,7 @@ class Board():
 				self.grid[x][y] = tile
 				if self.special_grid[x][y] != None:
 					sp = self.special_grid[x][y]
-					print(sp)
+					# print(sp)
 					if sp[0] == "t":
 						tile.tile_mult = sp[1]
 					elif sp[0] == "w":
@@ -282,7 +282,7 @@ class Board():
 		Please note 1 is 1 on all sides, resulting in a new side length of +2
 		New board is always i * 2 + size
 		"""
-		print(f"incrementing board by {increment}")
+		# print(f"incrementing board by {increment}")
 		new_inc = increment * 2
 		new_size = new_inc + self.size
 		new_board = [[None for _ in range(new_size)] for _ in range(new_size)]

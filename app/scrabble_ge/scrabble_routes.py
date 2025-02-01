@@ -4,6 +4,7 @@ from .. import schema, app, db, socketio, require_admin, require_token
 from flask_login import login_required, current_user
 from datetime import datetime
 from functools import wraps
+from threading import Thread
 import sqlite3
 
 zeta_word_game_namespace_instance = zeta_word_game("/zeta/word_game")
@@ -81,6 +82,49 @@ def scrabble_validate_word(word):
 		return jsonify({"status":"success","message":"Word found","data":{n:d for n,d in zip(["id", "word","definition"], output)}}), 200
 	else:
 		return jsonify({"status":"error","message":"No word found",}), 404
+
+# NOTE: Please move the following to an apporpriate file!
+# region defintions
+def get_endpoint(word):
+	return f"https://api.dictionaryapi.dev/api/v2/entries/en/{word.lower().strip()}"
+
+def get_definitions(response_data):
+	meanings = []
+	try:
+		data = response_data.json()
+		for meaning in data[0]["meanings"]:
+			if len(meaning["definitions"]) > 3:
+				meaning["definitions"] = meaning["definitions"][0:3]
+			for definition in meaning["definitions"]:
+				meanings.append(definition["definition"])
+	except Exception as e:
+		print(f"error {e}")
+		return None
+	return "\n".join(meanings)
+
+def add_definition(cursor, word_id, word, defintion):
+	add_query = """
+	UPDATE words
+	SET definition = ?
+	WHERE id = ? AND word = ?
+	"""
+	cursor.execute(add_query, (defintion, word_id, word))
+
+def attempt_to_get_definition(word_id, word):
+	from requests import get
+	connection = sqlite3.connect(app.config["word_dictionary_path"])
+	cursor = connection.cursor()
+	try:
+		resp = get(get_endpoint(word))
+		if resp.status_code == 200:
+			defintion = get_definitions(resp)
+			if defintion:
+				add_definition(cursor=cursor, word_id=word_id, word=word, defintion=defintion)
+	finally:
+		connection.commit()
+		connection.close()
+	return 
+# endregion
 	
 @scrabble_bp.route("/played_word", methods=["POST"])
 @word_dictionary_connection
@@ -89,7 +133,7 @@ def scrabble_played_word():
 	ns = zeta_word_game_namespace_instance
 	curs : sqlite3.Cursor = scrabble_played_word.dictionary_cursor
 	data = request.get_json()
-	print(data)
+	# print(data)
 	try:
 		words = [ns.WordProto(w) for w in data]
 	except AssertionError as e:
@@ -108,9 +152,11 @@ def scrabble_played_word():
 				if tile.id not in ns.board.played_tiles:
 					return jsonify({"status":"error", "message":"One or more external tile is not played", "word":str(word)})
 		
-		output = curs.execute("SELECT id, word FROM words WHERE word = ?", (word.word,)).fetchone()
+		output = curs.execute("SELECT id, word, definition FROM words WHERE word = ?", (word.word,)).fetchone()
 		if not isinstance(output, tuple):
 			return jsonify({"status":"error", "message":"Word not in dictionary", "word":str(word)})
+		if output[2] == None:
+			Thread(target=attempt_to_get_definition, args=(output[0], output[1])).start()
 
 	if not ns.board.place_tiles({t : primary.new_tile_positions[t.id] for t in primary.new_tiles}):
 		return jsonify({"status":"error", "message":"Board contains tiles in this position", "word":str(primary)})
@@ -128,18 +174,18 @@ def scrabble_played_word():
 	true_min = min(abs(all_max - (ns.board.size - 1)), all_min)
 	true_words = []
 	for word in words:
-		print(word)
+		# print(word)
 		this_word = model.Word(current_user.username, tiles = word.all_tiles, unique_tiles=word.new_tiles)
 		this_word.axis = word.axis 
 		ns.board.words.add(this_word)
 		true_words.append(this_word)
 		if word == primary:
-			print(word)
+			# print(word)
 			primary = this_word
 	ns.board.primaryWords.add(primary)
 	ns.playerTiming[current_user.username] = datetime.utcnow().timestamp()
 		
-	print(f"true min {true_min}")
+	# print(f"true min {true_min}")
 	if true_min < 3:
 		ns.resizeBoard(3 - true_min)
 	
