@@ -12,3 +12,4 @@ extra_data.json
 .env
 run.py
 *__pycache__/
+app/scrabble_ge/data/get_definitions.py

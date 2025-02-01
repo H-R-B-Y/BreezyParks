@@ -1577,14 +1577,14 @@ class GameState {
 		}
 		return words;
 	}
-		//#region DEBUG
-		debugResetTurnTime(username) {
-			game.socket.emit("reset_turn", {"username":username || game.username});
-		}
-		debugForceResize (inc) {
-			game.socket.emit("debug_force_increment", {"inc": inc || 1});
-		}
-		//#endregion
+		// //#region DEBUG
+		// debugResetTurnTime(username) {
+		// 	game.socket.emit("reset_turn", {"username":username || game.username});
+		// }
+		// debugForceResize (inc) {
+		// 	game.socket.emit("debug_force_increment", {"inc": inc || 1});
+		// }
+		// //#endregion
 	
 }
 
