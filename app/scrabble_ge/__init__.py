@@ -2,13 +2,14 @@ from flask import Blueprint, request, jsonify, make_response, render_template
 from .. import schema, app, zetaSocketIO
 from threading import Lock
 from flask_login import login_required, current_user
-from flask_socketio import Namespace, emit
+from flask_socketio import Namespace, emit, disconnect
 from functools import wraps
-from . import model
+
 from requests import get
 from datetime import datetime 
 import uuid
 import sqlite3
+import json
 import os
 
 scrabble_bp = Blueprint("scrabble_ge", __name__)
@@ -30,44 +31,84 @@ def word_dictionary_connection(func):
 	return wrapper
 
 
-
+from . import model
 
 class zeta_word_game(zetaSocketIO.zeta):
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
+
+		self.resetting = False
+		self.err = None
+
 		# parent has active users which contains current players
 		# but we also need to keep track of all players in the game
-		self.totalPlayers = set() 
-
+		self.totalPlayers = set()
 
 		self.board = model.Board()
 		self.hands = {} # in form {user : hand}
+		self.playerTiming = {}
+		self.maxdiscards = 5
+
+	@word_dictionary_connection
+	def reset_game(self):
+		conn : sqlite3.Connection = self.reset_game.dictionary_connection
+		curs : sqlite3.Cursor = self.reset_game.dictionary_cursor
+		part = 0
+		try:
+			self.emit("game_reset", {})
+			self.resetting = True
+			self.disconnect_all()
+			self.reset_ns()
+			part += 1
+	
+			# Save the game state and scores to DB?????
+			state_data = json.dumps(self.board.data(players=list(self.totalPlayers), scores = {n:self.hands[n].score for n in self.hands.keys()}))
+			if state_data:
+				curs.execute(
+					"INSERT INTO games (id, state) VALUES (?, ?)",
+					(self.board.gameid, state_data,)
+				)
+				conn.commit()
+	
+			del(self.totalPlayers)
+			del(self.board)
+			del(self.hands)
+			del(self.playerTiming)
+			part += 1
+	
+			self.totalPlayers = set()
+			self.board = model.Board()
+			self.hands = {}
+			self.playerTiming = {}
+			part += 1
+		except Exception as e:
+			self.err = e
+			print(f"Exception: {e} at part {['ns reset','state flush','state set','ERR'][part]}")
+		finally:
+			self.resetting = False
 
 	def on_connect(self):
 		'''
 		On connect store the sid, the username, and create a lookup value for this sid.
 		Active users and active sids are sets so don't need to worry about duplicates
 		'''
-		# Let users know about ALL USERS IN THE GAME
-		# we then need to send a message stating which are online currently
-		for uName in self.totalPlayers:
-			emit("joined", {"username":uName, "active": uName in self.activeUsers}, to=request.sid, broadcast=False)
+		if self.resetting:
+			disconnect()
 
 		self.activeSids.add(request.sid)
+
 		# Broadcast that new user has joined here.
 		# Add user details to the class (Done after broadcast such that no actions are dispatched
 		# for uninitialised users)
 		if current_user.is_authenticated:
-			# NOTE: This emit IS SENT TO THE USER AS WELL,
-			# this is the key that allows the user to request the board
-			emit("joined", {"username":current_user.username, "x":0, "y":0}, include_self=True, broadcast=True)
+			emit("joined", {"username" : current_user.username, "x":0, "y":0}, include_self=False, broadcast=True)
 			self.activeUsers.add(current_user.username)
 			self.sidLookup[request.sid] = current_user.username
 			self.totalPlayers.add(current_user.username)
 			if current_user.username not in self.hands.keys():
 				self.hands[current_user.username] = model.Hand(current_user)
-				#self.words[current_user.username] = []
+
 		
 	def on_disconnect(self):
 		'''
@@ -76,6 +117,8 @@ class zeta_word_game(zetaSocketIO.zeta):
 		We also need to remove the utser from the active users
 			IF and ONLY IF they have no other active session in his namespace.
 		'''
+		if self.resetting:
+			return
 		# Code that needs to be executed regardless of whether user  still has active sessions or not:
 		if request.sid in self.activeSids:
 			self.activeSids.discard(request.sid)
@@ -93,7 +136,42 @@ class zeta_word_game(zetaSocketIO.zeta):
 	# This was part of the parent class but is no longer needed
 	def on_moved(self, data):
 		return 
-	
+
+	def player_allowed_discard(self, username):
+		start_of_day = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+		hand : model.Hand = self.hands[username]
+		if datetime.fromtimestamp(hand.discardTimestamp) < start_of_day:
+			hand.discardsUsed = 0
+			hand.discardTimestamp = datetime.utcnow().timestamp();
+		if hand.discardsUsed < self.maxdiscards:
+			return True
+		return False
+
+	def player_allowed_turn(self, username):
+		start_of_day = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+		if self.playerTiming.get(current_user.username):
+				if datetime.fromtimestamp(self.playerTiming[current_user.username]) > start_of_day:
+					return False
+		return True
+
+	def get_player_hand(self, username):
+		hand = self.hands[current_user.username]
+		while len(hand.tiles) < 7:
+			hand.tiles.append(self.board.create_new_tile(owner=current_user.username))
+		return hand
+
+	def get_player_state(self, username):
+		return {
+			"username" : username,
+			**self.get_player_hand(username).data(),
+			"allowed_turn" : self.player_allowed_turn(username),
+			"discards_remaining" : self.maxdiscards - self.hands[username].discardsUsed,
+			"allowed_discard" : self.player_allowed_discard(username),
+		}
+
+	def emit_player_state(self, username, sid):
+		emit("player_state", self.get_player_state(username), to=sid, broadcast=False)
+
 	def on_request_game_state(self, data):
 		print("recieved game state request")
 		timestamp = None
@@ -101,15 +179,20 @@ class zeta_word_game(zetaSocketIO.zeta):
 			timestamp = data["timestamp"]
 		words = self.board.words_after_timestamp(timestamp)
 		print("sending game state")
-		emit("board_state", {"board_size":self.board.size, "words_played":[w.data() for w in list(words)], "timestamp":datetime.utcnow().timestamp()}, to=request.sid, broadcast=False)
-		emit("player_state", {"username":current_user.username, **self.hands[current_user.username].data()}, to=request.sid, broadcast=False)
-
+		emit("board_state", {
+				"board_size":self.board.size,
+				"special_tiles":list(self.board.special_tile_vector),
+				"words_played":[w.data() for w in list(words)],
+				"timestamp":datetime.utcnow().timestamp(),
+				"score" : self.hands[current_user.username].score,
+				"max_discards" : self.maxdiscards,
+			}, to=request.sid, broadcast=False)
+		self.emit_player_state(current_user.username, request.sid)
+		# Let users know about ALL USERS IN THE GAME
+		# we then need to send a message stating which are online currently
+		
 	def on_request_hand(self, data = None):
-		# if player doesn't have 7 tiles create new tiles
-		hand = self.hands[current_user.username]
-		while len(hand.tiles)  < 7:
-			hand.tiles.append(self.board.create_new_tile(owner=current_user.username))
-		emit("player_state", {"username":current_user.username, **self.hands[current_user.username].data()}, to=request.sid, broadcast=False)
+		self.emit_player_state(username=current_user.username, sid=request.sid)
 
 	class WordProto ():
 		def __init__ (self, data):
@@ -149,125 +232,47 @@ class zeta_word_game(zetaSocketIO.zeta):
 		def __str__(self):
 			return self.word
 		
-	@word_dictionary_connection
-	def on_played_word(self, data = None):
-		print(data)
-		curs : sqlite3.Cursor = self.on_played_word.dictionary_cursor
-		# words are sent as an array of form:
-		# {
-		#	is_parent_word : true / false
-		#	word : string
-		#	new_tiles : array of UUIDs
-		#	all_tiles : array of UUIDs
-		#	axis : 'h' / 'v'
-		# }
-		try:
-			words = [self.WordProto(dat) for dat in data.get("words")]
-		except AssertionError as e:
-			emit("played_word_response", {"status":"error", "message":"Assertion error (tiles or axis invalid)", "details":str(e)}, to=request.sid, broadcast=False)
+	def on_request_players(self, data=[]):
+		for uName in self.totalPlayers:
+			if uName == current_user.username:
+				continue
+			emit("joined",
+				{"username":uName, "active": uName in self.activeUsers, "score" : self.hands[uName].score},
+				to=request.sid,
+				broadcast=False)
+
+	def on_reset_turn (self, data):
+		if (not current_user.is_authenticated) or (not current_user.is_admin):
 			return
+		if data.get("username"):
+			self.playerTiming[data.get("username")] = None
+			self.emit_player_state(username = data.get("username"), sid=self.all_sids_for_username(data.get("username")))
+		else:
+			self.playerTiming[current_user.username] = None
+			self.emit_player_state(username = current_user.username, sid=request.sid)
 
-		primary = None
-
-		for word in words:
-			if word.is_parent and not primary:
-				primary = word
-			elif primary and word.is_parent:
-				emit("played_word_response", {"status":"error", "message":"Multiple primary words", "word":str(word)}, to=request.sid, broadcast=False)
-				return
-			# Checks that all new tiles placed are part of the users hand.
-			for tile in word.all_tiles:
-				if not tile.is_played:
-					if tile.owner != current_user.username or not tile in self.hands[current_user.username].tiles:
-						emit("played_word_response", {"status":"error", "message":"Played tiles are not thy own", "word":str(word)}, to=request.sid, broadcast=False)
-						return
-				else:
-					if tile.id not in self.board.played_tiles:
-						emit("played_word_response", {"status":"error", "message":"One or more external tile is not played", "word":str(word)}, to=request.sid, broadcast=False)
-						return
-			output = curs.execute("SELECT id, word FROM words WHERE word = ?", (word.word,)).fetchone()
-			if not isinstance(output, tuple):
-				emit("played_word_response", {"status":"error", "message":"Word not in dictionary", "word":str(word)}, to=request.sid, broadcast=False)
-				return
-			
-		if not self.board.place_tiles({t : primary.new_tile_positions[t.id] for t in primary.new_tiles}):
-			emit("played_word_response", {"status":"error", "message":"Board contains tiles in this position", "word":str(primary)}, to=request.sid, broadcast=False)
-			return
-		
-		for tile in primary.new_tiles:
-			tile.position = primary.new_tile_positions[tile.id]
-		
-		this_word = model.Word(current_user.username, tiles=primary.all_tiles, unique_tiles=primary.new_tiles)
-		this_word.axis = primary.axis
-		for tile in primary.new_tiles:
-			self.hands[current_user.username].tiles.remove(tile)
-		
-		self.board.words.add(this_word)
-
-		print(this_word)
-		print(self.hands[current_user.username].tiles)
-		emit("played_word_response", {"status":"success", "message":"Word played", "word":str(primary)}, to=request.sid, broadcast=False)
-		emit("new_word", {"word" : this_word.data()})
+	def on_debug_force_increment(self, data=[]):
+		if current_user.is_authenticated and current_user.is_admin:
+			self.resizeBoard(data.get("increment") or 1)
 		return
 
-"""	@word_dictionary_connection
-	def on_played_word(self, data = None):
-		# need the tiles that were played.
-		# need the words that were created?? 
-		print(data)
-		curs : sqlite3.Cursor = self.on_played_word.dictionary_cursor
-		output = curs.execute("SELECT id, word FROM words WHERE word = ?", (data["word"],)).fetchone()
-		if not isinstance(output, tuple):
-			emit("played_word_response", {"status":"error", "message":"Word not in dictionary", "word":data["word"]}, to=request.sid, broadcast=False)
-			return
-		# validate that all played tiles are users
-		tiles = [model.Tile.get_by_uuid(x.get("uuid")) for x in data.get("tiles")]
-		if not all([tile.owner == current_user.username for tile in tiles]) \
-				or not all([tile in self.hands[current_user.username].tiles for tile in tiles]):
-			
-		# validate tiles are part of word
+	def resizeBoard(self, increment):
+		#  Notify all clients that this may take a while and to block further action
+		# Probably a good idea XD
+		self.board.increment_size(increment=increment)
+		self.emit("board_resized", {"size":self.board.size, "special_tiles":list(self.board.special_tile_vector)})
 
-		model.Word.validate_axis(data.get("tiles"), data.get("axis"))
-
-		for t in tiles:
-			if t.identity not in data.get("word"):
-				emit("played_word_response", {"status":"error", "message":"Played tiles are not part of word", "word":data["word"]}, to=request.sid, broadcast=False)
-				return
-			
-		if not self.board.place_tiles(data.get("tiles")):
-			print("failed to find place on board.")
-			emit("played_word_response", {"status":"error", "message":"Board contains tiles in this position", "word":data["word"]}, to=request.sid, broadcast=False)
-			return
-		
-		this_word = model.Word(current_user.username, tiles)
-
-		for uid in data.get("buildsOn"):
-			if uid not in self.board.played_tiles:
-				emit("played_word_response", {"status":"error", "message":"Building on tiles that are not in play", "word":data["word"]}, to=request.sid, broadcast=False)
-				return 
-
-		for tData in data.get("tiles"):
-			x = tData["position"]["x"]
-			y = tData["position"]["y"]
-			t = model.Tile.get_by_uuid(tData["uuid"])
-			t.position = [x,y]
-
-		if self.words.get(current_user.username, None):
-			self.words[current_user.username].append(this_word)
-		else:
-			self.words[current_user.username] = [this_word]
-		for tile in tiles:
-			self.hands[current_user.username].tiles.remove(tile)
-		self.board.words.add(this_word)
-		print(self.hands)
-		print(self.words)
-		emit("played_word_response", {"status":"success", "message":"Word played", "word":data["word"]}, to=request.sid, broadcast=False)
-		emit("new_word", {"word" : this_word.data()})"""
-		
-
-		
-		
-		
-		
+	def calculate_score(self, words):
+		print(f"hello world: {words}")
+		print(words)
+		score = 0
+		user = words[0].owner
+		for word in words:
+			word.calculate_score()
+			score += word.score
+		print(score)
+		self.hands[user].score += score
+		self.emit("score_updated", {"username" : user, "score" : self.hands[user].score})
 
 from . import scrabble_routes
+

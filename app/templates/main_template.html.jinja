@@ -19,6 +19,7 @@
 	{% if zeta_ver is not defined or zeta_ver == "1" %}
 	<div class="background" style="background:#1f2122;">
 		<canvas id="zetaCanvas" data-userid="{{ current_user.username }}" style="background:#1f2122;display:none;"></canvas>
+		<script src="/static/scripts/zeta_parents/zeta_player.js"></script>
 		{% if zeta_script is not defined%}
 		<script src="/static/scripts/zetaSocketIO.js"></script>
 		{% else %}

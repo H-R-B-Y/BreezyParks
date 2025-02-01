@@ -8,74 +8,37 @@ function prepend_array(array, item) {
 
 // endblock
 
-class Player {
-	constructor(username){
-		this.username = username;
-		this.sprite = null;
-		this.usernameText = null;
-		this.ready = null;
-	}
-
-	loadSprite (drawContainer){
-		this.usernameText = new PIXI.Text({text:this.username, style:{fill:"#fff"}});
-		this.usernameText.anchor.set(0.5,1);
-		
-		fetch('/'+this.username+'/sprite').then(response => {
-			if (!response.ok){throw new Error("Not OK")};
-			return response.json();
-		}).then(async data => {
-			var texture = await PIXI.Assets.load(data.sprite);
-			this.sprite = PIXI.Sprite.from(data.sprite);
-		}).catch(async error => {
-			console.log(error);
-			var texture = await PIXI.Assets.load("/static/images/generichamster.png");
-			this.sprite = PIXI.Sprite.from("/static/images/generichamster.png");
-		}).then(() => {
-			this.sprite.width = 64;
-			this.sprite.height = 64;
-			this.sprite.anchor.set(0.5,0.5);
-			this.setPosition(parseInt(window.innerWidth/2), parseInt(window.innerHeight/2));
-			this.sprite.zindex = 5; // why do we set it to 5?
-			drawContainer.addChild(this.sprite);
-			drawContainer.addChild(this.usernameText);
-			this.ready = true;
-		});
-	}
-	setPosition (x, y) {
-		// this needs to not only set the position of the sprite 
-		// but also the position of the name/anything attached to the player
-		if (this.sprite){
-			this.sprite.x = x;
-			this.sprite.y = y;
-		}
-		if (this.usernameText){
-			this.usernameText.x = x;
-			this.usernameText.y = y - parseInt(this.sprite.height/2);
-		}
-	}
-}
+// Expect player class to be loaded!!
 
 class Grid {
-	constructor(game, parentContainer, gridWidth, gridHeight, squareSize) {
+	constructor(game, parentContainer, gridSize, squareSize) {
 		this.game = game
 
-		this.gridWidth = gridWidth;
-		this.gridHeight = gridHeight;
+		this.gridSize= gridSize;
 		this.squareSize = squareSize;
 
 		this.parentContainer = parentContainer;
 
 		this.grid = []; // 2D array to store squares
 
-
 		this.context = null;
 		
 		this.container = new PIXI.Container({}); // Container for the grid
 		this.container.interactive = true;
 		this.container.on("pointerleave", (() => {this.game.dropContext = null;}).bind(this))
+		this.container.on("wheel", this.onScroll.bind(this));
 
-		this.container.x = (game.app.screen.width / 2) - (squareSize * gridWidth)/2;
-		this.container.y = (game.app.screen.height / 2) - (squareSize * gridHeight)/2;
+		this.dragging = false;
+		this.startpos = {x:0,y:0};
+		this.container.on("pointerdown", this.dragStart.bind(this));
+		this.container.on("pointerup", this.dragEnd.bind(this));
+
+
+		this.offset = {x:0,y:0};
+		this.startOffset = {x:0,y:0};
+		this.scale_dir = 1;
+		this.container.x = (game.app.screen.width / 2) - (squareSize * gridSize)/2;
+		this.container.y = (game.app.screen.height / 2) - (squareSize * gridSize)/2;
 
 		parentContainer.addChild(this.container);
 
@@ -83,43 +46,144 @@ class Grid {
 
 	}
 
+	dragStart (event) {
+		if (!this.dragging && !this.game.holdingTile)
+		{
+			this.dragging = true;
+			this.startpos = {x:event.global.x, y:event.global.y};
+			this.startOffset = {x:this.offset.x, y:this.offset.y};
+			this.container.on("pointermove", this.onDrag.bind(this));
+		}
+	}
+	onDrag (event) {
+		if (this.dragging)
+		{
+			let diff = {x: event.global.x - this.startpos.x, y: event.global.y - this.startpos.y};
+			this.offset.x = this.startOffset.x + diff.x;
+			this.offset.y = this.startOffset.y + diff.y;
+			this.centerGrid();
+		}
+	}
+	dragEnd () {
+		if (this.dragging && !this.game.holdingTile)
+		{
+			this.dragging = false;
+			this.container.off("pointermove");
+		}
+	}
+
+	onScroll (event) {
+		// I have been struggling with trying to get the zoom onto the pointer for so long i give up.
+	
+		let direction = (event.deltaY > 0 ? 1 : -1); // 1 for zooming in, -1 for zooming out
+		let zoomFactor = 0.1;  // Adjust this value for faster/slower zooming
+		
+		// let p1 = {x:this.container.width / 2, y:this.container.height / 2};
+
+		// Calculate new size based on scroll direction
+		let newWidth = this.container.width + direction * zoomFactor * this.container.width;
+		let newHeight = this.container.height + direction * zoomFactor * this.container.height;
+		
+		
+		// Avoid scaling the container to 0 or negative sizes
+		if (newWidth < 10 || newHeight < 10) return;
+		
+		// Resize the container using setSize
+		this.container.setSize(newWidth, newHeight);
+		// let p2 = {x:this.container.width / 2, y:this.container.height / 2};
+
+		// this.offset.x += p1.x - p2.x;
+		// this.offset.y += p1.y - p2.y;
+		this.centerGrid();
+	}
+
+	createSquare (x, y) {
+		const squareContainer = new PIXI.Container();
+		const square = new PIXI.Graphics();
+		square.rect(0, 0, this.squareSize, this.squareSize)
+			.fill("#1f2122")
+			.roundRect(0, 0, this.squareSize, this.squareSize, ((x == (this.gridSize/2 - 0.5)) && (y == (this.gridSize/2 - 0.5)) ? 100 : 0) )
+			.stroke({ color: 0xffffff, pixelLine: true, width: 1 })
+
+		// Set position
+		squareContainer.x = x * this.squareSize;
+		squareContainer.y = y * this.squareSize;
+		square.parentContainer = squareContainer;
+
+		// Store its grid position
+		square.gridPosition = { x, y };
+		square.containsTile = false;
+		square.isSpecial = false;
+
+		// Add event listeners
+		square.interactive = true;
+		square.buttonMode = true;
+		square.on('pointerover', () => this.highlightSquare(square));
+		square.on('pointerout', () => this.unhighlightSquare(square));
+
+		// Add to container and row
+		squareContainer.addChild(square)
+		this.container.addChild(squareContainer);
+		return square
+	}
+
+	moveSquare(square, x, y) {
+		// Move the tile to its new position
+		square.gridPosition = { x, y };
+		square.parentContainer.x = x * this.squareSize;
+		square.parentContainer.y = y * this.squareSize;
+		if (square.containsTile) {
+			square.containsTile.position = { x, y };
+			square.containsTile.setPosition(square.x, square.y);
+		}
+	}
+
 	initGrid() {
-		for (let y = 0; y < this.gridHeight; y++) {
+		for (let y = 0; y < this.gridSize; y++) {this.grid
 			const row = [];
-			for (let x = 0; x < this.gridWidth; x++) {
-				const square = new PIXI.Graphics();
-				square.rect(0, 0, this.squareSize, this.squareSize)
-					.fill("#1f2122")
-					.rect(0, 0, this.squareSize, this.squareSize)
-					.stroke({ color: 0xffffff, pixelLine: false, width: 1 })
-
-				// Set position
-				square.x = x * this.squareSize;
-				square.y = y * this.squareSize;
-				square.parentContainer = this.container;
-
-				// Store its grid position
-				square.gridPosition = { x, y };
-				square.containsTile = false;
-
-				// Add event listeners
-				square.interactive = true;
-				square.buttonMode = true;
-				square.on('pointerover', () => this.highlightSquare(square));
-				square.on('pointerout', () => this.unhighlightSquare(square));
-				square.on('pointerdown', () => this.selectSquare(square));
-
-				// Add to container and row
-				this.container.addChild(square);
-				row.push(square);
+			for (let x = 0; x < this.gridSize; x++) {
+				let sq = this.createSquare(x, y)
+				row.push(sq);
 			}
 			this.grid.push(row);
 		}
 	}
 
+	updateGridSize(newSize) {
+		if (newSize == this.size){return;}
+		// Ensure that game block action is in place!!!!
+		let diff = Math.abs(newSize - this.gridSize);
+		let inc = diff / 2;
+		this.gridSize = newSize;
+
+		let new_grid = [];
+
+		for (let y = 0; y < this.gridSize; y++) {
+			const row = [];
+			for (let x = 0; x < this.gridSize; x++) {
+				// Determine the original grid's new position in the center
+				if (y >= inc && y < this.gridSize - inc && x >= inc && x < this.gridSize - inc) {
+					let oldX = x - inc;
+					let oldY = y - inc;
+					this.moveSquare(this.grid[oldY][oldX], x, y)
+					row.push(this.grid[oldY][oldX]);
+				} else {
+					// Create new squares around the old grid
+					let sq = this.createSquare(x, y);
+					row.push(sq);
+				}
+			}
+			new_grid.push(row);
+		}
+		delete this.grid;
+		this.grid = new_grid;
+		this.centerGrid();
+	}
+
 	highlightSquare(square) {
 		if (this.game.block_action){return};
 		square.tint = 0xAAAAAA; // Highlight color
+		if (square.containsTile && square.containsTile.is_played){return;}
 		this.game.dropContext = square;
 	}
 
@@ -133,9 +197,16 @@ class Grid {
 		square.fill(0xFF0000).rect(0, 0, this.squareSize, this.squareSize); // Change to red
 	}
 
+	getGridSize () {
+		return {
+			x: (this.squareSize * this.gridSize),
+			y: (this.squareSize * this.gridSize)
+		}
+	}
+
 	centerGrid() {
-		this.container.x = (this.game.app.screen.width / 2) - (this.squareSize * this.gridWidth)/2;
-		this.container.y = (this.game.app.screen.height / 2) - (this.squareSize * this.gridHeight)/2;
+		this.container.x = this.offset.x + (((this.game.app.screen.width / 2)) - (this.container.width)/2);
+		this.container.y = this.offset.y + (((this.game.app.screen.height / 2)) - (this.container.width)/2);
 	}
 
 	assignTileToSquare( tile, square ) {
@@ -154,8 +225,22 @@ class Grid {
 
 	getSquare ( x, y ) {
 		if (x < 0 || y < 0){return null;}
-		if (x >= this.grid.size || y >= this.grid.size){return null;}
+		if (x >= this.grid.length || y >= this.grid.length){return null;}
 		return this.grid[y][x];
+	}
+
+	setTileSpecial (data) {
+		let x = data[0];
+		let y = data[1];
+		let t = data[2];
+		let m = data[3];
+		let sq = this.getSquare(x, y);
+		if (sq.isSpecial) {return;}
+		let cont = sq.parentContainer;
+		sq.specialText = new PIXI.Text({text:`${t}x${m}`, style:{fill:"#fff", fontSize: sq.width * 0.5, align: 'center'}});
+		sq.parentContainer.addChild(sq.specialText);
+		sq.specialText.x = (sq.width / 2) - (sq.specialText.width / 2);
+		sq.isSpecial = true;
 	}
 }
 
@@ -182,9 +267,9 @@ class Tile {
 
 		// This section for played tile information sent from server
 			this.is_played = false;
-			this.played_score = false;
+			this.played_score = score;
 			this.played_by = null;
-			self.parentWord = parentWord
+			this.parentWord = parentWord
 		// end 
 
 		this.onSquare = false;
@@ -201,13 +286,18 @@ class Tile {
 			this.text.destroy();
 		}
 		this.graphic = new PIXI.Graphics();
-		this.graphic.rect(0, 0, tileSize, tileSize).fill(color).rect(0, 0, tileSize, tileSize).stroke({ color: 0xffffff, pixelLine: true, width: 1 });
+		this.graphic.roundRect(0, 0, tileSize, tileSize,10).fill(color).roundRect(0, 0, tileSize, tileSize,10).stroke({ color: 0xffffff, pixelLine: true, width: 1 });
 		this.text = new PIXI.Text({text:this.identity || "#err", style:{fill:"#fff", fontSize: tileSize * 0.6, align: 'center'}});
 		this.text.anchor.set(0.5,0.5);
 		this.text.x = this.graphic.width / 2;
 		this.text.y = this.graphic.height / 2;
+		this.subtext = new PIXI.Text({text:`${this.played_score}`, style:{fill:"#fff", fontSize: tileSize * 0.3, align: 'center'}});
+		
+		this.subtext.x += this.subtext.width / 2;
+		this.subtext.y += 2;
 		this.container.addChild(this.graphic);
 		this.container.addChild(this.text);
+		this.container.addChild(this.subtext);
 		
 
 	}
@@ -244,7 +334,6 @@ class Tile {
 	}
 
 	changeParent (newParent) {
-		if (this.game.block_action){return};
 		this.parentContainer.removeChild(this.container);
 		this.parentContainer = newParent;
 		this.parentContainer.addChild(this.container);
@@ -288,6 +377,7 @@ class Tile {
 			this.game.dropContext = what;
 		}
 	}
+
 	addToContext () {
 		if (!this.is_placed && !this.is_played)
 		{this.updateGlobalDropContext(this);}
@@ -295,6 +385,7 @@ class Tile {
 			this.updateGlobalDropContext(null);
 		}
 	}
+
 	removeFromContext () {
 		this.updateGlobalDropContext(null);
 	}
@@ -328,13 +419,15 @@ class Tile {
 		this.setPosition(square.x, square.y);
 		this.position = square.gridPosition;
 		this.onSquare = square;
-	
 	}
 
 	returnToHandOnRightClick () {
 		if (this.game.block_action){return};
 		if (this.onSquare)
 		{
+			this.game.holdingTile = false;
+			this.isPickedUp = false;
+			this.is_placed = false;
 			this.game.removeTileFromGrid( this, this.onSquare);
 			this.game.resetWordCheckerTimer();
 		} else {
@@ -376,19 +469,23 @@ class Word {
 		let t = null;
 		for (let i = 0; i < this.tiledata.length; i++) {
 			t = this.tiledata[i];
-			let newt = new Tile(this.game, this.game.board.container, t.identity, 0, this, t.id);
+			console.log(t);
+			let newt = new Tile(this.game, this.game.board.container, t.identity, t.played_score, this, t.id);
 			newt.is_played = true;
-			newt.played_by = t.owner;
+			newt.played_by = t.played_by;
 			newt.createGraphic(50, 0x252525);
 			let sq = this.game.board.getSquare(t.pos.x, t.pos.y);
+			if (sq.containsTile.is_placed) {
+				this.game.returnTileToHand(sq.containsTile);
+			}
 			newt._placeOnSquare(sq);
 			this.game.board.assignTileToSquare(newt, sq);
 			this.tiles[newt.uuid] = newt;
 		}
-		console.log(this);
+		//console.log(this);
 	}
 }
-
+//#region UI
 class UI {
 	constructor (game, parentContainer) {
 		this.tSize = 50;
@@ -399,27 +496,99 @@ class UI {
 		
 		this.game = game;
 		this.parentContainer = parentContainer;
-
+		
 		this.handContainer = new PIXI.Container();
 		this.handGraphic = new PIXI.Graphics();
 		this.draw_handContainer();
 		this.handContainer.y = game.app.screen.height - this.handGraphic.height;
 		this.handContainer.x = (game.app.screen.width - this.handGraphic.width)/ 2;
+		this.handContainer.addChild(this.handGraphic);
 		
 		this.submitButtonEnabled = false;
-		this.submitButton = new PIXI.Container();
 		this.drawSubmitButton();
-		this.submitButton.y = this.handContainer.y - this.submitButtonGraphic.height;
-		this.submitButton.x = this.handContainer.x + (this.handGraphic.width / 2) - (this.submitButtonGraphic.width / 2);
-
 		
-		this.handContainer.addChild(this.handGraphic);
-		this.parentContainer.addChild(this.submitButton);
+		this.maxDiscards = 0;
+		this.discardsRemaining = 0;
+		this.discardButtonEnabled = true;
+		this.discardContainer = new PIXI.Container();
+		this.discardContainer.interactive = true;
+		this.discardTarget = new PIXI.Graphics();
+		this.discardText = new PIXI.Text();
+		this.drawDiscardTarget();
+
+		this.parentContainer.addChild(this.discardContainer);
 		this.parentContainer.addChild(this.handContainer);
 		this.game.resizeEvents.push(this.onResizeEvent.bind(this));
 	}
 
+	setDiscardContext (event) {
+		if (this.game.holdingTile) {
+			this.game.dropContext = "discard";
+		}
+	}
+
+	unsetDiscardContext (event) {
+		this.game.dropContext = null;
+	}
+
+	disableDiscardButton () {
+		this.discardCountText.text = this.getDicardCountText();
+		if (this.discardButtonEnabled === false){return;}
+		this.discardButtonEnabled = false;
+		console.log("disabling discard button.");
+		this.discardTarget.clear().roundRect(0,0,this.discardText.width,this.discardText.width, 10).fill(0x151515);
+		this.discardContainer.off("pointerenter");
+	}
+
+	enableDiscardButton () {
+		this.discardCountText.text = this.getDicardCountText();
+		if (this.discardButtonEnabled === true){return;}
+		this.discardButtonEnabled = true;
+		console.log("enabling discard button.");
+		this.discardTarget.clear().roundRect(0,0,this.discardText.width,this.discardText.width, 10).fill(0x5f0000);
+		this.discardContainer.on("pointerenter", this.setDiscardContext.bind(this));
+	}
+
+	getDicardCountText( ) {
+		return `${this.discardsRemaining} / ${this.maxDiscards}`;
+	}
+
+	drawDiscardTarget () {
+		this.discardText.text = "Discard";
+		this.discardText.x += 35;
+		this.discardText.y += 5;
+		this.discardText.style.fontSize = 35;
+		this.discardText.rotation = Math.PI / 4;
+		
+		this.discardTarget
+		.roundRect(0,0,this.discardText.width,this.discardText.width, 10)
+		.fill(0x5f0000);
+
+		this.discardCountText = new PIXI.Text({
+			text: this.getDicardCountText(),
+			style: {
+				fontSize: 20,
+			}
+		});
+		
+		this.discardContainer.x = this.game.app.screen.width - (5 + this.discardTarget.width);
+		this.discardContainer.y = this.game.app.screen.height - (5 + this.discardTarget.height);
+		
+		this.discardContainer.addChild(this.discardTarget);
+		this.discardContainer.addChild(this.discardText);
+		this.discardContainer.addChild(this.discardCountText);
+
+		this.discardCountText.y -= this.discardCountText.height;
+		this.discardCountText.x += (this.discardTarget.width / 2) - (this.discardCountText.width / 2);
+
+		this.discardContainer.on("pointerenter", this.setDiscardContext.bind(this));
+		this.discardContainer.on("pointerleave", this.unsetDiscardContext.bind(this));
+	}
+
 	drawSubmitButton () {
+		this.submitButton = new PIXI.Container();
+		this.submitButtondDestroyed = false;
+		this.submitButtonEnabled = false;
 		this.submitButtonGraphic = new PIXI.Graphics();
 		this.submitButtonText = new PIXI.Text(
 			{text:"submit", style:{fill:"#fff", fontSize: 25, align: 'center'}}
@@ -430,21 +599,20 @@ class UI {
 		this.submitButton.addChild(this.submitButtonGraphic);
 		this.submitButton.addChild(this.submitButtonText);
 		this.submitButtonGraphic
-			.rect(0, 0, (this.tMargin * 2) + this.submitButtonText.width, (this.tMargin * 2) + this.submitButton.height).fill(0x252525);
+			.roundRect(0, 0, (this.tMargin * 2) + this.submitButtonText.width, (this.tMargin * 2) + this.submitButton.height,5)
+			.fill(0x252525);
 		//this.submitButtonText.anchor.set(0.5,0.5)
 		this.submitButtonText.x = this.tMargin;
 		this.submitButtonText.y = this.tMargin;
+		this.submitButton.y = this.handContainer.y - this.submitButtonGraphic.height;
+		this.submitButton.x = this.handContainer.x + (this.handGraphic.width / 2) - (this.submitButtonGraphic.width / 2);
+		this.parentContainer.addChild(this.submitButton);
 	}
 
 	draw_handContainer () {
 		this.handGraphic
-			.rect(0, 0, this.tMargin + ((this.tSize + this.tMargin) * 7), this.tMargin * 2 + this.tSize)
+			.roundRect(0, 0, this.tMargin + ((this.tSize + this.tMargin) * 7), this.tMargin * 2 + this.tSize,10)
 			.fill(0xAFAF00)
-	}
-
-	updateScore (score) {
-		// update the score but also make sure to update any text objects.
-		this.score = score;
 	}
 
 	swapTilesInHand (tile, tile2) {
@@ -458,9 +626,16 @@ class UI {
 	updateHand (handData) {
 		// update the hand graphics here.
 		this.handData = handData;
-		console.log(this.handData);
+		//console.log(this.handData);
 		let t = [];
 		if (this.hand.length != 0){
+			let newids = this.handData.map(t => t.id);
+			for (let mytile in this.hand) {
+				if (!newids.includes(this.hand[mytile].uuid))
+				{
+					this.removeTileFromHand(this.hand[mytile]);
+				}
+			}
 			for (let dataTile in this.handData) {
 				let inhand = false;
 				for (let handTile in this.hand) {
@@ -486,53 +661,87 @@ class UI {
 		this.orderTilesInHand();
 	}
 
+	// For exact match
+	removeTileFromHand (tile) {
+		this.hand = this.hand.filter((t) => t !== tile);
+		tile.del();
+	}
+
+	// There should be no duplicates! so this should be ok
+	// Logged to console if above assertion is false
+	removeTilebyId(tileId) {
+		let tile = this.hand.filter((t) => t.uuid === tileId);
+		if (tile.length > 1) {console.error(`Something has gone severly wrong, multiple tiles with ${tileId} exist!`);};
+		this.removeTileFromHand(tile[0]);
+	}
+
+
 	orderTilesInHand () {
-		// NOTE: THIS NEXT !!!!!
-		/*
-			Tiles should be evenly spaced within the hand.
-			and the hand should resize when there are extra tiles in it.
-		*/
-		var x_pos = this.tMargin;
-		for (let i = 0; i < this.hand.length; i++) 
-		{
-			let t = this.hand[i];
-			if (t.is_placed || t.isPickedUp){
-				continue;
-			}
+		let tileToOrder = [];
+		this.hand.forEach((t) => {
+			if (!t.is_placed && !t.isPickedUp){tileToOrder.push(t)};
+		});
+
+		// space to fill 
+		let spaceToFill = this.handGraphic.width - (2 * this.tMargin);
+		let spaceNeeded = (((this.tMargin + this.tSize) * tileToOrder.length) - this.tMargin);
+		let startOffset = (spaceToFill - spaceNeeded) / 2;
+
+		for (let i = 0; i < tileToOrder.length; i++) {
+			let t = tileToOrder[i];
 			if (!t.graphic){t.createGraphic(this.tSize)};
-			t.setPosition(x_pos, this.tMargin);
-			x_pos += this.tSize + this.tMargin;
+			t.setPosition(
+				this.tMargin + startOffset + (i * (this.tMargin + this.tSize)),
+				this.tMargin
+			);
 		}
 	}
 
 	onResizeEvent () {
 		this.handContainer.y = game.app.screen.height - this.handGraphic.height;
 		this.handContainer.x = (game.app.screen.width - this.handGraphic.width)/ 2;
-		this.submitButton.y = this.handContainer.y - this.submitButtonGraphic.height;
-		this.submitButton.x = this.handContainer.x + (this.handGraphic.width / 2) - (this.submitButtonGraphic.width / 2);
+		if(this.submitButtondDestroyed == false)
+		{
+			this.submitButton.y = this.handContainer.y - this.submitButtonGraphic.height;
+			this.submitButton.x = this.handContainer.x + (this.handGraphic.width / 2) - (this.submitButtonGraphic.width / 2);
+		}
+		this.discardContainer.x = this.game.app.screen.width - (5 + this.discardTarget.width);
+		this.discardContainer.y = this.game.app.screen.height - (5 + this.discardTarget.height);
 	}
 
 	enableSubmitButton () {
+		if (this.submitButtondDestroyed){return;}
 		if (this.submitButtonEnabled){return;}
 		this.submitButtonEnabled = true;
+		this.submitButtonGraphic.clear().roundRect(0, 0, (this.tMargin * 2) + this.submitButtonText.width, (this.tMargin * 2) + this.submitButton.height,5).fill(0x005a00);
 		this.submitButton.cursor = 'pointer';
 		this.submitButton.on("pointerup", this.submitButtonPressed.bind(this));
 	}
 
 	submitButtonPressed () {
 		if (!this.submitButtonEnabled){return;}
-		console.log("submitting words!")
+		//console.log("submitting words!")
 		this.game.submitWord();
 	}
 
 	disableSubmitButton () {
+		if (this.submitButtondDestroyed){return;}
 		if (!this.submitButtonEnabled){return;}
 		this.submitButtonEnabled = false;
+		this.submitButtonGraphic.roundRect(0, 0, (this.tMargin * 2) + this.submitButtonText.width, (this.tMargin * 2) + this.submitButton.height,5).fill(0x252525);
 		this.submitButton.cursor = 'not-allowed';
 		this.submitButton.off("pointerup");
 	}
-}
 
+	destroySubmitButton () {
+		this.submitButtondDestroyed = true;
+		this.parentContainer.removeChild(this.submitButton);
+		this.submitButtonGraphic.destroy();
+		this.submitButtonText.destroy();
+		this.submitButton.destroy();
+	}
+}
+//#endregion
 
 class WordProto {
 	constructor (){
@@ -542,6 +751,7 @@ class WordProto {
 		this.new_tiles = [];
 		this.all_tiles = [];
 		this.axis = null;
+		this.all_tile_position = [];
 	}
 
 	append_tile (tile) {
@@ -552,6 +762,7 @@ class WordProto {
 		}
 		this.word = this.word + tile.identity;
 		this.all_tiles.push(tile.uuid);
+		this.all_tile_position.push(tile.position);
 	}
 
 	prepend_tile (tile) {
@@ -562,12 +773,170 @@ class WordProto {
 		}
 		this.word = tile.identity + this.word;
 		this.all_tiles = prepend_array(this.all_tiles, tile.uuid);
+		this.all_tile_position = prepend_array(this.all_tile_position, tile.position);
 	}
 }
 
+class PlayerHalo {
+
+	constructor (game, parentContainer, radius, center) {
+		this.game = game;
+		this.parentContainer = parentContainer; 
+
+		this.players = [];
+		this.usernames = [];
+		this.lookup = {};
+
+		this.radius = radius;
+		this.center = center;
+		this.container = new PIXI.Container();
+
+		this.parentContainer.addChildAt(this.container, 0);
+
+		this.timeoutRefresh = null;
+	}
+
+	addPlayer (username) { 
+		if (this.usernames.includes(username)){return;};
+		this.usernames.push(username);
+		let p = new Player(username);
+		this.players.push(p);
+		this.lookup[username] = p;
+		p.loadSprite(this.container);
+	}
+
+	organisedRefresh () {
+		clearTimeout(this.timeoutRefresh);
+		this.timeoutRefresh = setTimeout(this.orderPlayerHalo.bind(this), 500);
+	}
+
+	orderPlayerHalo () {
+		let inc = (Math.PI * 2) / this.players.length;
+
+		let theta = 0;
+
+
+		for (let i = 0; i < this.players.length; i++) {
+			let x = this.center.x + this.radius * Math.cos(theta);
+			let y = this.center.y + this.radius * Math.sin(theta);
+
+			this.players[i].setPosition(x, y);
+
+			theta += inc;
+		}
+	}
+
+	reCenter () {
+		this.center = {x: window.innerWidth / 2, y: window.innerHeight / 2};
+		this.orderPlayerHalo();
+	}
+}
+
+class scoreRow {
+	constructor (username, score) {
+		this.container  = new PIXI.Container();
+		this.nameText = new PIXI.Text(
+			{text:username + ": ", style:{fill:"#fff", fontSize: 20, align: 'center'}}
+		); 
+		this.scoreText  = new PIXI.Text(
+			{text:score, style:{fill:"#fff", fontSize: 20, align: 'center'}}
+		);
+		this.container.addChild(this.nameText);
+		this.nameText.x += 5;
+		this.container.addChild(this.scoreText);
+		this.scoreText.x = 210 - this.scoreText.width;
+	}
+	del () {
+		this.nameText.destroy();
+		this.scoreText.destroy();
+		this.container.destroy();
+	}
+}
+
+class scoreboard {
+	constructor (game, parentContainer, players) {
+		this.game = game;
+		this.players = players;
+		this.parentContainer = parentContainer;
+
+		this.scoreBoardOpen = false;
+	}
+
+	initialiseDisplay () {
+		this.container = new PIXI.Container();
+		this.container.interactive = true;
+		this.parentContainer.addChild(this.container);
+
+		// at first just display a small tab, add a click event to expand the tab;
+		this.displayBump = new PIXI.Graphics();
+		this.displayBump.interactive = true;
+		this.displayBump.roundRect(0,0,50,window.screen.height/4,5).fill(0x8f8f8f);
+		this.displayBump.x -= 10;
+		this.displayBump.y = window.screen.height / 3;
+		this.container.addChild(this.displayBump);
+		this.displayBumpText = new PIXI.Text(
+			{text:"Scores", style:{fill:"#fff", fontSize: 20, align: 'center'}}
+		)
+		this.displayBumpText.rotation = Math.PI * 1.5;
+		this.displayBumpText.x = 5;
+		this.displayBumpText.y = this.displayBump.y + (this.displayBumpText.width / 2) + (this.displayBump.height / 2);
+		this.container.addChild(this.displayBumpText);
+		this.displayBump.on("mouseup", this.displayScoreBoard.bind(this));
+		this.displayBumpText.interactive = true;
+		this.displayBumpText.on("mouseup", this.displayScoreBoard.bind(this));
+	}
+
+	
+	displayScoreBoard () {
+		if (this.scoreBoardOpen){return;}
+		this.scoreBoardOpen = true;
+		this.scoreBoardBackground = new PIXI.Graphics();
+		let count = this.players.length;
+		let height = (5 + 30 + 5 * count) + 10;
+		this.scoreBoardBackground.rect(0,0,210,height).fill(0x00006a);
+		this.scoreBoardBackground.y = (window.screen.height / 3) + 30;
+		this.container.addChild(this.scoreBoardBackground);
+		let sorted = this.players.slice().sort((a,b) =>  b.score - a.score );
+		this.scores = sorted.map(s => new scoreRow(s.username, s.score || 0));
+		for (let i = 0; i < sorted.length; i++){
+			let s = this.scores[i];
+			this.container.addChild(s.container)
+			s.container.y = this.scoreBoardBackground.y + 5 + (20 * i);
+		}
+		this.closeButton = new PIXI.Graphics();
+		this.closeButton.interactive = true;
+		this.closeButton.rect(0,0,210,30).fill(0x150000);
+		this.closeButton.y = (window.screen.height / 3);
+		this.container.addChild(this.closeButton);
+		this.closeText = new PIXI.Text(
+			{text:"Close", style:{fill:"#fff", fontSize: 20, align: 'center'}}
+		);
+		this.container.addChild(this.closeText);
+		this.closeText.x = this.closeButton.width/2 - this.closeText.width /2;
+		this.closeText.y = (window.screen.height / 3);
+		this.closeButton.on("mouseup", this.closeScoreBoard.bind(this));
+		this.closeText.interactive = true;
+		this.closeText.on("mouseup", this.closeScoreBoard.bind(this));
+		
+	}
+
+	closeScoreBoard () {
+		if (!this.scoreBoardOpen){return;}
+		this.closeButton.destroy();
+		this.closeText.destroy();
+		this.scoreBoardBackground.destroy();
+		for (let i = 0; i < this.players.length; i++) {
+			let s = this.scores[i];
+			s.del();
+		}
+		this.scoreBoardOpen = false;
+	}
+	
+}
 
 class GameState {
 	constructor (namespace, username, canvas) {
+		this.canvas = canvas;
 		this.app = new PIXI.Application();
 		this.app.init({
 			canvas : canvas,
@@ -575,38 +944,44 @@ class GameState {
 			resizeTo : window,
 		});
 
+		this.username = username
+		
 		this.resizeEvents = [];
 		this.gameContainer = new PIXI.Container();
 		this.gameContainer.interactive = true;
 		this.app.stage.addChild(this.gameContainer);
-
+		
 		this.uiContainer = new PIXI.Container();
 		this.app.stage.addChild(this.uiContainer);
-
-		this.currentPlayer = new Player(username);
-		//this.currentPlayer.loadSprite(this.gameContainer); // will just leave the player in the corner for now.
-
-		this.block_action = false;
-
+		
+		this.playerHalo = null;
+		
 		this.words = {};
 		this.ui = null;
 		this.board = null;
-
+		
 		new ResizeObserver(this.onResize.bind(this)).observe(document.documentElement);
 		window.addEventListener("resize", this.onResize.bind(this));
-
+		
 		this.socket = io("/zeta/"+namespace);
 		this.socket_initial_recv = 0;
-
+		
 		this.socket.on("connect", this.onSocketConnected.bind(this));
 		this.socket.on("disconnect", this.onSocketDisconnected.bind(this));
-
+		
 		this.holdingTile = false;
 		this.dropContext = null;
-
+		
+		this.block_action = false;
 		this.wordCheckTimeout = null;
-
 		this.submittable_word_data = null;
+		this.expectingResponse = false;
+	}
+
+	handleSpecialTiles (data) {
+		for (let i = 0; i < data.length; i++) {
+			this.board.setTileSpecial(data[i]);
+		}
 	}
 
 	onUpdateGameState (data) {
@@ -616,39 +991,153 @@ class GameState {
 		}
 
 		if (this.board === null){
-			this.board = new Grid(this, this.gameContainer, data.board_size[0], data.board_size[1], 50);
+			this.board = new Grid(this, this.gameContainer, data.board_size, 50);
 			this.resizeEvents.push(this.board.centerGrid.bind(this.board));
 		}
 		
 		if (this.ui === null){
 			this.ui = new UI(this, this.uiContainer);
+			if (data.max_discards)
+			{
+				this.ui.maxDiscards = data.max_discards;
+			}
+		}
+
+		if (data.special_tiles) {
+			this.handleSpecialTiles(data.special_tiles);
 		}
 
 		if (data.words_played) {
 			this.drawWords(data.words_played);
 		}
 		
-		setTimeout((() => {if (this.ui.hand.length < 7) {this.socket.emit("request_hand", {"timestamp" : null})};}).bind(this), 100);
+		this.callUpdatePlayerState();
+
+		if (this.playerHalo === null) 
+		{
+			this.playerHalo = new PlayerHalo(
+				this, this.gameContainer, 
+				Math.sqrt(Math.pow(this.board.getGridSize().x/2, 2) + Math.pow(this.board.getGridSize().y/2, 2)) + 60,
+				{x: window.innerWidth / 2, y: window.innerHeight / 2}
+			);
+			this.playerHalo.addPlayer(this.username);
+			this.playerHalo.lookup[this.username].score = data.score || 0;
+			this.score = data.score;
+			this.playerHalo.organisedRefresh();
+			this.resizeEvents.push(this.playerHalo.reCenter.bind(this.playerHalo));
+			this.scoreboard = new scoreboard(this, this.uiContainer, this.playerHalo.players);
+			this.scoreboard.initialiseDisplay();
+			this.socket.on("joined", this.onPlayerJoined.bind(this));
+			this.socket.emit("request_players", {});
+		}
+
 	}
 
 	onUpdatePlayerState (data) {
-		if (!data.username || data.username != this.currentPlayer.username){throw new Error("Wrong player data returned from server.")}
+		// This is a different approach to the other functions, 
+		// I really am just testing the water with JS, not sure on the best approach.
+		if (!data.username || data.username != this.username){throw new Error("Wrong player data returned from server.")}
 		if (Object.hasOwn(data, "tiles")){
 			if (this.ui.handData != data.tiles){this.ui.updateHand(data.tiles)};
 		}else{throw new Error("No hand provided")}
-		if (Object.hasOwn(data, "score")){
-			if (this.ui.score != data.score){this.ui.updateScore(data.score)};
-		}else{throw new Error("No Score Provided")}
+		if (Object.hasOwn(data, "allowed_turn")){
+			if (data.allowed_turn === false) {
+				if (this.ui === null) {
+					console.log("Couldn't destory submit button, do something here!")
+				}
+				else {
+					this.ui.destroySubmitButton();
+				}
+			} else {
+				if (this.ui.submitButtondDestroyed)
+				{
+					this.ui.drawSubmitButton();
+				}
+			}
+		} else {console.log("Player state did not contain information about turn state.")}
+		if (Object.hasOwn(data, "allowed_discard") && Object.hasOwn(data, "discards_remaining"))
+		{
+			if (this.ui === null) {
+				console.log("Couldn't destory submit button, do something here!")
+			}
+			else {
+				this.ui.discardsRemaining = data.discards_remaining;
+				if (data.allowed_discard) {
+					this.ui.enableDiscardButton();
+				} else {
+					this.ui.disableDiscardButton();
+				}
+			}
+		}
 	}
 
-	onPlayedWordResponse (data) {
-		console.log(data);
-		if (!this.expectingResponse) {return}
+	async callUpdatePlayerState () {
+		try {
+			const response = await fetch("get_state");
+			if (!response.ok){throw new Error("State was not ok.")}
+			const data = await response.json();
+			if (data.status === "success") { 
+				this.onUpdatePlayerState(data.state);
+			} else {
+				throw new Error("State status was not ok", data);
+			}
+		} catch (error) {
+			console.error(error);
+		}
 	}
 
 	onNewWord (data) {
-		console.log(data);
-		return ;
+		//console.log(data);
+		this.ui.disableDiscardButton();
+		this.drawWords([data.word,]);
+		this.checkWords();
+		if (this.scoreboard.scoreBoardOpen)
+		{
+			this.scoreboard.closeScoreBoard();
+			this.scoreboard.displayScoreBoard();
+		}
+	}
+
+	onPlayerJoined (data) {
+		console.log("joined", data);
+		if (data.username == this.username){return ;}
+		this.playerHalo.addPlayer(data.username);
+		this.playerHalo.lookup[data.username].score = data.score;
+		this.playerHalo.organisedRefresh();
+		if (this.scoreboard.scoreBoardOpen)
+		{
+			this.scoreboard.closeScoreBoard();
+			this.scoreboard.displayScoreBoard();
+		}
+	}
+
+	onUpdateScore (data) {
+		if (!data.username || !this.playerHalo.usernames.includes(data.username)){
+			return;
+		}
+		this.playerHalo.lookup[data.username].score = data.score;
+		console.log(`${data.username} and ${this.username}`);
+		if (data.username == self.username) {
+			this.score = data.score;
+		}
+		if (this.scoreboard.scoreBoardOpen)
+		{
+			this.scoreboard.closeScoreBoard();
+			this.scoreboard.displayScoreBoard();
+		}
+	}
+
+	async onBoardResized (data) {
+		this.block_action = true;
+		this.board.updateGridSize(data.size || this.board.size);
+		this.playerHalo.radius = Math.sqrt(Math.pow(this.board.getGridSize().x/2, 2) + Math.pow(this.board.getGridSize().y/2, 2)) + 60;
+		if(data.special_tiles){this.handleSpecialTiles(data.special_tiles)};
+		this.block_action = false;
+	}
+
+	onResetting (data) {
+		this.resetting = true;
+		console.log("Server is resetting!");
 	}
 
 	onSocketConnected () {
@@ -656,13 +1145,46 @@ class GameState {
 		this.socket_initial_recv = 1;
 		this.socket.on("board_state", this.onUpdateGameState.bind(this));
 		this.socket.on("player_state", this.onUpdatePlayerState.bind(this));
-		this.socket.emit("request_game_state", {"timestamp" : null});
-		this.socket.on("played_word_response", this.onPlayedWordResponse.bind(this));
 		this.socket.on("new_word", this.onNewWord.bind(this));
+		this.socket.on("score_updated", this.onUpdateScore.bind(this));
+		this.socket.emit("request_game_state", {"timestamp" : null});
+		this.socket.on("board_resized", this.onBoardResized.bind(this));
+		this.socket.on("game_reset", this.onResetting.bind(this));
+		window.addEventListener("keydown", this.onKeyboardEvent.bind(this));
+	}
+
+	// Not a great solution but it works for now!
+	async reloadTimout () {
+		this.reloadCount++;
+		const resp = await fetch("state_check");
+		if (!resp.ok){console.error("failed to check game state")}
+		else{
+			const j = await resp.json();
+			if (j.status === "success")
+			{
+				if (j.resetting && this.reloadCount < 5)
+				{
+					setTimeout(this.reloadTimout.bind(this), 2000);
+					return;
+				}
+				else if (j.resetting && this.reloadCount >= 5) {
+					await fetch(`/flashme/${encodeURIComponent("server encountered an error connecting to game")}/error`);
+					window.location.href = "/";
+				} else {
+					window.location.reload();
+				}
+			}
+		}
 	}
 
 	onSocketDisconnected () {
 		console.log("lost connection to socket.")
+		if (this.resetting){
+			this.reloadCount = 0
+			console.log("closing socket");
+			this.socket.close()
+			setTimeout( this.reloadTimout.bind(this), 500);
+		}
 		// should handle safely here or server gets spammed with requests.
 	}
 
@@ -670,17 +1192,37 @@ class GameState {
 		for (let i = 0; i < this.resizeEvents.length; i++) {this.resizeEvents[i]()};
 	}
 
+	// handle it here as the containers cannot get key events it seems?
+	onKeyboardEvent (event) {
+		console.log(event);
+		if (["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","r"].includes(event.key)) {
+			if (event.key === "ArrowLeft") {
+				this.board.offset.x -= this.board.container.width * 0.05;
+			} else if (event.key === "ArrowRight") {
+				this.board.offset.x += this.board.container.width * 0.05;
+			} else if (event.key === "ArrowUp") {
+				this.board.offset.y -= this.board.container.height * 0.05;
+			} else if (event.key === "ArrowDown") {
+				this.board.offset.y += this.board.container.height * 0.05;
+			} else if (event.key === "r"){
+				this.board.offset = {x:0, y:0};
+				this.board.container.setSize(750);
+			}
+			this.board.centerGrid();
+		}
+	}
+
 	drawWords (words) {
 		let word = null;
 		for (let i = 0; i < words.length; i++) {
 			word = words[i];
-			console.log(word);
+			if (this.words[word.id]){continue;}
+			//console.log(word);
 			let neww = new Word(this, word.tiles, word.word, word.id, word.axis, word.owner);
 			this.words[word.id] = neww;
 			neww.drawWord();
 		}
 	}
-
 
 	placeTileOnGrid ( tile, square ) {
 		if (square.containsTile && square.containsTile !== tile) {throw new Error("Square already contains a letter.")}
@@ -689,6 +1231,7 @@ class GameState {
 		this.board.assignTileToSquare( tile, square );
 		tile.placeOnSquare( square );
 	}
+
 	removeTileFromGrid ( tile, square ) {
 		if (!square.containsTile) {throw new Error("Cannot remove tile from empty square.")}
 		this.board.removeTileFromSquare( tile, square );
@@ -697,7 +1240,25 @@ class GameState {
 
 	resetWordCheckerTimer() {
 		clearTimeout(this.wordCheckTimeout);
-		this.wordCheckTimeout = setTimeout(this.checkWords.bind(this), 300);
+		this.wordCheckTimeout = setTimeout(this.checkWords.bind(this), 500);
+	}
+
+	returnTileToHand (tile) {
+		if (tile.onSquare) {
+			this.removeTileFromGrid(tile, tile.onSquare);
+		} else {
+			tile.returnToHand();
+		}
+	}
+
+	returnAllTilesToHand () {
+		for (let i = 0; i < this.ui.hand.length; i++)
+		{
+			let tile = this.ui.hand[i];
+			if (tile.is_placed) {
+				this.returnTileToHand(tile);
+			}
+		}
 	}
 
 	handleTilePlacement ( tile ) {
@@ -705,25 +1266,22 @@ class GameState {
 		var context = this.dropContext;
 		if (context && this.board.grid.some(innerArray => innerArray.some(obj => obj === context))){
 			this.placeTileOnGrid( tile, this.dropContext );
-			this.resetWordCheckerTimer();
 		} else if ( context && this.ui.hand.includes(context) && context.is_placed != true) {
 			if (tile.is_placed){this.removeTileFromGrid( tile, tile.onSquare )};
 			this.ui.swapTilesInHand(tile, context);
+		} else if (context && context === "discard") {
+			this.discardTile(tile);
 		} else {
-			if (tile.onSquare) {
-				this.removeTileFromGrid(tile, tile.onSquare);
-				this.resetWordCheckerTimer();
-			} else {
-				tile.returnToHand();
-			}
+			this.returnTileToHand(tile);
 		}
+		this.resetWordCheckerTimer();
 	}
 
 	async wordIsLegal( word ){
 		try {
 			// load word list on server side
 			let addr = word_dictionary_endpoint.replace("{{word}}", word);
-			console.log("checking word: ", addr)
+			// console.log("checking word: ", addr)
 			const response = await fetch(addr);
 			if (response.status == 404) {return false;}
 			else {
@@ -744,7 +1302,7 @@ class GameState {
 		const result = await Promise.all(words.map(word => this.wordIsLegal(word.word)));
 		const allSame = result.every(result => result === true);
 		if (allSame) {
-			console.log("Words are ok!");
+			// console.log("Words are ok!");
 			this.ui.enableSubmitButton();
 		}
 		else {
@@ -753,19 +1311,70 @@ class GameState {
 		}
 	}
 
-	submitWord (  ) {
+	async discardTile (tile) {
 		this.block_action = true;
-		console.log(this.submittable_word_data);
-		this.socket.emit("played_word", {
-			words : this.submittable_word_data
-		});
+		try {
+			const resp = await fetch(`discard/${encodeURIComponent(tile.uuid)}`);
+			if (resp.ok) {
+				const j = await resp.json();
+				if (j.status === "success") {
+					this.ui.removeTilebyId(tile.uuid);
+				} else {
+					this.block_action = false;
+					this.returnTileToHand(tile);
+					console.error(j.message);
+				}
+			}
 
+		} finally {
+			this.socket.emit("request_hand", {"timestamp" : null});
+			this.block_action = false;
+		}
+	}
+
+	async submitWord (  ) {
+		this.block_action = true;
+		// this is now defunct i believe
+		this.expectingResponse = true;
+		try {
+			const resp = await fetch("played_word", {
+				method : "POST",
+				headers: {
+					"Content-Type": "application/json"  // Specify JSON data format
+				},
+				body : JSON.stringify(this.submittable_word_data)
+			});
+			const data = await resp.json();
+
+			if (data.status === "success") {
+				if (data.word.tiles) {
+					data.word.tiles.forEach((t) => {
+						this.ui.removeTilebyId(t.id);
+					});
+				} else {
+					console.error("Word accepted, no tile data sent from server.");
+				}
+				this.socket.emit("request_hand", {"timestamp" : null});
+				
+			} else {
+				console.error("Submitted word was not accepted: ", data);
+				// return played tiles to hand
+				this.returnAllTilesToHand();
+
+			}
+		} catch (error) {
+			console.log(error);
+		} finally {
+			this.block_action = false;
+			this. expectingResponse = false;
+		}
 	}
 
 	checkWords (  ) {
+		this.ui.disableSubmitButton();
 		let tilesToCheck = [];
 		for (let i = 0; i < this.ui.hand.length; i++){if (this.ui.hand[i].is_placed){tilesToCheck.push(this.ui.hand[i])}};
-		//console.log(tilesToCheck);
+		// console.log(tilesToCheck);
 
 		let primary_word = new WordProto();
 		primary_word.is_parent_word = true;
@@ -787,11 +1396,11 @@ class GameState {
 
 		if (rows.size === 1 && cols.size === 1)
 		{
-			if (this.board.getSquare([...cols][0], [...rows][0] + 1).containsTile)
+			if ([...rows][0] < this.board.gridSize - 1 && this.board.getSquare([...cols][0], [...rows][0] + 1).containsTile)
 			{
 				is_horiz = false;
 			}
-			else if (this.board.getSquare([...cols][0], [...rows][0] - 1).containsTile)
+			else if ([...rows][0] > 0 && this.board.getSquare([...cols][0], [...rows][0] - 1).containsTile)
 			{
 				is_horiz = false;
 			}
@@ -815,7 +1424,7 @@ class GameState {
 				if (tile){
 					primary_word.append_tile(tile);
 				}
-				else {break};
+				else {return};
 			}
 			// Check if tile is superseeding.
 			if (min_col > 0){
@@ -842,6 +1451,9 @@ class GameState {
 					}
 				}
 			}
+			let max_min = (Math.max(...primary_word.all_tile_position.map(s => s.x))
+				- Math.min(...primary_word.all_tile_position.map(s => s.x))) + 1;
+			if (max_min != primary_word.all_tiles.length){return;}
 		} else {
 			primary_word.axis = 'v';
 			let col = [...cols][0]; 
@@ -853,7 +1465,7 @@ class GameState {
 				if (tile){
 					primary_word.append_tile(tile);
 				}
-				else {break};
+				else {return};
 			}
 			// Check if tile is superseeding.
 			if (min_row > 0){
@@ -880,6 +1492,9 @@ class GameState {
 					}
 				}
 			}
+			let max_min = (Math.max(...primary_word.all_tile_position.map(s => s.y))
+				- Math.min(...primary_word.all_tile_position.map(s => s.y))) + 1;
+			if (max_min != primary_word.all_tiles.length){return;}
 		}
 
 		let words = []
@@ -890,6 +1505,27 @@ class GameState {
 			w => 
 			words.push(w)
 		);
+		
+		let validate = false;
+		if (Object.values(this.words).length == 0)
+		{
+			for (let pos in primary_word.all_tile_position)
+			{
+				if (primary_word.all_tile_position[pos].x == (this.board.gridSize / 2) - 0.5 && primary_word.all_tile_position[pos].x == primary_word.all_tile_position[pos].y)
+				{
+					validate = true;
+					break;
+				}
+			}
+			
+		}
+		else {
+			if ((words.length > 1) || (primary_word.new_tiles.length != primary_word.all_tiles.length))
+			{
+				validate = true;
+			}
+		}
+		if (!validate){return};
 		this.submittable_word_data = words;
 		this.processWords(words);
 	}
@@ -941,6 +1577,15 @@ class GameState {
 		}
 		return words;
 	}
+		//#region DEBUG
+		debugResetTurnTime(username) {
+			game.socket.emit("reset_turn", {"username":username || game.username});
+		}
+		debugForceResize (inc) {
+			game.socket.emit("debug_force_increment", {"inc": inc || 1});
+		}
+		//#endregion
+	
 }
 
 var game = null;

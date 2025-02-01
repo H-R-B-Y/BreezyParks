@@ -22,6 +22,21 @@ class zeta(Namespace):
 		self.sidLookup = {} # sid : username lookup
 		super().__init__(*args, **kwargs)
 
+	def disconnect_all(self):
+		for sid in self.activeSids:
+			self.disconnect(sid)
+
+	def reset_ns(self):
+		self.activeSids = set() # sids currently connected
+		self.activeUsers = set() # Users currently connected
+		self.sidLookup = {} # sid : username lookup
+
+	def all_sids_for_username(self, username = ''):
+		output = set()
+		for sid in self.sidLookup:
+			if self.sidLookup[sid] == username:
+				output.add(sid)
+		return list(output)
 
 	def on_connect(self):
 		'''

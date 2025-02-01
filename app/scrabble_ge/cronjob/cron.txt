@@ -1,0 +1,3 @@
+
+# 5 0 * * 1  Runs the command at 00:05 AM every Monday
+5 0 * * 1 <path to reset script>
