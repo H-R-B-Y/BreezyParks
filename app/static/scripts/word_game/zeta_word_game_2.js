@@ -960,7 +960,6 @@ class GameState {
 		this.uiContainer = new PIXI.Container();
 		this.uiContainer.interactive = true;
 		this.uiContainer.eventMode = 'dynamic';
-		this.uiContainer.on("click", () => {console.log("clicked")});
 		this.app.stage.addChild(this.uiContainer);
 		
 		this.playerHalo = null;
@@ -1030,7 +1029,7 @@ class GameState {
 				{x: window.innerWidth / 2, y: window.innerHeight / 2}
 			);
 			this.playerHalo.addPlayer(this.username);
-			this.playerHalo.lookup[this.username].score = data.score || 0;
+			this.playerHalo.lookup[this.username].score = data.score;
 			this.score = data.score;
 			this.playerHalo.organisedRefresh();
 			this.resizeEvents.push(this.playerHalo.reCenter.bind(this.playerHalo));
@@ -1121,6 +1120,7 @@ class GameState {
 	}
 
 	onUpdateScore (data) {
+		console.log("Score updated: ",data);
 		if (!data.username || !this.playerHalo.usernames.includes(data.username)){
 			return;
 		}

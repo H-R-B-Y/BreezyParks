@@ -267,6 +267,7 @@ class Board():
 				y = tiles[tile].get("y")
 				tile.position = tiles[tile]
 				self.grid[x][y] = tile
+				print(f"checking x{x} y{y} for special: {self.special_grid[x][y]} for {tile.identity}")
 				if self.special_grid[x][y] != None:
 					sp = self.special_grid[x][y]
 					# print(sp)
@@ -287,13 +288,15 @@ class Board():
 		new_size = new_inc + self.size
 		new_board = [[None for _ in range(new_size)] for _ in range(new_size)]
 		new_special = [[None for _ in range(new_size)] for _ in range(new_size)]
+		print(self.special_grid)
 		with self.grid_lock:
 			current_board_state = self.grid
 			for x in range(len(current_board_state)):
 				for y in range(len(current_board_state[0])):
+					if self.special_grid[x][y] != None:
+						new_special[increment + x][increment + y] = self.special_grid[x][y]
 					if current_board_state[x][y] != None:
 						new_board[increment + x][increment + y] = current_board_state[x][y]
-						new_special[increment + x][increment + y] = self.special_grid[x][y]
 						if isinstance(current_board_state[x][y], Tile):
 							current_board_state[x][y].position["x"] += increment
 							current_board_state[x][y].position["y"] += increment
@@ -306,6 +309,7 @@ class Board():
 			st[1] += increment
 		[self.create_tile_special_squares((old_size // 2) + 1, new_size // 2, int(3 + self._size / 6)) for i in range(10)]
 		[self.create_word_special_squares((old_size // 2) + 1, new_size // 2, int(3 + self._size / 6)) for i in range(6)]
+		print(self.special_grid)
 		return True
 	
 	def data(self, *args, **kwargs):

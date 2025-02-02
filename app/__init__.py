@@ -103,7 +103,6 @@ def create_db():
 def on_exit(*args, **kwargs):
 	for func, nargs in exit_handlers:
 		func(*nargs)
-		time.sleep(1)
 	sys.exit()
 
 signal.signal(signal.SIGINT, on_exit)  # Handle Ctrl+C
