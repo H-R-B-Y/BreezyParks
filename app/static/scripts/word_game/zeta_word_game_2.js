@@ -1096,7 +1096,7 @@ class GameState {
 
 	onNewWord (data) {
 		//console.log(data);
-		this.ui.disableDiscardButton();
+		// this.ui.disableDiscardButton();
 		this.drawWords([data.word,]);
 		this.checkWords();
 		if (this.scoreboard.scoreBoardOpen)

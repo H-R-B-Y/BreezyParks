@@ -121,12 +121,12 @@ class zeta_word_game(zetaSocketIO.zeta):
 		# Add user details to the class (Done after broadcast such that no actions are dispatched
 		# for uninitialised users)
 		if current_user.is_authenticated:
-			emit("joined", {"username" : current_user.username, "x":0, "y":0}, include_self=False, broadcast=True)
+			if current_user.username not in self.hands.keys():
+				self.hands[current_user.username] = model.Hand(current_user)
 			self.activeUsers.add(current_user.username)
 			self.sidLookup[request.sid] = current_user.username
 			self.totalPlayers.add(current_user.username)
-			if current_user.username not in self.hands.keys():
-				self.hands[current_user.username] = model.Hand(current_user)
+			emit("joined", {"username":current_user.username, "active": True, "score" : self.hands[current_user.username].score}, include_self=False, broadcast=True)
 
 		
 	def on_disconnect(self):

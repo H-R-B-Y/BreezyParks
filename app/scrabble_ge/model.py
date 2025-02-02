@@ -104,12 +104,12 @@ class Word():
 			self.extends.remove(self.id)
 		self.axis = axis
 		Word.words_by_uuid[str(self.id)] = self
-		for tile in tiles:
+		for tile in unique_tiles:
 			tile.is_placed = True
 			tile.is_played = True
 			tile.played_by = self.owner
 			tile.played_word = self
-		for tile in self.all_tiles:
+		for tile in self.tiles:
 			self.score_mult *= tile.word_mult
 		# print(f"word created with score_mult: {self.score_mult}")
 
@@ -151,11 +151,15 @@ class Word():
 	def calculate_score (self):
 		score = 0
 		tile : Tile
-		for tile in self.all_tiles:
+		for tile in self.tiles:
 			tile.played_score = tile.score * tile.tile_mult * self.score_mult
-			# print(f"tile {tile.identity} with mult: {tile.tile_mult} with score: {tile.score}")
-			score += tile.score * tile.tile_mult
-		score *= self.score_mult
+		for tile in self.all_tiles:
+			if tile in self.tiles:
+				score += tile.played_score
+			else:
+				score += tile.played_score * self.score_mult
+				tile.played_score *= self.score_mult
+		# score *= self.score_mult
 		self.score = score
 
 	def __repr__ (self):
