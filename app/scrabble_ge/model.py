@@ -288,7 +288,6 @@ class Board():
 		new_size = new_inc + self.size
 		new_board = [[None for _ in range(new_size)] for _ in range(new_size)]
 		new_special = [[None for _ in range(new_size)] for _ in range(new_size)]
-		print(self.special_grid)
 		with self.grid_lock:
 			current_board_state = self.grid
 			for x in range(len(current_board_state)):
@@ -309,7 +308,6 @@ class Board():
 			st[1] += increment
 		[self.create_tile_special_squares((old_size // 2) + 1, new_size // 2, int(3 + self._size / 6)) for i in range(10)]
 		[self.create_word_special_squares((old_size // 2) + 1, new_size // 2, int(3 + self._size / 6)) for i in range(6)]
-		print(self.special_grid)
 		return True
 	
 	def data(self, *args, **kwargs):
