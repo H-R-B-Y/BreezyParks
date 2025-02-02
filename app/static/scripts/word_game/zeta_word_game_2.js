@@ -25,11 +25,13 @@ class Grid {
 		
 		this.container = new PIXI.Container({}); // Container for the grid
 		this.container.interactive = true;
-		this.container.on("pointerleave", (() => {this.game.dropContext = null;}).bind(this))
+		this.container.eventMode = 'dynamic';
+		this.container.on("pointerleave", (() => {this.game.dropContext = null;this.dragging=false;}).bind(this))
 		this.container.on("wheel", this.onScroll.bind(this));
 
 		this.dragging = false;
 		this.startpos = {x:0,y:0};
+		this.container.eventMode = 'dynamic';
 		this.container.on("pointerdown", this.dragStart.bind(this));
 		this.container.on("pointerup", this.dragEnd.bind(this));
 
@@ -255,6 +257,7 @@ class Tile {
 
 		this.container = new PIXI.Container();
 		this.container.interactive = true;
+		this.container.eventMode = 'dynamic';
 
 		this.graphic = null;
 		this.text = null;
@@ -939,6 +942,7 @@ class GameState {
 		this.canvas = canvas;
 		this.app = new PIXI.Application();
 		this.app.init({
+			eventMode : 'dynamic',
 			canvas : canvas,
 			background :  0x1F2122,
 			resizeTo : window,
@@ -949,9 +953,13 @@ class GameState {
 		this.resizeEvents = [];
 		this.gameContainer = new PIXI.Container();
 		this.gameContainer.interactive = true;
+		this.gameContainer.eventMode = 'dynamic';
 		this.app.stage.addChild(this.gameContainer);
 		
 		this.uiContainer = new PIXI.Container();
+		this.uiContainer.interactive = true;
+		this.uiContainer.eventMode = 'dynamic';
+		this.uiContainer.on("click", () => {console.log("clicked")});
 		this.app.stage.addChild(this.uiContainer);
 		
 		this.playerHalo = null;
