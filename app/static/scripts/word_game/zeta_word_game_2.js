@@ -895,8 +895,7 @@ class scoreboard {
 		this.scoreBoardOpen = true;
 		this.scoreBoardBackground = new PIXI.Graphics();
 		let count = this.players.length;
-		let height = (5 + 30 + 5 * count) + 10;
-		this.scoreBoardBackground.rect(0,0,210,height).fill(0x00006a);
+		let height = 10;
 		this.scoreBoardBackground.y = (window.screen.height / 3) + 30;
 		this.container.addChild(this.scoreBoardBackground);
 		let sorted = this.players.slice().sort((a,b) =>  b.score - a.score );
@@ -905,7 +904,9 @@ class scoreboard {
 			let s = this.scores[i];
 			this.container.addChild(s.container)
 			s.container.y = this.scoreBoardBackground.y + 5 + (20 * i);
+			height += s.container.height;
 		}
+		this.scoreBoardBackground.rect(0,0,210,height).fill(0x00006a);
 		this.closeButton = new PIXI.Graphics();
 		this.closeButton.interactive = true;
 		this.closeButton.rect(0,0,210,30).fill(0x150000);
@@ -925,14 +926,14 @@ class scoreboard {
 
 	closeScoreBoard () {
 		if (!this.scoreBoardOpen){return;}
+		this.scoreBoardOpen = false;
 		this.closeButton.destroy();
 		this.closeText.destroy();
 		this.scoreBoardBackground.destroy();
-		for (let i = 0; i < this.players.length; i++) {
+		for (let i = 0; i < this.scores.length; i++) {
 			let s = this.scores[i];
 			s.del();
 		}
-		this.scoreBoardOpen = false;
 	}
 	
 }
