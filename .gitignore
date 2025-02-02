@@ -13,3 +13,4 @@ extra_data.json
 run.py
 *__pycache__/
 app/scrabble_ge/data/get_definitions.py
+*word_list.db
