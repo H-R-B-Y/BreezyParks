@@ -224,3 +224,13 @@ def api_v1_user_ban_user(id):
 	user.is_banned = not user.is_banned
 	schema.db.session.commit()
 	return _add_api_version_header((jsonify({"status":"success", "message":"User ban toggled", "banned": True if user.is_banned else False, "version":1}), 200))
+
+@api_v1_bp.route("/user/<int:id>/toggle_debug", methods=["POST"])
+@require_admin
+def api_v1_user_toggle_debug_user(id):
+	user = schema.User.query.filter_by(id = id).first()
+	if not user:
+		return jsonify({"status":"error", "message":"User not found", "version":1}), 404
+	user.is_debug = not user.is_debug
+	schema.db.session.commit()
+	return _add_api_version_header((jsonify({"status":"success", "message":"User debug toggled", "is_debug": True if user.is_debug else False, "version":1}), 200))

@@ -28,6 +28,7 @@ class User(UserMixin, db.Model):
 		is_banned = "${user.is_banned}"
 		can_comment = "${user.can_comment}"
 		wilt_enabled = "${user.wilt_enabled}"
+		is_debug = "${user.is_debug}"
 
 	__tablename__ = 'users'
 
@@ -45,6 +46,7 @@ class User(UserMixin, db.Model):
 	is_banned = db.Column(Boolean, default=False)
 	can_comment = db.Column(Boolean, default=True)
 	wilt_enabled = db.Column(Boolean, default=False)
+	is_debug = db.Column(Boolean, default=False)
 
 	likes = db.relationship("Like", back_populates="user", cascade="all, delete-orphan")
 	comments = db.relationship("Comment", back_populates="user", cascade="all, delete-orphan")

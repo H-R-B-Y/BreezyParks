@@ -1,15 +1,15 @@
 from flask import Blueprint, request, jsonify, make_response, render_template, flash
-from . import scrabble_bp, zeta_word_game, word_dictionary_connection, model
-from .. import schema, app, db, socketio, require_admin, require_token
+from . import scrabble_bp, zeta_word_game, word_dictionary_connection, model, zeta_word_game_namespace_instance
+from .. import schema, app, db, socketio, require_admin, require_token, exit_handlers
 from flask_login import login_required, current_user
 from datetime import datetime
 from functools import wraps
 from threading import Thread
 import sqlite3
 
-zeta_word_game_namespace_instance = zeta_word_game("/zeta/word_game")
-socketio.on_namespace(zeta_word_game_namespace_instance)
+
 @scrabble_bp.route("/")
+@login_required
 def scrabble_index():
 	return render_template("scrabble_ge/scrabble_ge.html.jinja")
 
@@ -102,25 +102,35 @@ def get_definitions(response_data):
 		return None
 	return "\n".join(meanings)
 
-def add_definition(cursor, word_id, word, defintion):
+def add_definition(cursor, word_data, defintion):
 	add_query = """
 	UPDATE words
 	SET definition = ?
 	WHERE id = ? AND word = ?
 	"""
-	cursor.execute(add_query, (defintion, word_id, word))
+	cursor.execute(add_query, (defintion, word_data[0], word_data[1]))
 
-def attempt_to_get_definition(word_id, word):
+def toggle_definition_polled(cursor, word_data):
+	toggle_query = """
+	UPDATE words
+	SET definition_polled = ?
+	WHERE id = ? AND word = ?
+	"""
+	cursor.execute(toggle_query, ((1 if word_data[3] == 0 else 0), word_data[0], word_data[1]))
+	return (1 if word_data[3] == 0 else 0)
+
+def attempt_to_get_definition(word_data):
 	from requests import get
 	connection = sqlite3.connect(app.config["word_dictionary_path"])
 	cursor = connection.cursor()
 	try:
-		resp = get(get_endpoint(word))
+		resp = get(get_endpoint(word_data[1]))
 		if resp.status_code == 200:
 			defintion = get_definitions(resp)
 			if defintion:
-				add_definition(cursor=cursor, word_id=word_id, word=word, defintion=defintion)
+				add_definition(cursor=cursor, word_data=word_data, defintion=defintion)
 	finally:
+		toggle_definition_polled(cursor=cursor, word_data=word_data)
 		connection.commit()
 		connection.close()
 	return 
@@ -152,11 +162,11 @@ def scrabble_played_word():
 				if tile.id not in ns.board.played_tiles:
 					return jsonify({"status":"error", "message":"One or more external tile is not played", "word":str(word)})
 		
-		output = curs.execute("SELECT id, word, definition FROM words WHERE word = ?", (word.word,)).fetchone()
+		output = curs.execute("SELECT id, word, definition, definition_polled FROM words WHERE word = ?", (word.word,)).fetchone()
 		if not isinstance(output, tuple):
 			return jsonify({"status":"error", "message":"Word not in dictionary", "word":str(word)})
-		if output[2] == None:
-			Thread(target=attempt_to_get_definition, args=(output[0], output[1])).start()
+		if output[2] == None and output[3] == 0:
+			Thread(target=attempt_to_get_definition, args=(output,)).start()
 
 	if not ns.board.place_tiles({t : primary.new_tile_positions[t.id] for t in primary.new_tiles}):
 		return jsonify({"status":"error", "message":"Board contains tiles in this position", "word":str(primary)})

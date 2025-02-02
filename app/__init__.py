@@ -1,4 +1,4 @@
-import os, json
+import os, json, signal, sys, time
 from dotenv import load_dotenv, set_key
 from flask import Flask, request, abort, jsonify, redirect, render_template, Response, flash
 from flask_sqlalchemy import SQLAlchemy
@@ -47,6 +47,9 @@ socketio = SocketIO(app)
 
 loginman = LoginManager(app)
 
+# in the form [(func, (args,)), ]
+exit_handlers = []
+
 from app import schema
 
 # Need to double check this later.
@@ -93,6 +96,20 @@ def create_db():
 		db.create_all()
 	else:
 		print("Not in development mode, not creating database.")
+
+
+
+# exit handlers:
+def on_exit(*args, **kwargs):
+	for func, nargs in exit_handlers:
+		func(*nargs)
+		time.sleep(1)
+	sys.exit()
+
+signal.signal(signal.SIGINT, on_exit)  # Handle Ctrl+C
+
+
+#
 
 
 # should probably move this stuff into its own file but whatever
@@ -192,6 +209,6 @@ from app import spotify_stuff
 
 app.register_blueprint(spotify_stuff.spotify_routes, url_prefix="/spotify")
 
-if app.config["ENVIRONMENT_NAME"] != "production":
-	from app import scrabble_ge
-	app.register_blueprint(scrabble_ge.scrabble_bp, url_prefix="/word_game")
+
+from app import scrabble_ge
+app.register_blueprint(scrabble_ge.scrabble_bp, url_prefix="/word_game")

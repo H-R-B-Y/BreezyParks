@@ -95,6 +95,26 @@
 		</div>
 	</div>
 
+	<div id="is-debug-header-container" class="w3-border-bottom w3-margin-bottom">
+		<div class="w3-cell-row" onclick="unfold_something('is-debug-accordian')">
+			<div class="w3-cell">Is debug: </div>
+			<div id="is-debug-text" class="w3-cell w3-right-align">{% if user.is_debug %}Yes.{% else %}No.{% endif %}</div>
+		</div>
+
+		<div id="is-debug-accordian" style="max-width:200px;" class="w3-auto w3-center w3-hide">
+			<a href="javascript:toggle_debug();"
+			class="w3-button w3-margin-top">
+				<div id="is-debug-button" class="my-hover-lilac">
+				{% if user.is_debug %}
+					Set non-debug user
+				{% else %}
+					Set debug user
+				{% endif %}
+				</div>
+			</a>
+		</div>
+	</div>
+
 	<div id="banned-header-container" class="w3-border-bottom w3-margin-bottom">
 		<div id="user-banned-header" class="w3-cell-row" onclick="unfold_something('banned-info-accordian')">
 			<div class="w3-cell">Banned: </div>
@@ -191,5 +211,29 @@
 			console.error("Error banning user: ", error);
 		}
 	}
+
+	async function toggle_debug()
+	{
+		const user_id = {{ user.id }};
+		try {
+			const response = await fetch("{{ url_for('api_v1.api_v1_user_toggle_debug_user', id=user.id) }}", {
+				method: "POST"
+			});
+			if (!response.ok)
+			{
+				throw new Error("Error toggling debug for user: ", response);
+			}
+			const data = await response.json();
+			console.log(data);
+			if (data.status === "success")
+			{
+				document.getElementById("is-debug-button").innerText = data.is_debug ? "Set non-debug user" : "Set debug user";
+				document.getElementById("is-debug-text").innerText = data.is_debug ? "Yes." : "No.";
+			}
+		} catch (error) {
+			console.error("Error toggling debug user: ", error);
+		}
+	}
+
 </script>
 {% endif %}

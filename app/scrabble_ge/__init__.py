@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, make_response, render_template
-from .. import schema, app, zetaSocketIO
+from .. import schema, app, zetaSocketIO, exit_handlers, socketio
+
 from threading import Lock
 from flask_login import login_required, current_user
 from flask_socketio import Namespace, emit, disconnect
@@ -12,8 +13,17 @@ import sqlite3
 import json
 import os
 
+
 scrabble_bp = Blueprint("scrabble_ge", __name__)
 app.config["word_dictionary_path"] = os.getenv("WORD_DICTIONARY_PATH")
+
+
+
+@scrabble_bp.before_request
+def enforce_debug():
+	if not current_user.is_authenticated or not current_user.is_debug:
+		return render_template("default_error.html.jinja", status_code = 403, message = "Unauthorized"), 403
+
 
 def word_dictionary_connection(func):
 	@wraps(func)
@@ -51,9 +61,25 @@ class zeta_word_game(zetaSocketIO.zeta):
 		self.maxdiscards = 5
 
 	@word_dictionary_connection
+	def save_game_state(self,):
+		conn : sqlite3.Connection = self.save_game_state.dictionary_connection
+		curs : sqlite3.Cursor = self.save_game_state.dictionary_cursor
+		# Save the game state and scores to DB?????
+		if len(self.board.words) == 0:
+			return
+		state_data = json.dumps(self.board.data(players=list(self.totalPlayers), scores = {n:self.hands[n].score for n in self.hands.keys()}))
+		try:
+			if state_data:
+				curs.execute(
+					"INSERT OR REPLACE INTO games (id, state, started_at, ended_at) VALUES (?, ?, ?, ?)",
+					(self.board.gameid, state_data, datetime.fromtimestamp(self.board.starttime), datetime.utcnow(),)
+				)
+				conn.commit()
+				conn.close()
+		except Exception as e:
+			print(f"error saving game {self.board.id}: {e}")
+
 	def reset_game(self):
-		conn : sqlite3.Connection = self.reset_game.dictionary_connection
-		curs : sqlite3.Cursor = self.reset_game.dictionary_cursor
 		part = 0
 		try:
 			self.emit("game_reset", {})
@@ -62,14 +88,7 @@ class zeta_word_game(zetaSocketIO.zeta):
 			self.reset_ns()
 			part += 1
 	
-			# Save the game state and scores to DB?????
-			state_data = json.dumps(self.board.data(players=list(self.totalPlayers), scores = {n:self.hands[n].score for n in self.hands.keys()}))
-			if state_data:
-				curs.execute(
-					"INSERT INTO games (id, state) VALUES (?, ?)",
-					(self.board.gameid, state_data,)
-				)
-				conn.commit()
+			self.save_game_state()
 	
 			del(self.totalPlayers)
 			del(self.board)
@@ -271,5 +290,11 @@ class zeta_word_game(zetaSocketIO.zeta):
 		self.hands[user].score += score
 		self.emit("score_updated", {"username" : user, "score" : self.hands[user].score})
 
-from . import scrabble_routes
 
+zeta_word_game_namespace_instance = zeta_word_game("/zeta/word_game")
+socketio.on_namespace(zeta_word_game_namespace_instance)
+exit_handlers.append(
+	(zeta_word_game_namespace_instance.save_game_state, ())
+)
+
+from . import scrabble_routes
