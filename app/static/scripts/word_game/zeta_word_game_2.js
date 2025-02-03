@@ -1349,12 +1349,13 @@ class GameState {
 	}
 
 	colourWords () {
-		if (!this.playerHalo){this.colourWordsTimeout(); return;}
+		if (!this.playerHalo.lookup){this.colourWordsTimeout(); return;}
 		let word = null;
 		let parent = null;
 		for (let i in this.words) {
 			word = this.words[i];
 			parent = word.owner;
+			if (!this.playerHalo.lookup[word.owner]){this.colourWordsTimeout(); return;}
 			if (!this.playerHalo.lookup[word.owner].colour){continue;}
 			for (let key in word.tiles)
 			{
@@ -1371,7 +1372,7 @@ class GameState {
 		clearTimeout(this.colourTimer);
 		this.colourTimer = setTimeout(
 			this.colourWords.bind(this),
-			100
+			300
 		)
 	}
 
