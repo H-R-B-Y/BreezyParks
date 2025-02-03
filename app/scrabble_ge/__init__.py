@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, make_response, render_template
-from .. import schema, app, zetaSocketIO, exit_handlers, socketio
+from .. import schema, app, zetaSocketIO, exit_handlers, socketio, get_auth_token_from_header, check_auth_token
 
 from threading import Lock
 from flask_login import login_required, current_user
@@ -18,12 +18,13 @@ scrabble_bp = Blueprint("scrabble_ge", __name__)
 app.config["word_dictionary_path"] = os.getenv("WORD_DICTIONARY_PATH")
 
 
-
 @scrabble_bp.before_request
 def enforce_debug():
-	if not current_user.is_authenticated or not current_user.is_debug:
+	auth_token = get_auth_token_from_header()
+	if auth_token and check_auth_token(auth_token):
+		return
+	elif not current_user.is_authenticated or not current_user.is_debug:
 		return render_template("default_error.html.jinja", status_code = 403, message = "Unauthorized"), 403
-
 
 def word_dictionary_connection(func):
 	@wraps(func)
@@ -126,7 +127,7 @@ class zeta_word_game(zetaSocketIO.zeta):
 			self.activeUsers.add(current_user.username)
 			self.sidLookup[request.sid] = current_user.username
 			self.totalPlayers.add(current_user.username)
-			emit("joined", {"username":current_user.username, "active": True, "score" : self.hands[current_user.username].score}, include_self=False, broadcast=True)
+			emit("joined", {"username":current_user.username, "active": True, "score" : self.hands[current_user.username].score, "colour" : current_user.fav_colour}, include_self=False, broadcast=True)
 
 		
 	def on_disconnect(self):
@@ -205,6 +206,7 @@ class zeta_word_game(zetaSocketIO.zeta):
 				"timestamp":datetime.utcnow().timestamp(),
 				"score" : self.hands[current_user.username].score,
 				"max_discards" : self.maxdiscards,
+				"colour" : current_user.fav_colour,
 			}, to=request.sid, broadcast=False)
 		self.emit_player_state(current_user.username, request.sid)
 		# Let users know about ALL USERS IN THE GAME
@@ -255,8 +257,11 @@ class zeta_word_game(zetaSocketIO.zeta):
 		for uName in self.totalPlayers:
 			if uName == current_user.username:
 				continue
-			emit("joined",
-				{"username":uName, "active": uName in self.activeUsers, "score" : self.hands[uName].score},
+			emit("joined", {"username":uName,
+	 				"active": uName in self.activeUsers,
+					"score" : self.hands[uName].score,
+					"colour" : schema.User.get_user_by_name(uName).fav_colour
+				},
 				to=request.sid,
 				broadcast=False)
 

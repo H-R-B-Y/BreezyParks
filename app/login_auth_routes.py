@@ -118,6 +118,18 @@ def update_profile():
 	# Render the update form for GET requests
 	return render_template("edit_profile.html.jinja")
 
+@app.route("/profile/set_colour", methods=["POST"])
+@login_required
+def set_user_colour():
+	data = request.get_json()
+	if data is None or data.get("colour") is None:
+		return jsonify({"status":"error", "message":"no data provided"}), 200 # should really be user error
+	# some form of validation here would be nice!
+	current_user.fav_colour = int(data.get("colour").lstrip('#'), 16)
+	db.session.commit()
+	return jsonify({"status":"success", "message":"set fav colour"}), 200 
+
+
 # @app.route('/<string:username>/sprite', methods=["GET"])
 # def get_user_sprite_username (username:str):
 # 	user = User.get_user_by_name(username)

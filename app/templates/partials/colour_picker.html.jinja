@@ -1,0 +1,38 @@
+
+<script>
+function getColourFromValue (colourValue) {
+	return `#${colourValue.toString(16).padStart(6, '0')}`;
+}
+</script>
+<div id="colour-picker{% if colour_picker_id is defined %}-{{colour_picker_id}}{%endif%}" class="w3-cell-row w3-auto">
+	<div class="w3-cell w3-card w3-padding" style="border-radius:15px;">
+		<div class="w3-border-bottom w3-margin-bottom">
+		{% if colour_picker_text is defined %}
+			{{ colour_picker_text }}
+		{% else %}
+			Pick a colour:
+		{% endif %}
+		</div>
+		<div id="colour-picker-inner{% if colour_picker_id is defined %}-{{colour_picker_id}}{%endif%}"
+		class="w3-auto w3-margin w3-center">
+			<input type="color" 
+			id="colour-picker-input{% if colour_picker_id is defined %}-{{colour_picker_id}}{%endif%}" 
+			style="width:50%"
+			{%if colour_picker_default_value is defined %}value="{{colour_picker_default_value}}"{%endif%}>
+		</div>
+		<div id="colour-picker-status{% if colour_picker_id is defined %}-{{colour_picker_id}}{%endif%}">
+			Status
+		</div>	
+		<div class="w3-auto w3-center w3-margin">
+		<button class="w3-button my-hover-lilac"
+		{% if colour_picker_callback is defined%}
+			onclick = "{{ colour_picker_callback }};"
+		{% endif %}>
+			Set colour
+		</button>
+		</div>
+		<script>
+		const picker_id{% if colour_picker_id is defined %}-{{colour_picker_id}}{%endif%} = "colour-picker-input{% if colour_picker_id is defined %}-{{colour_picker_id}}{%endif%}";
+		</script>
+	</div>
+</div>

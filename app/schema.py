@@ -43,6 +43,7 @@ class User(UserMixin, db.Model):
 	github_id = db.Column(String(255), unique=True)
 	username_last_updated = db.Column(DateTime)
 
+	fav_colour = db.Column(Integer, default=5592405)
 	is_banned = db.Column(Boolean, default=False)
 	can_comment = db.Column(Boolean, default=True)
 	wilt_enabled = db.Column(Boolean, default=False)
@@ -94,6 +95,9 @@ class User(UserMixin, db.Model):
 		
 	def url(self):
 		return url_for("profile", username=self.username)
+	
+	def colour_to_hex(self):
+		return f"#{self.fav_colour:06x}"
 
 
 class BlogPost(db.Model):

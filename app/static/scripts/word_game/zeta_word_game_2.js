@@ -6,6 +6,30 @@ function prepend_array(array, item) {
 	return new_array;
 }
 
+function getColourFromValue (colourValue) {
+	return `#${colourValue.toString(16).padStart(6, '0')}`;
+}
+
+function hexToRgb(hex) {
+	hex = hex.replace(/^#/, ""); // Remove '#' if present
+	if (hex.length === 3) {
+		hex = hex.split("").map(c => c + c).join(""); // Expand short form like #FFF to #FFFFFF
+	}
+	let r = parseInt(hex.substring(0, 2), 16);
+	let g = parseInt(hex.substring(2, 4), 16);
+	let b = parseInt(hex.substring(4, 6), 16);
+	return [r, g, b];
+}
+
+function getBrightness(r, g, b) {
+	return (0.299 * r) + (0.587 * g) + (0.114 * b);
+}
+
+function getContrastingColor(hexColor) {
+	let [r, g, b] = hexToRgb(hexColor);
+	return getBrightness(r, g, b) < 128 ? "#FFFFFF" : "#000000";
+}
+
 // endblock
 
 // Expect player class to be loaded!!
@@ -74,26 +98,44 @@ class Grid {
 		}
 	}
 
+	// I literally have no way to test this OMG
+	// onPinchZoom (event) {
+	// 	if (event.data.originalEvent.touches && event.data.originalEvent.touches.length === 2) {
+	// 		// Two-finger pinch logic
+	// 		const touch1 = event.data.getLocalPosition(this.container);
+	// 		const touch2 = event.data.getLocalPosition(this.container);
+	// 		const pinchDistance = this.getDistance(touch1, touch2);
+	
+	// 		if (pinchStartDistance === 0) {
+	// 			pinchStartDistance = pinchDistance;
+	// 			pinchStartScale = this.container.scale.x;
+	// 		} else {
+	// 			const scaleFactor = pinchDistance / pinchStartDistance;
+	// 			this.setZoom(scaleFactor);
+	// 		}
+	// 	}
+	// }
+
 	onScroll (event) {
 		// I have been struggling with trying to get the zoom onto the pointer for so long i give up.
 	
 		let direction = (event.deltaY > 0 ? 1 : -1); // 1 for zooming in, -1 for zooming out
 		let zoomFactor = 0.1;  // Adjust this value for faster/slower zooming
 		
-		// let p1 = {x:this.container.width / 2, y:this.container.height / 2};
+		this.setZoom(zoomFactor, direction);
+	}
 
+	setZoom (zoomFactor, direction) {
+		// let p1 = {x:this.container.width / 2, y:this.container.height / 2};
 		// Calculate new size based on scroll direction
 		let newWidth = this.container.width + direction * zoomFactor * this.container.width;
 		let newHeight = this.container.height + direction * zoomFactor * this.container.height;
 		
-		
 		// Avoid scaling the container to 0 or negative sizes
 		if (newWidth < 10 || newHeight < 10) return;
-		
 		// Resize the container using setSize
 		this.container.setSize(newWidth, newHeight);
 		// let p2 = {x:this.container.width / 2, y:this.container.height / 2};
-
 		// this.offset.x += p1.x - p2.x;
 		// this.offset.y += p1.y - p2.y;
 		this.centerGrid();
@@ -118,10 +160,9 @@ class Grid {
 		square.isSpecial = false;
 
 		// Add event listeners
-		square.interactive = true;
-		square.buttonMode = true;
-		square.on('pointerover', () => this.highlightSquare(square));
-		square.on('pointerout', () => this.unhighlightSquare(square));
+		squareContainer.interactive = true;
+		squareContainer.on('pointerover', () => this.highlightSquare(square));
+		squareContainer.on('pointerout', () => this.unhighlightSquare(square));
 
 		// Add to container and row
 		squareContainer.addChild(square)
@@ -522,6 +563,8 @@ class UI {
 		this.parentContainer.addChild(this.discardContainer);
 		this.parentContainer.addChild(this.handContainer);
 		this.game.resizeEvents.push(this.onResizeEvent.bind(this));
+
+		this.smaller_ui = false;
 	}
 
 	setDiscardContext (event) {
@@ -701,15 +744,22 @@ class UI {
 	}
 
 	onResizeEvent () {
-		this.handContainer.y = game.app.screen.height - this.handGraphic.height;
-		this.handContainer.x = (game.app.screen.width - this.handGraphic.width)/ 2;
+		this.handContainer.y = game.app.screen.height - this.handContainer.height;
+		this.handContainer.x = (game.app.screen.width - this.handContainer.width)/ 2;
 		if(this.submitButtondDestroyed == false)
 		{
 			this.submitButton.y = this.handContainer.y - this.submitButtonGraphic.height;
 			this.submitButton.x = this.handContainer.x + (this.handGraphic.width / 2) - (this.submitButtonGraphic.width / 2);
 		}
-		this.discardContainer.x = this.game.app.screen.width - (5 + this.discardTarget.width);
-		this.discardContainer.y = this.game.app.screen.height - (5 + this.discardTarget.height);
+		if (!this.smaller_ui)
+		{
+		this.discardContainer.x = this.game.app.screen.width - (5 + this.discardContainer.width);
+		this.discardContainer.y = this.game.app.screen.height - (5 + this.discardContainer.height);
+		}
+		else { 
+			this.discardContainer.x = this.game.app.screen.width - (5 + this.discardContainer.width);
+			this.discardContainer.y = this.game.app.screen.height - (this.handContainer.height * 0.8) - this.discardContainer.height;
+		}
 	}
 
 	enableSubmitButton () {
@@ -835,28 +885,35 @@ class PlayerHalo {
 	}
 }
 
-class scoreRow {
-	constructor (username, score) {
+class ScoreRow {
+	constructor (username, score, bgCol, fgCol, width) {
 		this.container  = new PIXI.Container();
 		this.nameText = new PIXI.Text(
-			{text:username + ": ", style:{fill:"#fff", fontSize: 20, align: 'center'}}
+			{text:username + ": ", style:{fill:fgCol, fontSize: 20, align: 'center'}}
 		); 
 		this.scoreText  = new PIXI.Text(
-			{text:score, style:{fill:"#fff", fontSize: 20, align: 'center'}}
+			{text:score, style:{fill:fgCol, fontSize: 20, align: 'center'}}
 		);
+		this.bg = new PIXI.Graphics();
+		console.log(bgCol);
+		this.bg.rect(0,0,width, 5 + this.nameText.height + 5).fill(bgCol);
+		this.container.addChild(this.bg);
 		this.container.addChild(this.nameText);
 		this.nameText.x += 5;
+		this.nameText.y += 5;
 		this.container.addChild(this.scoreText);
 		this.scoreText.x = 210 - this.scoreText.width;
+		this.scoreText.y += 5;
 	}
 	del () {
 		this.nameText.destroy();
 		this.scoreText.destroy();
+		this.bg.destroy();
 		this.container.destroy();
 	}
 }
 
-class scoreboard {
+class ScoreBoard {
 	constructor (game, parentContainer, players) {
 		this.game = game;
 		this.players = players;
@@ -875,38 +932,33 @@ class scoreboard {
 		this.displayBump.interactive = true;
 		this.displayBump.roundRect(0,0,50,window.screen.height/4,5).fill(0x8f8f8f);
 		this.displayBump.x -= 10;
-		this.displayBump.y = window.screen.height / 3;
 		this.container.addChild(this.displayBump);
 		this.displayBumpText = new PIXI.Text(
 			{text:"Scores", style:{fill:"#fff", fontSize: 20, align: 'center'}}
 		)
 		this.displayBumpText.rotation = Math.PI * 1.5;
 		this.displayBumpText.x = 5;
+		this.displayBump.y = window.screen.height / 3;
 		this.displayBumpText.y = this.displayBump.y + (this.displayBumpText.width / 2) + (this.displayBump.height / 2);
 		this.container.addChild(this.displayBumpText);
-		this.displayBump.on("mouseup", this.displayScoreBoard.bind(this));
+		this.displayBump.on("pointerup", this.displayScoreBoard.bind(this));
 		this.displayBumpText.interactive = true;
-		this.displayBumpText.on("mouseup", this.displayScoreBoard.bind(this));
+		this.displayBumpText.on("pointerup", this.displayScoreBoard.bind(this));
 	}
 
 	
 	displayScoreBoard () {
 		if (this.scoreBoardOpen){return;}
 		this.scoreBoardOpen = true;
-		this.scoreBoardBackground = new PIXI.Graphics();
 		let count = this.players.length;
 		let height = 10;
-		this.scoreBoardBackground.y = (window.screen.height / 3) + 30;
-		this.container.addChild(this.scoreBoardBackground);
 		let sorted = this.players.slice().sort((a,b) =>  b.score - a.score );
-		this.scores = sorted.map(s => new scoreRow(s.username, s.score || 0));
+		this.scores = sorted.map(s => new ScoreRow(s.username, s.score || 0, s.colour, s.text_colour, 210));
 		for (let i = 0; i < sorted.length; i++){
 			let s = this.scores[i];
 			this.container.addChild(s.container)
-			s.container.y = this.scoreBoardBackground.y + 5 + (20 * i);
-			height += s.container.height;
+			s.container.y = this.displayBump.y + 30 + ((s.nameText.height + 10)* (i));
 		}
-		this.scoreBoardBackground.rect(0,0,210,height).fill(0x00006a);
 		this.closeButton = new PIXI.Graphics();
 		this.closeButton.interactive = true;
 		this.closeButton.rect(0,0,210,30).fill(0x150000);
@@ -918,9 +970,9 @@ class scoreboard {
 		this.container.addChild(this.closeText);
 		this.closeText.x = this.closeButton.width/2 - this.closeText.width /2;
 		this.closeText.y = (window.screen.height / 3);
-		this.closeButton.on("mouseup", this.closeScoreBoard.bind(this));
+		this.closeButton.on("pointerup", this.closeScoreBoard.bind(this));
 		this.closeText.interactive = true;
-		this.closeText.on("mouseup", this.closeScoreBoard.bind(this));
+		this.closeText.on("pointerup", this.closeScoreBoard.bind(this));
 		
 	}
 
@@ -929,11 +981,16 @@ class scoreboard {
 		this.scoreBoardOpen = false;
 		this.closeButton.destroy();
 		this.closeText.destroy();
-		this.scoreBoardBackground.destroy();
 		for (let i = 0; i < this.scores.length; i++) {
 			let s = this.scores[i];
 			s.del();
 		}
+	}
+
+	onResizeEvent () 
+	{
+		this.displayBump.y = window.screen.height / 3;
+		this.displayBumpText.y = this.displayBump.y + (this.displayBumpText.width / 2) + (this.displayBump.height / 2);
 	}
 	
 }
@@ -1009,6 +1066,19 @@ class GameState {
 			{
 				this.ui.maxDiscards = data.max_discards;
 			}
+			if (this.app.screen.width < 600)
+			{
+				this.ui.smaller_ui = true;
+				this.ui.handContainer.setSize(
+					this.ui.handContainer.width * 0.8,
+					this.ui.handContainer.height * 0.8
+				);
+				this.ui.discardContainer.setSize(
+					this.ui.discardContainer.width * 0.8,
+					this.ui.discardContainer.height * 0.8
+				);
+				this.ui.onResizeEvent();
+			}
 		}
 
 		if (data.special_tiles) {
@@ -1025,15 +1095,18 @@ class GameState {
 		{
 			this.playerHalo = new PlayerHalo(
 				this, this.gameContainer, 
-				Math.sqrt(Math.pow(this.board.getGridSize().x/2, 2) + Math.pow(this.board.getGridSize().y/2, 2)) + 60,
+				Math.min(Math.sqrt(Math.pow(this.board.getGridSize().x/2, 2) + Math.pow(this.board.getGridSize().y/2, 2)) + 60 * 0.8, this.app.screen.width * 0.8),
 				{x: window.innerWidth / 2, y: window.innerHeight / 2}
 			);
 			this.playerHalo.addPlayer(this.username);
+			this.playerHalo.lookup[this.username].colour = getColourFromValue(data.colour);
 			this.playerHalo.lookup[this.username].score = data.score;
+			this.playerHalo.lookup[this.username].text_colour = getContrastingColor(this.playerHalo.lookup[this.username].colour);
 			this.score = data.score;
 			this.playerHalo.organisedRefresh();
 			this.resizeEvents.push(this.playerHalo.reCenter.bind(this.playerHalo));
-			this.scoreboard = new scoreboard(this, this.uiContainer, this.playerHalo.players);
+			this.scoreboard = new ScoreBoard(this, this.uiContainer, this.playerHalo.players);
+			this.resizeEvents.push(this.scoreboard.onResizeEvent.bind(this.scoreboard))
 			this.scoreboard.initialiseDisplay();
 			this.socket.on("joined", this.onPlayerJoined.bind(this));
 			this.socket.emit("request_players", {});
@@ -1111,6 +1184,8 @@ class GameState {
 		if (data.username == this.username){return ;}
 		this.playerHalo.addPlayer(data.username);
 		this.playerHalo.lookup[data.username].score = data.score;
+		this.playerHalo.lookup[data.username].colour = getColourFromValue(data.colour);
+		this.playerHalo.lookup[data.username].text_colour = getContrastingColor(this.playerHalo.lookup[data.username].colour);
 		this.playerHalo.organisedRefresh();
 		if (this.scoreboard.scoreBoardOpen)
 		{
@@ -1231,6 +1306,34 @@ class GameState {
 			this.words[word.id] = neww;
 			neww.drawWord();
 		}
+		this.colourWordsTimeout()
+	}
+
+	colourWords () {
+		if (!this.playerHalo){this.colourWordsTimeout(); return;}
+		let word = null;
+		let parent = null;
+		for (let i in this.words) {
+			word = this.words[i];
+			parent = word.owner;
+			if (!this.playerHalo.lookup[word.owner].colour){continue;}
+			for (let key in word.tiles)
+			{
+				word.tiles[key].graphic.clear();
+				word.tiles[key].createGraphic(50, this.playerHalo.lookup[word.owner].colour);
+				word.tiles[key].text.style.fill = this.playerHalo.lookup[word.owner].text_colour;
+				word.tiles[key].subtext.style.fill = this.playerHalo.lookup[word.owner].text_colour;
+			}
+			word.isColoured = true;
+		}
+	}
+
+	colourWordsTimeout () {
+		clearTimeout(this.colourTimer);
+		this.colourTimer = setTimeout(
+			this.colourWords.bind(this),
+			100
+		)
 	}
 
 	placeTileOnGrid ( tile, square ) {

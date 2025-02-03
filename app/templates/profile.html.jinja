@@ -26,6 +26,38 @@
 			</div>
 		</div>
 		{% if user.wilt_enabled and user.spotify_token is not none %}{% include "spotify_stuff/partials/wilt.html.jinja"%}{% endif %}
+		{% if myprofile is true %}
+			{% set colour_picker_text = "What is your favourite colour: "%}
+			{% set colour_picker_default_value = user.colour_to_hex()%}
+			{% set colour_picker_callback = "setFavColour()"%}
+			{% include "partials/colour_picker.html.jinja" %}
+			<script>
+				async function setFavColour ()
+				{
+					let picker = document.getElementById(picker_id);
+					const resp = await fetch("/profile/set_colour", {
+							method : "POST",
+							headers : {
+								'Content-Type' : "application/json",
+							},
+							body : JSON.stringify({
+								"colour" : picker.value
+							})
+					});
+					if (resp.ok)
+					{
+						const jsresp = await resp.json();
+						if (jsresp.status === "error")
+						{
+							// NOTE: fix this later to be more informative!
+							throw new Error(jsresp.message);
+						}
+					}
+				}
+			</script>
+		{% else%}
+			{% include "partials/profile_fav_colour.html.jinja"%}
+		{% endif %}
 		<p>More here soon!</p>
 		{% if myprofile is true%}
 		<a href="/profile/update">Edit Profile</a>

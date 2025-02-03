@@ -109,6 +109,22 @@ signal.signal(signal.SIGINT, on_exit)  # Handle Ctrl+C
 
 
 #
+def get_auth_token_from_header():
+	auth_header = request.headers.get('Authorization')
+	if not auth_header:
+		return False
+	# Ensure the header starts with 'Bearer'
+	parts = auth_header.split()
+	if len(parts) != 2 or parts[0].lower() != "bearer":
+		return False
+	# Validate the token
+	token = parts[1]
+	return token
+
+def check_auth_token(token):
+	if schema.AccessToken.query.filter_by(token=token).first() != None:
+		return True
+	return False
 
 
 # should probably move this stuff into its own file but whatever
@@ -136,7 +152,7 @@ def require_token(func):
 		# Validate the token
 		token = parts[1]
 		# valid something like:
-		if schema.AccessToken.query.filter_by(token=token).first() != None:
+		if check_auth_token(token):
 			return func(*args, **kwargs)
 		return jsonify({"error": "Invalid token"}), 403
 	return wrapper
