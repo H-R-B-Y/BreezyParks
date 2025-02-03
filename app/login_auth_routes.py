@@ -127,7 +127,7 @@ def set_user_colour():
 	# some form of validation here would be nice!
 	current_user.fav_colour = int(data.get("colour").lstrip('#'), 16)
 	db.session.commit()
-	return jsonify({"status":"success", "message":"set fav colour"}), 200 
+	return jsonify({"status":"success", "message":"Colour set successfully"}), 200 
 
 
 # @app.route('/<string:username>/sprite', methods=["GET"])

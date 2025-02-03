@@ -1,0 +1,54 @@
+{% extends "admin_area/admin_template.html.jinja" %}
+{% set page_type, page_id= "admin", 1 %}
+{%if thing%}
+{% set title = "Edit thing" %}
+{% else %}
+{% set title = "New thing" %}
+{% endif %}
+
+<div class="w3-container w3-content">
+	<form class="my-custom-form w3-card">
+		<div class="w3-row w3-margin-bottom">
+			<div class="w3-col">
+				<label for="title">Title</label>
+				<input type="text" id="title" name="title" class="w3-input" value="{% if thing %}{{thing.title}}{% else %}{% endif %}" required>
+			</div>
+		</div>
+		<div class="w3-row w3-margin-bottom">
+			<div class="w3-col">
+				<label for="status">Status</label>
+				<select id="status" name="status" class="w3-select" required>
+					<option value="draft">Draft</option>
+					<option value="published">Published</option>
+				</select>
+			</div>
+		</div>
+		<div class="w3-row w3-margin-bottom">
+			<div class="w3-col">
+				<label for="type">Type</label>
+				<select id="type" name="type" class="w3-select" required>
+					<option value="url">URL</option>
+					<option value="template">Template</option>
+				</select>
+			</div>
+		</div>
+		<div class="w3-row w3-margin-bottom w3-hide">
+			<div class="w3-col">
+				<label for="url-path">URL Path</label>
+				<input type="text" id="url-path" name="url-path" class="w3-input" value="{% if thing %}{{thing.title}}{% else %}{% endif %}" required>
+			</div>
+		</div>
+		<div class="w3-row w3-margin-bottom w3-hide">
+			<div class="w3-col">
+				<label for="template-path">Template Path</label>
+				<input type="text" id="template-path" name="template-path" class="w3-input" value="{% if thing %}{{thing.title}}{% else %}{% endif %}" required>
+			</div>
+		</div>
+		<div class="w3-row w3-margin-bottom">
+			<div class="w3-col s12 m12 l12">
+				<button id="submitbutton" type="submit" class="w3-button w3-block w3-lilac w3-hover-deep-purple">Submit</button>
+			</div>
+		</div>
+	</form>
+	<div style="color:red;" id="error-div"></div>
+</div>

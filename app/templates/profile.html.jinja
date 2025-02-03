@@ -44,14 +44,14 @@
 								"colour" : picker.value
 							})
 					});
-					if (resp.ok)
+					if (resp.headers.get("content-type") === "application/json"
+						|| resp.headers.get("Content-Type") === "application/json")
 					{
 						const jsresp = await resp.json();
-						if (jsresp.status === "error")
-						{
-							// NOTE: fix this later to be more informative!
-							throw new Error(jsresp.message);
-						}
+						let picker_status = document.getElementById(picker_status_id);
+						picker_status.classList.remove("w3-hide");
+						picker_status.style.color = jsresp.status === "error" ? "red" : "green";
+						picker_status.innerText = jsresp.message;
 					}
 				}
 			</script>

@@ -130,6 +130,7 @@ class ThingPost(db.Model):
 	type = Column(Text)
 	url_for = Column(Text)
 	created_date = Column(DateTime, nullable=False, default=datetime.utcnow())
+	status = db.Column(Text, CheckConstraint("status IN ('draft', 'published', 'deleted')"), default='draft')
 
 	@property
 	def likes(self):

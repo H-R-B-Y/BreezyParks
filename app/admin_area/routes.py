@@ -8,7 +8,7 @@ def admin_area_home():
 	return render_template("admin_area/home.html.jinja")
 
 # Right now we just need to worry about post authoring 
-
+# region EDIT POST
 @admin_area.route("/new_post", methods=["GET", "POST"])
 def admin_area_new_post():
 	if request.method == "POST":
@@ -50,6 +50,53 @@ def admin_area_delete_post(id : int):
 	db.session.delete(post)
 	db.session.commit()
 	return jsonify({"status":"success", "message":"Post deleted"}), 200
+
+# endregion
+
+# region EDIT THING
+@admin_area.route("/new_thing", methods=["GET", "POST"])
+def admin_area_new_thing():
+	if request.method == "POST":
+		# title = request.form.get("title")
+		# content = request.form.get("body")
+		# status = request.form.get("status")
+		# if not title or not content:
+		# 	return jsonify({"status":"error", "message":"Title and content are required"}), 400
+		# post = schema.BlogPost(title=title, status=status, body=content)
+		# schema.db.session.add(post)
+		# schema.db.session.commit()
+		return jsonify({"status":"success", "message":"Thing created", "id":None}), 201
+	return render_template("admin_area/posts/new_thing.html.jinja")
+
+@admin_area.route("/edit_thing/<int:id>", methods=["GET", "POST"])
+def admin_area_edit_thing(id : int):
+	if request.method == "POST":
+	# 	post = schema.BlogPost.query.get(id)
+	# 	if not post:
+	# 		return jsonify({"status":"error", "message":"Post not found"}), 404
+	# 	print(request.form.get("status"))
+	# 	if request.form.get("title") == "" or request.form.get("body") == "" or request.form.get("status").lower() not in ["published", "draft"]:
+	# 		return jsonify({"status":"error", "message":"Malformed post!"}), 400 
+	# 	post.title = request.form.get("title")
+	# 	post.body = request.form.get("body")
+	# 	post.status = request.form.get("status").lower()
+	# 	db.session.commit()
+		return jsonify({"status":"success", "message":"Post updated"}), 200
+	thing = schema.ThingPost.query.get(id)
+	if not thing:
+		return jsonify({"status":"error", "message":"Post not found"}), 404
+	return render_template("admin_area/posts/new_post.html.jinja", thing=thing)
+
+@admin_area.route("/delete_thing/<int:id>", methods=["POST"])
+def admin_area_delete_thing(id : int):
+	thing = schema.Thingthing.query.get(id)
+	if not thing:
+		return jsonify({"status":"error", "message":"thing not found"}), 404
+	db.session.delete(thing)
+	db.session.commit()
+	return jsonify({"status":"success", "message":"thing deleted"}), 200
+
+# endregion
 
 @admin_area.route("/post_view")
 def admin_area_post_view():

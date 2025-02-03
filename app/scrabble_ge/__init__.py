@@ -18,13 +18,13 @@ scrabble_bp = Blueprint("scrabble_ge", __name__)
 app.config["word_dictionary_path"] = os.getenv("WORD_DICTIONARY_PATH")
 
 
-@scrabble_bp.before_request
-def enforce_debug():
-	auth_token = get_auth_token_from_header()
-	if auth_token and check_auth_token(auth_token):
-		return
-	elif not current_user.is_authenticated or not current_user.is_debug:
-		return render_template("default_error.html.jinja", status_code = 403, message = "Unauthorized"), 403
+# @scrabble_bp.before_request
+# def enforce_debug():
+# 	auth_token = get_auth_token_from_header()
+# 	if auth_token and check_auth_token(auth_token):
+# 		return
+# 	elif not current_user.is_authenticated or not current_user.is_debug:
+# 		return render_template("default_error.html.jinja", status_code = 403, message = "Unauthorized"), 403
 
 def word_dictionary_connection(func):
 	@wraps(func)

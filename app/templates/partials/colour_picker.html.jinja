@@ -20,7 +20,7 @@ function getColourFromValue (colourValue) {
 			style="width:50%"
 			{%if colour_picker_default_value is defined %}value="{{colour_picker_default_value}}"{%endif%}>
 		</div>
-		<div id="colour-picker-status{% if colour_picker_id is defined %}-{{colour_picker_id}}{%endif%}">
+		<div class="w3-hide w3-center" id="colour-picker-status{% if colour_picker_id is defined %}-{{colour_picker_id}}{%endif%}">
 			Status
 		</div>	
 		<div class="w3-auto w3-center w3-margin">
@@ -32,7 +32,8 @@ function getColourFromValue (colourValue) {
 		</button>
 		</div>
 		<script>
-		const picker_id{% if colour_picker_id is defined %}-{{colour_picker_id}}{%endif%} = "colour-picker-input{% if colour_picker_id is defined %}-{{colour_picker_id}}{%endif%}";
+		const picker_id{% if colour_picker_id is defined %}_{{colour_picker_id}}{%endif%} = "colour-picker-input{% if colour_picker_id is defined %}-{{colour_picker_id}}{%endif%}";
+		const picker_status_id{% if colour_picker_id is defined %}_{{colour_picker_id}}{%endif%} = "colour-picker-status{% if colour_picker_id is defined %}-{{colour_picker_id}}{%endif%}";
 		</script>
 	</div>
 </div>
