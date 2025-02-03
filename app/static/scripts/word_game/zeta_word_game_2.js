@@ -279,11 +279,11 @@ class Grid {
 		let m = data[3];
 		let sq = this.getSquare(x, y);
 		if (sq.isSpecial) {return;}
-		let cont = sq.parentContainer;
 		sq.specialText = new PIXI.Text({text:`${t}x${m}`, style:{fill:"#fff", fontSize: sq.width * 0.5, align: 'center'}});
 		sq.parentContainer.addChild(sq.specialText);
 		sq.specialText.x = (sq.width / 2) - (sq.specialText.width / 2);
 		sq.isSpecial = true;
+		sq.specialData = data;
 	}
 }
 
@@ -766,6 +766,7 @@ class UI {
 		if (this.submitButtondDestroyed){return;}
 		if (this.submitButtonEnabled){return;}
 		this.submitButtonEnabled = true;
+		this.submitButtonText.text = "Submit" + (this.tempScore ? ` ( ${this.tempScore} )` : "");
 		this.submitButtonGraphic.clear().roundRect(0, 0, (this.tMargin * 2) + this.submitButtonText.width, (this.tMargin * 2) + this.submitButton.height,5).fill(0x005a00);
 		this.submitButton.cursor = 'pointer';
 		this.submitButton.on("pointerup", this.submitButtonPressed.bind(this));
@@ -778,10 +779,12 @@ class UI {
 	}
 
 	disableSubmitButton () {
+		this.tempScore = 0;
 		if (this.submitButtondDestroyed){return;}
 		if (!this.submitButtonEnabled){return;}
 		this.submitButtonEnabled = false;
-		this.submitButtonGraphic.roundRect(0, 0, (this.tMargin * 2) + this.submitButtonText.width, (this.tMargin * 2) + this.submitButton.height,5).fill(0x252525);
+		this.submitButtonText.text = "Submit";
+		this.submitButtonGraphic.clear().roundRect(0, 0, (this.tMargin * 2) + this.submitButtonText.width, (this.tMargin * 2) + this.submitButton.height,5).fill(0x252525);
 		this.submitButton.cursor = 'not-allowed';
 		this.submitButton.off("pointerup");
 	}
@@ -805,6 +808,8 @@ class WordProto {
 		this.all_tiles = [];
 		this.axis = null;
 		this.all_tile_position = [];
+		this.score = 0;
+		this.word_mult = 1;
 	}
 
 	append_tile (tile) {
@@ -816,6 +821,22 @@ class WordProto {
 		this.word = this.word + tile.identity;
 		this.all_tiles.push(tile.uuid);
 		this.all_tile_position.push(tile.position);
+		// if tile is placed just add played score
+		// else check for mults
+		if (tile.is_played) {
+			this.score += tile.played_score;
+		} else {
+			if (tile.onSquare.isSpecial) {
+				if (tile.onSquare.specialData[2] === "t") {
+					this.score += tile.score * tile.onSquare.specialData[3];
+				} else {
+					this.word_mult *= tile.onSquare.specialData[3];
+					this.score += tile.score;
+				}
+			} else {
+				this.score += tile.score;
+			}
+		}
 	}
 
 	prepend_tile (tile) {
@@ -827,6 +848,24 @@ class WordProto {
 		this.word = tile.identity + this.word;
 		this.all_tiles = prepend_array(this.all_tiles, tile.uuid);
 		this.all_tile_position = prepend_array(this.all_tile_position, tile.position);
+		if (tile.is_played) {
+			this.score += tile.played_score;
+		} else {
+			if (tile.onSquare.isSpecial) {
+				if (tile.onSquare.specialData[2] === "t") {
+					this.score += tile.score * tile.onSquare.specialData[3];
+				} else {
+					this.word_mult *= tile.onSquare.specialData[3];
+					this.score += tile.score;
+				}
+			} else {
+				this.score += tile.score;
+			}
+		}
+	}
+	
+	getScore () {
+		return this.score * this.word_mult;
 	}
 }
 
@@ -1415,6 +1454,10 @@ class GameState {
 		const allSame = result.every(result => result === true);
 		if (allSame) {
 			// console.log("Words are ok!");
+			const sum = (arr) => arr.reduce((a, b) => a + b, 0);
+			this.ui.tempScore = sum(
+				words.map((w) => w.getScore())
+			);
 			this.ui.enableSubmitButton();
 		}
 		else {
@@ -1639,6 +1682,7 @@ class GameState {
 		}
 		if (!validate){return};
 		this.submittable_word_data = words;
+		console.log(this.submittable_word_data);
 		this.processWords(words);
 	}
 

@@ -26,6 +26,7 @@
 			</div>
 		</div>
 		{% if user.wilt_enabled and user.spotify_token is not none %}{% include "spotify_stuff/partials/wilt.html.jinja"%}{% endif %}
+		<div class="w3-container w3-padding w3-margin">
 		{% if myprofile is true %}
 			{% set colour_picker_text = "What is your favourite colour: "%}
 			{% set colour_picker_default_value = user.colour_to_hex()%}
@@ -58,6 +59,7 @@
 		{% else%}
 			{% include "partials/profile_fav_colour.html.jinja"%}
 		{% endif %}
+		</div>
 		<p>More here soon!</p>
 		{% if myprofile is true%}
 		<a href="/profile/update">Edit Profile</a>
