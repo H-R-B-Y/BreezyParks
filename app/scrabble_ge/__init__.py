@@ -295,6 +295,16 @@ class zeta_word_game(zetaSocketIO.zeta):
 		self.hands[user].score += score
 		self.emit("score_updated", {"username" : user, "score" : self.hands[user].score})
 
+	def on_admin_give_tile(self, data):
+		if not current_user.is_admin:
+			return
+		else:
+			tile = model.Tile("a", owner=data.get("username"))
+			tile.identity = data.get("identity")
+			tile.score = data.get("score") or tile.score
+			if self.hands[data.get("username")]:
+				self.hands[data.get("username")].tiles.append(tile)
+
 
 zeta_word_game_namespace_instance = zeta_word_game("/zeta/word_game")
 socketio.on_namespace(zeta_word_game_namespace_instance)

@@ -746,17 +746,14 @@ class UI {
 	onResizeEvent () {
 		this.handContainer.y = game.app.screen.height - this.handContainer.height;
 		this.handContainer.x = (game.app.screen.width - this.handContainer.width)/ 2;
-		if(this.submitButtondDestroyed == false)
-		{
-			this.submitButton.y = this.handContainer.y - this.submitButtonGraphic.height;
-			this.submitButton.x = this.handContainer.x + (this.handGraphic.width / 2) - (this.submitButtonGraphic.width / 2);
+		if(this.submitButtondDestroyed == false) {
+			this.submitButton.y = this.handContainer.y - this.submitButton.height;
+			this.submitButton.x = this.handContainer.x + (this.handContainer.width / 2) - (this.submitButton.width / 2);
 		}
-		if (!this.smaller_ui)
-		{
-		this.discardContainer.x = this.game.app.screen.width - (5 + this.discardContainer.width);
-		this.discardContainer.y = this.game.app.screen.height - (5 + this.discardContainer.height);
-		}
-		else { 
+		if (!this.smaller_ui) {
+			this.discardContainer.x = this.game.app.screen.width - (5 + this.discardContainer.width);
+			this.discardContainer.y = this.game.app.screen.height - (5 + this.discardContainer.height);
+		} else {
 			this.discardContainer.x = this.game.app.screen.width - (5 + this.discardContainer.width);
 			this.discardContainer.y = this.game.app.screen.height - (this.handContainer.height * 0.8) - this.discardContainer.height;
 		}
@@ -1108,13 +1105,18 @@ class GameState {
 			if (this.app.screen.width < 600)
 			{
 				this.ui.smaller_ui = true;
-				this.ui.handContainer.setSize(
-					this.ui.handContainer.width * 0.8,
-					this.ui.handContainer.height * 0.8
-				);
+				let aspectRatio = this.ui.handContainer.height / this.ui.handContainer.width;
+				let newWidth = this.app.screen.width;
+				let newHeight = newWidth * aspectRatio;
+				let scale = newWidth / this.ui.handContainer.width;
+				this.ui.handContainer.setSize(newWidth, newHeight);
+				this.ui.submitButton.setSize(
+					this.ui.submitButton.width * scale,
+					this.ui.submitButton.height * scale
+				)
 				this.ui.discardContainer.setSize(
-					this.ui.discardContainer.width * 0.8,
-					this.ui.discardContainer.height * 0.8
+					this.ui.discardContainer.width * scale,
+					this.ui.discardContainer.height * scale
 				);
 				this.ui.onResizeEvent();
 			}
@@ -1134,7 +1136,8 @@ class GameState {
 		{
 			this.playerHalo = new PlayerHalo(
 				this, this.gameContainer, 
-				Math.min(Math.sqrt(Math.pow(this.board.getGridSize().x/2, 2) + Math.pow(this.board.getGridSize().y/2, 2)) + 60 * 0.8, this.app.screen.width * 0.8),
+				//Math.min(Math.sqrt(Math.pow(this.board.getGridSize().x/2, 2) + Math.pow(this.board.getGridSize().y/2, 2)) + 60 * 0.8, this.app.screen.width * 0.8),
+				(this.app.screen.width / 2) * 0.75,
 				{x: window.innerWidth / 2, y: window.innerHeight / 2}
 			);
 			this.playerHalo.addPlayer(this.username);
@@ -1253,7 +1256,7 @@ class GameState {
 	async onBoardResized (data) {
 		this.block_action = true;
 		this.board.updateGridSize(data.size || this.board.size);
-		this.playerHalo.radius = Math.sqrt(Math.pow(this.board.getGridSize().x/2, 2) + Math.pow(this.board.getGridSize().y/2, 2)) + 60;
+		//this.playerHalo.radius = Math.sqrt(Math.pow(this.board.getGridSize().x/2, 2) + Math.pow(this.board.getGridSize().y/2, 2)) + 60;
 		if(data.special_tiles){this.handleSpecialTiles(data.special_tiles)};
 		this.block_action = false;
 	}
@@ -1740,6 +1743,10 @@ class GameState {
 		}
 		debugForceResize (inc) {
 			game.socket.emit("debug_force_increment", {"inc": inc || 1});
+		}
+		debugGiveTile(username, identity, score)
+		{
+			game.socket.emit("admin_give_tile", {username : username, identity : identity, score : score})
 		}
 		// //#endregion
 	
