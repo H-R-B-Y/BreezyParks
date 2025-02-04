@@ -363,11 +363,14 @@ class zeta_word_game(zetaSocketIO.zeta):
 			if self.hands[data.get("username")]:
 				self.hands[data.get("username")].tiles.append(tile)
 
+def save_game_on_exit(ns):
+	ns.emit("closing", {"redirect":"/"})
+	ns.save_game_state()
 
 zeta_word_game_namespace_instance = zeta_word_game("/zeta/word_game")
 socketio.on_namespace(zeta_word_game_namespace_instance)
 exit_handlers.append(
-	(zeta_word_game_namespace_instance.save_game_state, ())
+	(save_game_on_exit, (zeta_word_game_namespace_instance,))
 )
 
 from . import scrabble_routes

@@ -139,7 +139,10 @@ def post_id(id):
 	"""
 	Display a blog post.
 	"""
-	post = BlogPost.query.filter_by(id = id, status = "published").first()
+	if current_user.is_authenticated and current_user.is_admin:
+		post = BlogPost.query.filter_by(id = id).first()
+	else:
+		post = BlogPost.query.filter_by(id = id, status = "published").first()
 	if not post:
 		return jsonify({"status":"error","message":"That post doesn't exist"}), 404
 	return render_template("posts/default.html.jinja", post=post)

@@ -1162,8 +1162,14 @@ class GameState {
 			this.scoreboard.initialiseDisplay();
 			this.socket.on("joined", this.onPlayerJoined.bind(this));
 			this.socket.emit("request_players", {});
+			this.socket.on("closing", this.exitGracefully.bind(this));
 		}
 
+	}
+
+	exitGracefully (data) {
+		this.socket.close();
+		window.location.href = (data["redirect"] ? data["redirect"] : "/");
 	}
 
 	onUpdatePlayerState (data) {
