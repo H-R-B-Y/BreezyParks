@@ -77,7 +77,7 @@ class zeta_word_game(zetaSocketIO.zeta):
 					self.playerTiming[player] = data["timings"][player]
 				self.hands[player] = model.Hand.init_from_data(player, data["hands"][player])
 			# print("loading hands")
-			print(f"loaded game with id {data["id"]}")
+			# print(f"loaded game with id {data["id"]}")
 		except json.JSONDecodeError as e:
 			print(f"Error parsing game state: {e}")
 			self.base_init()
