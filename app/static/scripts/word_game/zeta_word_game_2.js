@@ -519,6 +519,7 @@ class Word {
 			newt.played_by = t.played_by;
 			newt.createGraphic(50, 0x252525);
 			let sq = this.game.board.getSquare(t.pos.x, t.pos.y);
+			if (!sq){this.game.reloadTimout();}
 			if (sq.containsTile.is_placed) {
 				this.game.returnTileToHand(sq.containsTile);
 			}
@@ -1077,6 +1078,8 @@ class GameState {
 		this.wordCheckTimeout = null;
 		this.submittable_word_data = null;
 		this.expectingResponse = false;
+
+		this.reloadCount = 0;
 	}
 
 	handleSpecialTiles (data) {
@@ -1127,7 +1130,11 @@ class GameState {
 		}
 
 		if (data.words_played) {
-			this.drawWords(data.words_played);
+			try{
+				this.drawWords(data.words_played);
+			} catch (e) {
+				this.reloadTimout();
+			}
 		}
 		
 		this.callUpdatePlayerState();
