@@ -51,7 +51,6 @@ class zeta_word_game(zetaSocketIO.zeta):
 
 		self.base_init()
 		if state := self.check_if_import_possible():
-			print("state found")
 			self.initialise_game_from_backup(state)
 		
 
@@ -68,23 +67,23 @@ class zeta_word_game(zetaSocketIO.zeta):
 		self.resetting = True
 		data = json.loads(state)
 		try:
-			print("loading board: ")
+			# print("loading board: ")
 			self.board = model.Board.init_from_data(data)
 
-			print("loading players")
+			# print("loading players")
 			for player in data["players"]:
 				self.totalPlayers.add(player)
 				if player in data["timings"]:
 					self.playerTiming[player] = data["timings"][player]
 				self.hands[player] = model.Hand.init_from_data(player, data["hands"][player])
-			print("loading hands")
+			# print("loading hands")
 			print(f"loaded game with id {data["id"]}")
-		# except json.JSONDecodeError as e:
-		# 	print(f"Error parsing game state: {e}")
-		# 	self.base_init()
-		# except KeyError as e:
-		# 	print(f"Error loading data from key: {e}")
-		# 	self.base_init()
+		except json.JSONDecodeError as e:
+			print(f"Error parsing game state: {e}")
+			self.base_init()
+		except KeyError as e:
+			print(f"Error loading data from key: {e}")
+			self.base_init()
 		finally:
 			self.resetting = False
 

@@ -76,7 +76,7 @@ class Tile():
 		Tile.tiles_by_uuid[tile.id] = tile
 		tile.identity = data["identity"]
 		tile.score = data["score"]
-		print(data)
+		# print(data)
 		tile.position = data["pos"]
 		tile.is_played = data["is_played"]
 		tile.played_by = data["played_by"]
@@ -97,7 +97,7 @@ class Hand():
 		self.discardTimestamp = datetime.utcnow().timestamp()
 
 	def data(self):
-		print(self.score)
+		# print(self.score)
 		return {
 			"tiles" : [t.data() for t in self.tiles],
 			"score" : self.score,
@@ -308,7 +308,7 @@ class Board():
 				y = tiles[tile].get("y")
 				tile.position = tiles[tile]
 				self.grid[x][y] = tile
-				print(f"checking x{x} y{y} for special: {self.special_grid[x][y]} for {tile.identity}")
+				# print(f"checking x{x} y{y} for special: {self.special_grid[x][y]} for {tile.identity}")
 				if self.special_grid[x][y] != None:
 					sp = self.special_grid[x][y]
 					# print(sp)
@@ -352,8 +352,8 @@ class Board():
 		return True
 	
 	def data(self, *args, **kwargs):
-		print(self.played_tiles)
-		print(Tile.tiles_by_uuid)
+		# print(self.played_tiles)
+		# print(Tile.tiles_by_uuid)
 		return {
 			"id" : self.gameid,
 			"started_at" : self.starttime,
@@ -371,7 +371,7 @@ class Board():
 		word = Word.init_from_data(data["owner"], data)
 		# add tiles to grid
 		for tile in word.tiles: 
-			print(tile.id)
+			# print(tile.id)
 			self.grid[tile.position["x"]][tile.position["y"]] = tile
 			self.played_tiles.add(tile.id)
 		# add word to played words / primary words
@@ -387,7 +387,7 @@ class Board():
 		board.special_tile_vector = data["letter_mult_array"]
 		# What happens when a word is played? 
 		for word in data["all_words"]:
-			print(word["word"])
+			# print(word["word"])
 			board.add_played_word_from_data(word)
 		board.gameid = data["id"]
 		return board
