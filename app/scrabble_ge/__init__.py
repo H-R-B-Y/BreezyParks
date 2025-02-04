@@ -116,29 +116,30 @@ class zeta_word_game(zetaSocketIO.zeta):
 
 	@word_dictionary_connection
 	def save_game_state(self,):
-		conn : sqlite3.Connection = self.save_game_state.dictionary_connection
-		curs : sqlite3.Cursor = self.save_game_state.dictionary_cursor
-		# Save the game state and scores to DB?????
-		if len(self.board.words) == 0:
-			return
-		state_data = json.dumps(
-			self.board.data(
-				players = list(self.totalPlayers),
-				scores = {n:self.hands[n].score for n in self.hands.keys()},
-				hands = {h:self.hands[h].data() for h in self.hands},
-				timings = self.playerTiming,
-			)
-		)
-		try:
-			if state_data:
-				curs.execute(
-					"INSERT OR REPLACE INTO games (id, state, started_at, ended_at) VALUES (?, ?, ?, ?)",
-					(self.board.gameid, state_data, datetime.fromtimestamp(self.board.starttime), datetime.utcnow(),)
+		with self.board.grid_lock:
+			conn : sqlite3.Connection = self.save_game_state.dictionary_connection
+			curs : sqlite3.Cursor = self.save_game_state.dictionary_cursor
+			# Save the game state and scores to DB?????
+			if len(self.board.words) == 0:
+				return
+			state_data = json.dumps(
+				self.board.data(
+					players = list(self.totalPlayers),
+					scores = {n:self.hands[n].score for n in self.hands.keys()},
+					hands = {h:self.hands[h].data() for h in self.hands},
+					timings = self.playerTiming,
 				)
-				conn.commit()
-				conn.close()
-		except Exception as e:
-			print(f"error saving game {self.board.id}: {e}")
+			)
+			try:
+				if state_data:
+					curs.execute(
+						"INSERT OR REPLACE INTO games (id, state, started_at, ended_at) VALUES (?, ?, ?, ?)",
+						(self.board.gameid, state_data, datetime.fromtimestamp(self.board.starttime), datetime.utcnow(),)
+					)
+					conn.commit()
+					conn.close()
+			except Exception as e:
+				print(f"error saving game {self.board.id}: {e}")
 
 	def reset_game(self):
 		part = 0

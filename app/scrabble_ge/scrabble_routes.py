@@ -23,7 +23,7 @@ def scrabble_state_check():
 	if current_user.is_authenticated and current_user.is_admin:
 		data = {**data, "err": str(ns.err)}
 	data = {**data, "state": state, "resetting": resetting}
-	print(data)
+	# print(data)
 	return jsonify(data), 200
 
 @scrabble_bp.route("/force_reset")
