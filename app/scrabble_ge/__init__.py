@@ -7,7 +7,7 @@ from flask_socketio import Namespace, emit, disconnect
 from functools import wraps
 
 from requests import get
-from datetime import datetime 
+from datetime import datetime, timedelta
 import uuid
 import sqlite3
 import json
@@ -49,17 +49,71 @@ class zeta_word_game(zetaSocketIO.zeta):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 
+		self.base_init()
+		if state := self.check_if_import_possible():
+			print("state found")
+			self.initialise_game_from_backup(state)
+		
+
+	def base_init(self):
 		self.resetting = False
 		self.err = None
-
-		# parent has active users which contains current players
-		# but we also need to keep track of all players in the game
 		self.totalPlayers = set()
-
 		self.board = model.Board()
 		self.hands = {} # in form {user : hand}
 		self.playerTiming = {}
 		self.maxdiscards = 5
+
+	def initialise_game_from_backup(self, state):
+		self.resetting = True
+		data = json.loads(state)
+		try:
+			print("loading board: ")
+			self.board = model.Board.init_from_data(data)
+
+			print("loading players")
+			for player in data["players"]:
+				self.totalPlayers.add(player)
+				if player in data["timings"]:
+					self.playerTiming[player] = data["timings"][player]
+				self.hands[player] = model.Hand.init_from_data(player, data["hands"][player])
+			print("loading hands")
+			print(f"loaded game with id {data["id"]}")
+		# except json.JSONDecodeError as e:
+		# 	print(f"Error parsing game state: {e}")
+		# 	self.base_init()
+		# except KeyError as e:
+		# 	print(f"Error loading data from key: {e}")
+		# 	self.base_init()
+		finally:
+			self.resetting = False
+
+	@word_dictionary_connection
+	def check_if_import_possible(self):
+		# Get today's date
+		today = datetime.today()
+		# Find the most recent Monday (start of the week)
+		start_of_week = today - timedelta(days=today.weekday())
+		# Convert to a timestamp for SQLite
+		start_of_week_timestamp = start_of_week.strftime('%Y-%m-%d %H:%M:%S')
+		conn : sqlite3.Connection = self.check_if_import_possible.dictionary_connection
+		curs : sqlite3.Cursor = self.check_if_import_possible.dictionary_cursor
+		# Fetch the latest game that started within this week
+		curs.execute(
+			"""
+			SELECT id, state, started_at 
+			FROM games 
+			WHERE started_at >= ?
+			ORDER BY started_at DESC 
+			LIMIT 1
+			""",
+			(start_of_week_timestamp,)
+		)
+		game = curs.fetchone()
+		if not game:
+			return False
+		else:
+			return game[1]
 
 	@word_dictionary_connection
 	def save_game_state(self,):
@@ -68,7 +122,14 @@ class zeta_word_game(zetaSocketIO.zeta):
 		# Save the game state and scores to DB?????
 		if len(self.board.words) == 0:
 			return
-		state_data = json.dumps(self.board.data(players=list(self.totalPlayers), scores = {n:self.hands[n].score for n in self.hands.keys()}))
+		state_data = json.dumps(
+			self.board.data(
+				players = list(self.totalPlayers),
+				scores = {n:self.hands[n].score for n in self.hands.keys()},
+				hands = {h:self.hands[h].data() for h in self.hands},
+				timings = self.playerTiming,
+			)
+		)
 		try:
 			if state_data:
 				curs.execute(
@@ -97,10 +158,7 @@ class zeta_word_game(zetaSocketIO.zeta):
 			del(self.playerTiming)
 			part += 1
 	
-			self.totalPlayers = set()
-			self.board = model.Board()
-			self.hands = {}
-			self.playerTiming = {}
+			self.base_init()
 			part += 1
 		except Exception as e:
 			self.err = e
@@ -123,7 +181,7 @@ class zeta_word_game(zetaSocketIO.zeta):
 		# for uninitialised users)
 		if current_user.is_authenticated:
 			if current_user.username not in self.hands.keys():
-				self.hands[current_user.username] = model.Hand(current_user)
+				self.hands[current_user.username] = model.Hand(current_user.username)
 			self.activeUsers.add(current_user.username)
 			self.sidLookup[request.sid] = current_user.username
 			self.totalPlayers.add(current_user.username)

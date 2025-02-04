@@ -1,4 +1,4 @@
-import os, json, signal, sys, time
+import os, json, atexit
 from dotenv import load_dotenv, set_key
 from flask import Flask, request, abort, jsonify, redirect, render_template, Response, flash
 from flask_sqlalchemy import SQLAlchemy
@@ -99,13 +99,14 @@ def create_db():
 
 
 
-# exit handlers:
+
 def on_exit(*args, **kwargs):
+	print("shutting down!")
 	for func, nargs in exit_handlers:
 		func(*nargs)
-	sys.exit()
 
-signal.signal(signal.SIGINT, on_exit)  # Handle Ctrl+C
+atexit.register(on_exit)
+# signal.signal(signal.SIGINT, on_exit)  # Handle Ctrl+C
 
 
 #

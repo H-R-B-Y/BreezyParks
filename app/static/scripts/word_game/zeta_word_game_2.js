@@ -519,7 +519,10 @@ class Word {
 			newt.played_by = t.played_by;
 			newt.createGraphic(50, 0x252525);
 			let sq = this.game.board.getSquare(t.pos.x, t.pos.y);
-			if (!sq){this.game.reloadTimout();}
+			if (!sq){
+				console.error("SQuare not found when placing word!!!");
+				this.game.reloadTimout();
+			}
 			if (sq.containsTile.is_placed) {
 				this.game.returnTileToHand(sq.containsTile);
 			}
@@ -1290,9 +1293,11 @@ class GameState {
 	async reloadTimout () {
 		this.reloadCount++;
 		const resp = await fetch("state_check");
+		console.log("response from refresh check: ",resp);
 		if (!resp.ok){console.error("failed to check game state")}
 		else{
 			const j = await resp.json();
+			console.log("response from refresh check json: ", j);
 			if (j.status === "success")
 			{
 				if (j.resetting && this.reloadCount < 5)

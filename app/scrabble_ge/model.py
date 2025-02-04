@@ -24,10 +24,10 @@ class Tile():
 
 	base_distribution = {
 	'a': 9, 'b': 2, 'c': 2, 'd': 4, 'e': 12, 'f': 2,
-    'g': 3, 'h': 2, 'i': 9, 'j': 1, 'k': 1, 'l': 4,
-    'm': 2, 'n': 6, 'o': 8, 'p': 2, 'q': 1, 'r': 6,
-    's': 4, 't': 6, 'u': 4, 'v': 2, 'w': 2, 'x': 1,
-    'y': 2, 'z': 1,
+	'g': 3, 'h': 2, 'i': 9, 'j': 1, 'k': 1, 'l': 4,
+	'm': 2, 'n': 6, 'o': 8, 'p': 2, 'q': 1, 'r': 6,
+	's': 4, 't': 6, 'u': 4, 'v': 2, 'w': 2, 'x': 1,
+	'y': 2, 'z': 1,
 	}
 
 	vowels = set(["a","e","i","o","u"])
@@ -36,7 +36,7 @@ class Tile():
 
 	def __init__(self, identity, owner):
 		assert identity in self.faces
-		self.uuid = uuid.uuid4()
+		self.uuid = str(uuid.uuid4())
 		self.id = str(self.uuid)
 		self.owner = owner
 		self.identity = identity
@@ -65,15 +65,31 @@ class Tile():
 			"is_played" : self.is_played,
 			"played_by" : self.played_by,
 			"played_score" : self.played_score,
-			"played_word" : str(self.played_word.id) if self.played_word else None
+			"played_word" : self.played_word if self.played_word else None
 		}
 	
+	@classmethod
+	def init_from_data(cls, owner, data):
+		tile = Tile("a", owner)
+		del Tile.tiles_by_uuid[tile.uuid]
+		tile.id = data["id"]
+		Tile.tiles_by_uuid[tile.id] = tile
+		tile.identity = data["identity"]
+		tile.score = data["score"]
+		print(data)
+		tile.position = data["pos"]
+		tile.is_played = data["is_played"]
+		tile.played_by = data["played_by"]
+		tile.played_score = data["played_score"]
+		tile.played_word = data["played_word"]
+		return tile
+
 	@classmethod
 	def get_by_uuid(cls, id):
 		return cls.tiles_by_uuid.get(id, None)
 
 class Hand():
-	def __init__(self, owner : schema.User):
+	def __init__(self, owner):
 		self.tiles = []
 		self.score = 0
 		self.owner = owner
@@ -81,11 +97,19 @@ class Hand():
 		self.discardTimestamp = datetime.utcnow().timestamp()
 
 	def data(self):
+		print(self.score)
 		return {
 			"tiles" : [t.data() for t in self.tiles],
 			"score" : self.score,
-			"username" : self.owner.username
+			"username" : self.owner
 		}
+	
+	@classmethod
+	def init_from_data(cls, owner, data):
+		hand = Hand(owner=owner)
+		hand.score = data["score"]
+		hand.tiles = [Tile.init_from_data(owner, t) for t in data["tiles"]]
+		return hand
 
 class Word():
 	words_by_uuid = {}
@@ -99,7 +123,7 @@ class Word():
 		self.score_mult = 1
 		self.owner = owner
 		self.init_time = datetime.utcnow()
-		self.extends = list(set([(tile.played_word.id if tile.played_word else self.id) for tile in tiles]))
+		self.extends = list(set([(tile.played_word if tile.played_word else self.id) for tile in tiles]))
 		if self.id in self.extends:
 			self.extends.remove(self.id)
 		self.axis = axis
@@ -108,7 +132,7 @@ class Word():
 			tile.is_placed = True
 			tile.is_played = True
 			tile.played_by = self.owner
-			tile.played_word = self
+			tile.played_word = self.id
 		for tile in self.tiles:
 			self.score_mult *= tile.word_mult
 		# print(f"word created with score_mult: {self.score_mult}")
@@ -123,6 +147,19 @@ class Word():
 			"extends" : self.extends,
 			"axis" : self.axis
 		}
+	
+	@classmethod
+	def init_from_data(cls, owner, data):
+		tiles = [Tile.init_from_data(t["played_by"], t) for t in data["tiles"]]
+		word = Word(owner=owner, score=data["score"], axis=data["axis"])
+		del Word.words_by_uuid[word.id]
+		word.id = data["id"]
+		Word.words_by_uuid[data["id"]] = word
+		word.tiles = tiles
+		word.all_tiles = tiles
+		word.score = data["score"]
+		word.extends = data["extends"]
+		return word
 	
 	@classmethod
 	def validate_axis(cls, tiledata, axis):
@@ -315,17 +352,46 @@ class Board():
 		return True
 	
 	def data(self, *args, **kwargs):
+		print(self.played_tiles)
+		print(Tile.tiles_by_uuid)
 		return {
 			"id" : self.gameid,
 			"started_at" : self.starttime,
 			"board_size" : self._size,
 			"primary_words" : [w.data() for w in self.primaryWords],
 			"all_words" : [w.data() for w in self.words],
+			"letter_mult_array" : self.special_tile_vector,
 			"all_tiles" : [Tile.get_by_uuid(t).data() for t in self.played_tiles],
 			"data" : list(args),
 			**kwargs,
 		}
-			
-			
+	
+	
+	def add_played_word_from_data(self, data):
+		word = Word.init_from_data(data["owner"], data)
+		# add tiles to grid
+		for tile in word.tiles: 
+			print(tile.id)
+			self.grid[tile.position["x"]][tile.position["y"]] = tile
+			self.played_tiles.add(tile.id)
+		# add word to played words / primary words
+		self.words.add(word)
+		self.primaryWords.add(word)
+		# dont bother with score just load from data 
+
+	@classmethod
+	def init_from_data(cls, data):
+		board = Board(data["board_size"])
+		for x, y, t, m in data["letter_mult_array"]:
+			board.special_grid[x][y] = [t, m]
+		board.special_tile_vector = data["letter_mult_array"]
+		# What happens when a word is played? 
+		for word in data["all_words"]:
+			print(word["word"])
+			board.add_played_word_from_data(word)
+		board.gameid = data["id"]
+		return board
+
+
 
 
