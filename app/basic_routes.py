@@ -68,7 +68,7 @@ def thing_pages():
 	start = (page - 1) * per_page
 	end = start + per_page
 	things = ThingPost.query.order_by(desc(ThingPost.created_date)).all()
-	data = [{"id":x.id, "title": x.title, "path":"/thing/"+str(x.id)} for x in things[start:end]]
+	data = [{"id":x.id, "title": x.title, "path":"/thing/"+str(x.id), "created_date": x.created_date.timestamp()} for x in things[start:end]]
 	return jsonify({
 			"status":"ok",
 			"data":data,
@@ -119,7 +119,7 @@ def post_pages():
 	start = (page - 1) * per_page
 	end = start + per_page
 	things = BlogPost.query.filter_by(status = "published").order_by(desc(BlogPost.created_date)).all()
-	data = [{"id":x.id, "title": x.title, "path":"/thing/"+str(x.id)} for x in things[start:end]]
+	data = [{"id":x.id, "title": x.title, "path":"/post/"+str(x.id), "created_date":x.created_date.timestamp()} for x in things[start:end]]
 	return jsonify({
 			"status":"ok",
 			"data":data,

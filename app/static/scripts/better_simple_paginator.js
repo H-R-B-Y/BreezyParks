@@ -12,7 +12,10 @@ async function fetch_posts(page)
 };
 function render_post(post)
 {
-	let new_rendered = loader_template.replace(/{{id}}/g, post.id).replace(/{{title}}/g, post.title).replace(/{{created_date}}/g, post.created_date);
+	let new_rendered = loader_template
+	.replace(/{{id}}/g, post.id)
+	.replace(/{{title}}/g, post.title)
+	.replace(/{{created_date}}/g, new Date(post.created_date * 1000).toLocaleDateString("en-CA").replaceAll("-","/"));
 	return new_rendered;
 };
 function create_new_row(container)
@@ -38,6 +41,7 @@ function render_posts(posts) {
 async function get_page()
 {
 	const posts = await fetch_posts(1);
+	const button = document.getElementById("load-more");
 	if (posts && posts.data.length > 0)
 	{
 		render_posts(posts.data);
