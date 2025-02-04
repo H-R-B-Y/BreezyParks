@@ -5,7 +5,7 @@
 {% else %}
 {% set title = "New thing" %}
 {% endif %}
-
+{%block body %}
 <div class="w3-container w3-content">
 	<form class="my-custom-form w3-card">
 		<div class="w3-row w3-margin-bottom">
@@ -18,30 +18,30 @@
 			<div class="w3-col">
 				<label for="status">Status</label>
 				<select id="status" name="status" class="w3-select" required>
-					<option value="draft">Draft</option>
-					<option value="published">Published</option>
+					<option value="draft" {{'selected' if thing is defined and thing.status == "draft" else ''}}>Draft</option>
+					<option value="published" {{'selected' if thing is defined and thing.status == "published" else ''}}>Published</option>
 				</select>
 			</div>
 		</div>
 		<div class="w3-row w3-margin-bottom">
 			<div class="w3-col">
 				<label for="type">Type</label>
-				<select id="type" name="type" class="w3-select" required>
-					<option value="url">URL</option>
-					<option value="template">Template</option>
+				<select id="type" name="type" class="w3-select" data-value="{{thing.type if thing is defined else ''}}" required>
+					<option value="url" {{ 'selected' if thing is defined and thing.type == "url" else ''}} >URL</option>
+					<option value="template" {{ 'selected' if thing is defined and thing.type == "template" else ''}} >Template</option>
 				</select>
 			</div>
 		</div>
 		<div class="w3-row w3-margin-bottom w3-hide">
 			<div class="w3-col">
 				<label for="url-path">URL Path</label>
-				<input type="text" id="url-path" name="url-path" class="w3-input" value="{% if thing %}{{thing.title}}{% else %}{% endif %}" required>
+				<input type="text" id="url-path" name="url-path" class="w3-input" value="{% if thing %}{{thing.url_for}}{% else %}{% endif %}" required>
 			</div>
 		</div>
 		<div class="w3-row w3-margin-bottom w3-hide">
 			<div class="w3-col">
 				<label for="template-path">Template Path</label>
-				<input type="text" id="template-path" name="template-path" class="w3-input" value="{% if thing %}{{thing.title}}{% else %}{% endif %}" required>
+				<input type="text" id="template-path" name="template-path" class="w3-input" value="{% if thing %}{{thing.template_path}}{% else %}{% endif %}" required>
 			</div>
 		</div>
 		<div class="w3-row w3-margin-bottom">
@@ -52,3 +52,63 @@
 	</form>
 	<div style="color:red;" id="error-div"></div>
 </div>
+
+<script>
+async function hideIrrlevantFields()
+{
+	const typeField = document.getElementById("type");
+	const templateField = document.getElementById("template-path");
+	const urlField = document.getElementById("url-path");
+	if (typeField.value === "url") {
+		urlField.parentNode.parentNode.classList.remove("w3-hide");
+		templateField.parentNode.parentNode.classList.add("w3-hide");
+	} else {
+		templateField.parentNode.parentNode.classList.remove("w3-hide");
+		urlField.parentNode.parentNode.classList.add("w3-hide");
+	}
+}
+hideIrrlevantFields();
+document.getElementById("type").addEventListener("change",()=>{hideIrrlevantFields()})
+
+async function send_thing () {
+	const thing_title = document.getElementById("title").value;
+	const thing_status = document.getElementById("status").value;
+	const thing_type = document.getElementById("type").value;
+	
+	const thing_url = document.getElementById("url-path").value;
+	const thing_template = document.getElementById("template-path").value;
+
+	const error_div = document.getElementById("error-div");
+	const formData = new FormData();
+
+	formData.append("title", thing_title);
+	formData.append("status", thing_status);
+	formData.append("type", thing_type);
+	formData.append("url_path", thing_url);
+	formData.append("template_path", thing_template);
+	
+	try {
+		const response = await fetch("{{url_for('admin_area.admin_area_home')}}{% if thing %}edit_thing/{{thing.id}}{% else %}new_thing{% endif %}", {
+			method: "POST",
+			body: formData
+		});
+		const json = await response.json();
+		if (json.status === "success") {
+			window.location.href = "{{url_for('admin_area.admin_area_home')}}thing_view";
+		} else {
+			error_div.innerText = `Server sent error ${json.message}`;
+		}
+	} catch (error) {
+		console.error("An error occurred", error);
+		error_div.innerText = `An error occurred: ${error}`;
+	}
+};
+
+document.getElementById("submitbutton").addEventListener("click", function(e){
+	e.preventDefault();
+	send_thing();
+});
+
+</script>
+
+{% endblock %}

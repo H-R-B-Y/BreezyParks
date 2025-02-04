@@ -1,5 +1,5 @@
 {% extends "admin_area/admin_template.html.jinja" %}
-{% set page_type, page_id, title = "admin", 1, "Post view" %}
+{% set page_type, page_id, title = "admin", 1, "Thing view" %}
 
 {% block body %}
 
@@ -8,20 +8,20 @@
 	<tr>
 		<th>Title</th>
 		<th>Status</th>
+		<th>Type</th>
 		<th>Created</th>
-		<th>Updated</th>
 		<th>Actions</th>
 	</tr>
-	{% for post in posts %}
-	<tr id="post-{{ post.id }}">
-		<td>{{ post.title }}</td>
-		<td>{{ post.status }}</td>
-		<td>{{ post.created_date }}</td>
-		<td>{{ post.updated_date }}</td>
+	{% for thing in things %}
+	<tr id="thing-{{ thing.id }}">
+		<td>{{ thing.title }}</td>
+		<td>{{ thing.status }}</td>
+		<td>{{ thing.type }}</td>
+		<td>{{ thing.created_date }}</td>
 		<td class="w3-center">
-			<a href= "{{ url_for('admin_area.admin_area_edit_post', id=post.id) }}"
+			<a href= "{{ url_for('admin_area.admin_area_edit_thing', id=thing.id) }}"
 			class="w3-button w3-lilac w3-hover-deep-purple">Edit</a>
-			<a href="javascript:delete_post('{{post.id}}');"
+			<a href="javascript:delete_thing('{{thing.id}}');"
 			class="w3-button w3-lilac w3-hover-deep-purple">Delete</a>
 		</td>
 	</tr>
@@ -31,9 +31,9 @@
 </div>
 <script>
 
-async function delete_post(post_id)
+async function delete_thing(thing_id)
 {
-	const response = await fetch(`{{ url_for('admin_area.admin_area_home') }}delete_post/${post_id}`, {
+	const response = await fetch(`{{ url_for('admin_area.admin_area_home') }}delete_thing/${thing_id}`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
@@ -42,7 +42,7 @@ async function delete_post(post_id)
 	const data = await response.json();
 	if (data.status == 'success')
 	{
-		document.getElementById(`post-${post_id}`).remove();
+		document.getElementById(`thing-${thing_id}`).remove();
 	}
 	else
 	{

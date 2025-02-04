@@ -20,7 +20,8 @@
 		<div class=" w3-margin-bottom w3-border" style="border-radius:15px;">
 			<button class="w3-button w3-block w3-left-align my-hover-lilac" style="border-radius:15px;" onclick="toggle_accordian('admin-accordian-5')">Things</button>
 			<div id="admin-accordian-5" class="w3-hide w3-container">
-				<p>Thing stuff here!</p>
+			<a href="{{url_for('admin_area.admin_area_thing_view')}}" ><div class="w3-margin-bottom w3-padding">View things</div></a>
+				<a href="{{url_for('admin_area.admin_area_new_thing')}}"><div class="w3-margin-bottom w3-padding">New thing</div></a>
 			</div>
 		</div>
 		<div class=" w3-margin-bottom w3-border" style="border-radius:15px;">

@@ -67,8 +67,11 @@ def thing_pages():
 	per_page = 6
 	start = (page - 1) * per_page
 	end = start + per_page
-	things = ThingPost.query.order_by(desc(ThingPost.created_date)).all()
-	data = [{"id":x.id, "title": x.title, "path":"/thing/"+str(x.id), "created_date": x.created_date.timestamp()} for x in things[start:end]]
+	if current_user.is_authenticated and current_user.is_admin:
+		things = ThingPost.query.order_by(desc(ThingPost.created_date)).all()
+	else:
+		things = ThingPost.query.filter_by(status = "published").order_by(desc(ThingPost.created_date)).all()
+	data = [{"id":x.id, "title": x.title, "path":"/thing/"+str(x.id), "created_date": x.created_date.timestamp(), "status" : x.status} for x in things[start:end]]
 	return jsonify({
 			"status":"ok",
 			"data":data,
@@ -118,8 +121,11 @@ def post_pages():
 	per_page = 6
 	start = (page - 1) * per_page
 	end = start + per_page
-	things = BlogPost.query.filter_by(status = "published").order_by(desc(BlogPost.created_date)).all()
-	data = [{"id":x.id, "title": x.title, "path":"/post/"+str(x.id), "created_date":x.created_date.timestamp()} for x in things[start:end]]
+	if current_user.is_authenticated and current_user.is_admin:
+		things = BlogPost.query.order_by(desc(BlogPost.created_date)).all()
+	else:
+		things = BlogPost.query.filter_by(status = "published").order_by(desc(BlogPost.created_date)).all()
+	data = [{"id":x.id, "title": x.title, "path":"/post/"+str(x.id), "created_date":x.created_date.timestamp(), "status" : x.status} for x in things[start:end]]
 	return jsonify({
 			"status":"ok",
 			"data":data,

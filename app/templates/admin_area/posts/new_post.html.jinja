@@ -73,34 +73,34 @@ body.addEventListener('input', () => {populate_doc();});
 populate_doc();
 
 async function send_post () {
-const text_title = title.value;
-const text_body = body.value;
-const text_status = document.getElementById("status").value;
-const error_div = document.getElementById("error-div");
-const formData = new FormData();
-formData.append("title", text_title);
-formData.append("body", text_body);
-formData.append("status", text_status);
-try {
-	const response = await fetch("{{url_for('admin_area.admin_area_home')}}{% if post %}edit_post/{{post.id}}{% else %}new_post{% endif %}", {
-		method: "POST",
-		body: formData
-	});
-	const json = await response.json();
-	if (json.status === "success") {
-		window.location.href = "{{url_for('admin_area.admin_area_home')}}post_view";
-	} else {
-		error_div.innerText = `Server sent error ${json.message}`;
+	const text_title = title.value;
+	const text_body = body.value;
+	const text_status = document.getElementById("status").value;
+	const error_div = document.getElementById("error-div");
+	const formData = new FormData();
+	formData.append("title", text_title);
+	formData.append("body", text_body);
+	formData.append("status", text_status);
+	try {
+		const response = await fetch("{{url_for('admin_area.admin_area_home')}}{% if post %}edit_post/{{post.id}}{% else %}new_post{% endif %}", {
+			method: "POST",
+			body: formData
+		});
+		const json = await response.json();
+		if (json.status === "success") {
+			window.location.href = "{{url_for('admin_area.admin_area_home')}}post_view";
+		} else {
+			error_div.innerText = `Server sent error ${json.message}`;
+		}
+	} catch (error) {
+		console.error("An error occurred", error);
+		error_div.innerText = `An error occurred: ${error}`;
 	}
-} catch (error) {
-	console.error("An error occurred", error);
-	error_div.innerText = `An error occurred: ${error}`;
-}
-}
+	}
 
-document.getElementById("submitbutton").addEventListener("click", function(e){
-e.preventDefault();
-send_post();
+	document.getElementById("submitbutton").addEventListener("click", function(e){
+	e.preventDefault();
+	send_post();
 });
 
 </script>
