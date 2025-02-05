@@ -5,7 +5,7 @@ from app import app, db, google, loginman, socketio, zetaSocketIO, require_admin
 from app.jinja_template_addons import get_likes_for_x, user_liked_x
 from app.schema import User, ThingPost, Comment, BlogPost, Like
 from sqlalchemy import desc, asc
-from flask import render_template, flash, redirect, url_for, request, jsonify
+from flask import render_template, flash, redirect, url_for, request, jsonify, send_file
 from authlib.integrations.flask_client import OAuth
 from flask_login import login_required, current_user
 
@@ -16,6 +16,10 @@ def index():
 	Index page.
 	"""
 	return render_template("index.html.jinja")
+
+@app.route("/favicon.ico")
+def icon():
+	return send_file("static/images/favicon.ico")
 
 @app.route("/wip/")
 def workinprogress():
@@ -88,7 +92,12 @@ def thing_id(id):
 		- render_template: if the thing is a template
 		- 404: if the thing is not found
 	"""
-	thing = ThingPost.query.filter_by(id=id).first()
+	if current_user.is_authenticated and current_user.is_admin:
+		thing = ThingPost.query.filter_by(id=id).first()
+		if thing.status != "published":
+			flash(f"The current post has a status of {thing.status}", "info")
+	else:
+		thing = ThingPost.query.filter_by(id=id, status = "published").first()
 	if not thing:
 		return jsonify({"status":"error", "message":"That page doesn't exist"}), 404
 	if thing.type == "url":
@@ -141,6 +150,8 @@ def post_id(id):
 	"""
 	if current_user.is_authenticated and current_user.is_admin:
 		post = BlogPost.query.filter_by(id = id).first()
+		if post.status != "published":
+			flash(f"Post currently has status of {post.status}", "info")
 	else:
 		post = BlogPost.query.filter_by(id = id, status = "published").first()
 	if not post:
