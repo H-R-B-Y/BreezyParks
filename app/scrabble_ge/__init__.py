@@ -350,7 +350,7 @@ class zeta_word_game(zetaSocketIO.zeta):
 			emit("joined", {"username":uName,
 	 				"active": uName in self.activeUsers,
 					"score" : self.hands[uName].score,
-					"colour" : schema.User.get_user_by_name(uName).fav_colour
+					"colour" : schema.User.get_user_by_name(uName).fav_colour if schema.User.get_user_by_name(uName) else None
 				},
 				to=request.sid,
 				broadcast=False)

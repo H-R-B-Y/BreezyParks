@@ -46,7 +46,7 @@ def flashme(text = "", flash_type = ""):
 	DEBUG: Flash a message.
 	"""
 	flash(text, flash_type)
-	return redirect(url_for("index"))
+	return jsonify({"status":"success", "message":"flash sent!"}), 200
 
 @app.route("/things")
 def things_index():

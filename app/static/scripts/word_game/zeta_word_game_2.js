@@ -1133,12 +1133,12 @@ class GameState {
 		}
 
 		if (data.words_played) {
-			// try{
-			// 	this.drawWords(data.words_played);
-			// } catch (e) {
-			// 	this.reloadTimout();
-			// }
-			this.drawWords(data.words_played);
+			try{
+				this.drawWords(data.words_played);
+			} catch (e) {
+				this.reloadTimout();
+			}
+			// this.drawWords(data.words_played);
 		}
 		
 		this.callUpdatePlayerState();
@@ -1243,7 +1243,7 @@ class GameState {
 		if (data.username == this.username){return ;}
 		this.playerHalo.addPlayer(data.username);
 		this.playerHalo.lookup[data.username].score = data.score;
-		this.playerHalo.lookup[data.username].colour = getColourFromValue(data.colour);
+		this.playerHalo.lookup[data.username].colour = data.colour ? getColourFromValue(data.colour) : getColourFromValue(5592405);
 		this.playerHalo.lookup[data.username].text_colour = getContrastingColor(this.playerHalo.lookup[data.username].colour);
 		this.playerHalo.organisedRefresh();
 		if (this.scoreboard.scoreBoardOpen)
@@ -1321,7 +1321,7 @@ class GameState {
 					return;
 				}
 				else if (j.resetting && this.reloadCount >= 5) {
-					// await fetch(`/flashme/${encodeURIComponent("server encountered an error connecting to game")}/error`);
+					await fetch(`/flashme/${encodeURIComponent("server encountered an error connecting to game")}/error`);
 					window.location.href = "/";
 				}
 			}

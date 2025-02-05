@@ -144,7 +144,11 @@ class Word():
 			"id" : str(self.id),
 			"word" : self.word,
 			"tiles" : [t.data() for t in self.tiles],
-			"all_tiles": [(t.data() if isinstance(t, Tile) else Tile.get_by_uuid(t).data()) for t in (self.all_tiles if self.all_tiles else self.tiles)],
+			"all_tiles": 
+				[
+					(t.data() if isinstance(t, Tile) else Tile.get_by_uuid(t).data() if isinstance(t, str) else Tile.get_by_uuid(t.get("id")).data() if isinstance(t, dict) else None) \
+						for t in \
+							(self.all_tiles if self.all_tiles else self.tiles)],
 			"score" : self.score,
 			"owner" : self.owner if self.owner else None,
 			"extends" : self.extends,
