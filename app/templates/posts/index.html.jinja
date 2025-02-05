@@ -1,8 +1,10 @@
 {% extends "nonzeta_template.html.jinja" %}
-{% block title %} Posts {% endblock %}
+{% set title = "Posts!"%}
+{% block page_title %}
+<h2>Posts:</h2>
+{% endblock %}
 {% block body %}
 <div id="main">
-			<h2>Posts:</h2>
 			<div id="data-container" class="w3-container"
 				style="background-color:#27292a;border-radius:15px;margin-bottom:10px;padding:10px;border-color:#e6d7ff;">
 			</div>

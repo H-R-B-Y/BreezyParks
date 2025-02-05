@@ -1,6 +1,7 @@
 {% set page_type = "blog_post" %}
 {% set page_id = post.id %}
 {% extends "main_template.html.jinja" %}
+{% set title = post.title %}
 {% if post is not defined %}
 	<h1 style="color:red;"> SEVERE ERROR! </h1>
 {% endif %}

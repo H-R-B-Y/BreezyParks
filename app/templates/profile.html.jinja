@@ -3,28 +3,31 @@
 {% if user is not defined %}{% set user = current_user %}{% set myprofile = true %}{% endif %}
 {% set username = getUsername(user) %}
 {% set likedthings = getUserLikedCount(username)%}
-{% set page_type, page_id = "profile", user.id %}
+{% set page_type, page_id, title = "profile", user.id, user.username %}
+{% block page_title%}
+<div class="w3-cell-row"> 
+<div class="w3-cell"><h2>{{ username }}</h2></div>
+<div class="w3-cell w3-cell-top w3-right-align">
+	{% if myprofile is true %}
+		<a class="w3-small">
+			Profile likes recieved: {{ getLikesForX("profile", user.id) }}
+		</a>
+	{% else %}
+		{% if user.id != current_user.id and current_user.is_authenticated %}
+		<a id="profile-{{ user.id }}" href="javascript:bp_toggle_like_on_item('profile-{{ user.id }}', 'profile', {{ user.id}})">{% if UserLikedThis(current_user.id, "profile", user.id) %}Unlike{% else %}Like{% endif%}</a><a> { </a><a id="{{page_type}}-{{page_id}}-count">{{ getLikesForX(page_type, page_id)}}</a><a> }</a>
+		{% elif not current_user.is_authenticated%}
+			<a> { </a><a id="{{page_type}}-{{page_id}}-count">{{ getLikesForX(page_type, page_id)}}</a><a> }</a>
+		{% endif %}
+	{% endif %}
+</div>
+</div>
+{% endblock %}
 {% block body %}
 	<div id="main" class="w3-container w3-margin-bottom">
 		{% if current_user.is_authenticated and current_user.is_admin %}
 			{% include "admin_area/partials/admin_profile_header.html.jinja" %}
 		{% endif %}
-		<div class="w3-cell-row"> 
-			<div class="w3-cell"><h2>{{ username }}</h2></div>
-			<div class="w3-cell w3-cell-top w3-right-align">
-				{% if myprofile is true %}
-					<a class="w3-small">
-						Profile likes recieved: {{ getLikesForX("profile", user.id) }}
-					</a>
-				{% else %}
-					{% if user.id != current_user.id and current_user.is_authenticated %}
-					<a id="profile-{{ user.id }}" href="javascript:bp_toggle_like_on_item('profile-{{ user.id }}', 'profile', {{ user.id}})">{% if UserLikedThis(current_user.id, "profile", user.id) %}Unlike{% else %}Like{% endif%}</a><a> { </a><a id="{{page_type}}-{{page_id}}-count">{{ getLikesForX(page_type, page_id)}}</a><a> }</a>
-					{% elif not current_user.is_authenticated%}
-						<a> { </a><a id="{{page_type}}-{{page_id}}-count">{{ getLikesForX(page_type, page_id)}}</a><a> }</a>
-					{% endif %}
-				{% endif %}
-			</div>
-		</div>
+
 		{% if user.wilt_enabled and user.spotify_token is not none %}{% include "spotify_stuff/partials/wilt.html.jinja"%}{% endif %}
 		<div class="w3-container w3-padding w3-margin">
 		{% if myprofile is true %}
