@@ -1270,6 +1270,14 @@ class GameState {
 	}
 
 	async onBoardResized (data) {
+		const startTime = Date.now();
+		while (this.expectingResponse) {
+			if (Date.now() - startTime > 1500) {
+				location.reload(); // Refresh if waiting too long
+				return;
+			}
+			await new Promise(resolve => setTimeout(resolve, 50)); // Wait 50ms before checking again
+		}
 		this.block_action = true;
 		this.board.updateGridSize(data.size || this.board.size);
 		//this.playerHalo.radius = Math.sqrt(Math.pow(this.board.getGridSize().x/2, 2) + Math.pow(this.board.getGridSize().y/2, 2)) + 60;
