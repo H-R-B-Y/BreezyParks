@@ -1,18 +1,9 @@
 {% extends "nonzeta_template.html.jinja" %}
 {% set hideable_content = true %}
 	{% block head %}
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<meta name="google-adsense-account" content="ca-pub-8516076386707931">
-		<title>{% block title %} {{ title }} {% endblock %}</title>
-		<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-		<link rel="stylesheet" href="/static/css/main.css"/>
+		{% include "partials/basic_head.html.jinja" %}
 		<script src="https://pixijs.download/release/pixi.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.min.js"></script>
-		<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8516076386707931"
-     	crossorigin="anonymous">
-	 	</script>
 	{% endblock %}
 {% block background%}
 {% if prevent_zeta is not defined and current_user.is_authenticated %}

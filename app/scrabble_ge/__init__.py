@@ -63,9 +63,34 @@ class zeta_word_game(zetaSocketIO.zeta):
 		self.playerTiming = {}
 		self.maxdiscards = 5
 
+	@word_dictionary_connection
+	def insert_or_replace_state(self,  gameid, state):
+		conn : sqlite3.Connection = self.insert_or_replace_state.dictionary_connection
+		curs : sqlite3.Cursor = self.insert_or_replace_state.dictionary_cursor
+		curs.execute(
+			"""
+			UPDATE games
+			SET state = ?
+			WHERE id = ?
+			""",
+			(gameid, state,)
+		)
+		conn.commit()
+	
 	def initialise_game_from_backup(self, state):
 		self.resetting = True
 		data = json.loads(state)
+		if data.get("game_state") == "in_progress":
+			if started_at := data.get("started_at"):
+				started_at = datetime.fromtimestamp(started_at)
+				started_at.replace(hour=0, minute=0, second=0, microsecond=0)
+				started_at += timedelta(days=7)
+				if datetime.utcnow() > started_at:
+					print("Loaded game that was in the past! Resetting board")
+					data["game_state"] = "finished"
+					self.insert_or_replace_state(data.get("id"), json.dumps(data))
+					self.base_init()
+					return
 		try:
 			# print("loading board: ")
 			self.board = model.Board.init_from_data(data)
@@ -90,7 +115,7 @@ class zeta_word_game(zetaSocketIO.zeta):
 	@word_dictionary_connection
 	def check_if_import_possible(self):
 		# Get today's date
-		today = datetime.today()
+		today = datetime.utcnow()
 		# Find the most recent Monday (start of the week)
 		start_of_week = today - timedelta(days=today.weekday())
 		# Convert to a timestamp for SQLite
@@ -122,12 +147,21 @@ class zeta_word_game(zetaSocketIO.zeta):
 			# Save the game state and scores to DB?????
 			if len(self.board.words) == 0:
 				return
+			game_finished = False
+
+			startTime = datetime.fromtimestamp(self.board.starttime).replace(hour=0, minute=0, second=0, microsecond=0)
+			startTime += timedelta(days=7)
+
+			if datetime.utcnow() > startTime:
+				game_finished = True
+
 			state_data = json.dumps(
 				self.board.data(
 					players = list(self.totalPlayers),
 					scores = {n:self.hands[n].score for n in self.hands.keys()},
 					hands = {h:self.hands[h].data() for h in self.hands},
 					timings = self.playerTiming,
+					game_state = ("finished" if game_finished else "in_progress")
 				)
 			)
 			try:
@@ -149,15 +183,12 @@ class zeta_word_game(zetaSocketIO.zeta):
 			self.disconnect_all()
 			self.reset_ns()
 			part += 1
-	
 			self.save_game_state()
-	
 			del(self.totalPlayers)
 			del(self.board)
 			del(self.hands)
 			del(self.playerTiming)
 			part += 1
-	
 			self.base_init()
 			part += 1
 		except Exception as e:
@@ -165,6 +196,7 @@ class zeta_word_game(zetaSocketIO.zeta):
 			print(f"Exception: {e} at part {['ns reset','state flush','state set','ERR'][part]}")
 		finally:
 			self.resetting = False
+
 
 	def on_connect(self):
 		'''
