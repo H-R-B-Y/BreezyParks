@@ -144,6 +144,7 @@ class Word():
 			"id" : str(self.id),
 			"word" : self.word,
 			"tiles" : [t.data() for t in self.tiles],
+			"all_tiles": [(t.data() if isinstance(t, Tile) else Tile.get_by_uuid(t).data()) for t in (self.all_tiles if self.all_tiles else self.tiles)],
 			"score" : self.score,
 			"owner" : self.owner if self.owner else None,
 			"extends" : self.extends,
@@ -158,9 +159,10 @@ class Word():
 		word = Word(owner=owner, score=data["score"], axis=data["axis"])
 		del Word.words_by_uuid[word.id]
 		word.id = data["id"]
+		word.word = data["word"]
 		Word.words_by_uuid[data["id"]] = word
 		word.tiles = tiles
-		word.all_tiles = tiles
+		word.all_tiles = data.get("all_tiles")
 		word.score = data["score"]
 		word.extends = data["extends"]
 		return word
@@ -390,7 +392,7 @@ class Board():
 			board.special_grid[x][y] = [t, m]
 		board.special_tile_vector = data["letter_mult_array"]
 		# What happens when a word is played? 
-		for word in data["all_words"]:
+		for word in data["primary_words"]:
 			# print(word["word"])
 			board.add_played_word_from_data(word)
 		board.gameid = data["id"]

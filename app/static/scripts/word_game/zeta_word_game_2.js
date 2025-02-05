@@ -520,10 +520,10 @@ class Word {
 			newt.createGraphic(50, 0x252525);
 			let sq = this.game.board.getSquare(t.pos.x, t.pos.y);
 			if (!sq){
-				console.error("SQuare not found when placing word!!!");
-				this.game.reloadTimout();
+				console.error("Square not found when placing word!!!");
+				// this.game.reloadTimout();
 			}
-			if (sq.containsTile.is_placed) {
+			if (sq.containsTile.is_placed && !sq.containsTile.is_played) {
 				this.game.returnTileToHand(sq.containsTile);
 			}
 			newt._placeOnSquare(sq);
@@ -1133,11 +1133,12 @@ class GameState {
 		}
 
 		if (data.words_played) {
-			try{
-				this.drawWords(data.words_played);
-			} catch (e) {
-				this.reloadTimout();
-			}
+			// try{
+			// 	this.drawWords(data.words_played);
+			// } catch (e) {
+			// 	this.reloadTimout();
+			// }
+			this.drawWords(data.words_played);
 		}
 		
 		this.callUpdatePlayerState();
@@ -1320,10 +1321,8 @@ class GameState {
 					return;
 				}
 				else if (j.resetting && this.reloadCount >= 5) {
-					await fetch(`/flashme/${encodeURIComponent("server encountered an error connecting to game")}/error`);
+					// await fetch(`/flashme/${encodeURIComponent("server encountered an error connecting to game")}/error`);
 					window.location.href = "/";
-				} else {
-					window.location.reload();
 				}
 			}
 		}
