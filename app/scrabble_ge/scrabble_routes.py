@@ -193,16 +193,22 @@ def scrabble_played_word():
 		if word == primary:
 			# print(word)
 			primary = this_word
+			primary.is_primary = True
+
+	for tw in true_words:
+		if tw != primary:
+			tw.parent_primary = primary.id
+
 	ns.board.primaryWords.add(primary)
 	ns.playerTiming[current_user.username] = datetime.utcnow().timestamp()
 		
+	ns.calculate_score(true_words)
+	ns.emit("new_word", {"word" : primary.data()})
+
 	# print(f"true min {true_min}")
 	if true_min < 3:
 		ns.resizeBoard(3 - true_min)
 	
-	ns.calculate_score(true_words)
-	ns.emit("new_word", {"word" : primary.data()})
-
 	return jsonify({"status": "success", "message": "Word played", "word":primary.data()})
 
 

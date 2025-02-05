@@ -124,6 +124,8 @@ class Word():
 		self.owner = owner
 		self.init_time = datetime.utcnow()
 		self.extends = list(set([(tile.played_word if tile.played_word else self.id) for tile in tiles]))
+		self.is_primary = False
+		self.parent_primary = None
 		if self.id in self.extends:
 			self.extends.remove(self.id)
 		self.axis = axis
@@ -145,7 +147,9 @@ class Word():
 			"score" : self.score,
 			"owner" : self.owner if self.owner else None,
 			"extends" : self.extends,
-			"axis" : self.axis
+			"axis" : self.axis,
+			"is_primary" : self.is_primary,
+			"parent_primary" : self.parent_primary,
 		}
 	
 	@classmethod
