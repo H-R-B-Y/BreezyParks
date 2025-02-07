@@ -1,6 +1,6 @@
-<div class="w3-auto" style="width:{{ canvas_width if canvas_width is defined else 300 }}px;">
+<div class="w3-auto" style="width:{{ canvas_width if canvas_width is defined else 300 }}px;overflow: hidden;scrollbar-width: none;">
 	<canvas id="drawingCanvas" width="{{ canvas_width if canvas_width is defined else 300 }}" height="{{ canvas_height if canvas_height is defined else 300}}"
-		style="border: 1px solid black;background-color:{{ canvas_background if canvas_background is defined else 'white' }};"></canvas>
+		style="overflow: hidden;scrollbar-width: none;border: 1px solid black;background-color:{{ canvas_background if canvas_background is defined else 'white' }};"></canvas>
 		<br/>
 	<div class="w3-row"> <!-- need to give this a second pass? --> 
 		<div class="w3-half">

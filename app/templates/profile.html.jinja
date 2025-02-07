@@ -1,9 +1,9 @@
 {% extends "nonzeta_template.html.jinja" %}
 {% block extraHead%} <script src="/static/scripts/bp_like_stuff.js"></script> {% endblock %}
 {% if user is not defined %}{% set user = current_user %}{% set myprofile = true %}{% endif %}
-{% set username = getUsername(user) %}
+{% set username = user.username %}
 {% set likedthings = getUserLikedCount(username)%}
-{% set page_type, page_id, title = "profile", user.id, user.username %}
+{% set page_type, page_id, title = "profile", user.id, "Profile: " + user.username %}
 {% block page_title%}
 <div class="w3-cell-row"> 
 <div class="w3-cell"><h2>{{ username }}</h2></div>
@@ -24,50 +24,33 @@
 {% endblock %}
 {% block body %}
 	<div id="main" class="w3-container w3-margin-bottom">
+		
 		{% if current_user.is_authenticated and current_user.is_admin %}
 			{% include "admin_area/partials/admin_profile_header.html.jinja" %}
 		{% endif %}
-
-		{% if user.wilt_enabled and user.spotify_token is not none %}{% include "spotify_stuff/partials/wilt.html.jinja"%}{% endif %}
-		<div class="w3-container w3-padding w3-margin">
-		{% if myprofile is true %}
-			{% set colour_picker_text = "What is your favourite colour: "%}
-			{% set colour_picker_default_value = user.colour_to_hex()%}
-			{% set colour_picker_callback = "setFavColour()"%}
-			{% include "partials/colour_picker.html.jinja" %}
-			<script>
-				async function setFavColour ()
-				{
-					let picker = document.getElementById(picker_id);
-					const resp = await fetch("/profile/set_colour", {
-							method : "POST",
-							headers : {
-								'Content-Type' : "application/json",
-							},
-							body : JSON.stringify({
-								"colour" : picker.value
-							})
-					});
-					if (resp.headers.get("content-type") === "application/json"
-						|| resp.headers.get("Content-Type") === "application/json")
-					{
-						const jsresp = await resp.json();
-						let picker_status = document.getElementById(picker_status_id);
-						picker_status.classList.remove("w3-hide");
-						picker_status.style.color = jsresp.status === "error" ? "red" : "green";
-						picker_status.innerText = jsresp.message;
-					}
-				}
-			</script>
-		{% else%}
-			{% include "partials/profile_fav_colour.html.jinja"%}
+		
+		{% if user.wilt_enabled and user.spotify_token is not none %}
+			{% include "spotify_stuff/partials/wilt.html.jinja"%}
 		{% endif %}
-		</div>
-		<div class="w3-card w3-padding w3-margin" style="border-radius:15px;">
-			{% if user.username == "Killer" %}
-				<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/1JCcJJpOyMphGWHbSMpNIt?utm_source=generator" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
-			{% endif %}
-		</div>
+		
+		{% include "partials/profile_cards/colour_cards.html.jinja"%}
+
+		{% if user_cards is defined%}
+			{% for card in user_cards%}
+				{% if card.type == "partial" %}
+					{% include card.path %}
+				{% elif card.type == "raw" %}
+					{{ card.html }}
+				{% endif %}
+			{% endfor %}
+		{% endif %}
+
+		{% if user.username == "Killer" %}
+			<div class="profile-card" style="border-radius:15px;">
+					<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/1JCcJJpOyMphGWHbSMpNIt?utm_source=generator" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+			</div>
+		{% endif %}
+		
 		<p>More here soon!</p>
 		{% if myprofile is true%}
 		<a href="/profile/update">Edit Profile</a>

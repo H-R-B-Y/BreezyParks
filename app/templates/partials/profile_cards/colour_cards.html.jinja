@@ -1,0 +1,33 @@
+
+{% if myprofile is true %}
+	{% set colour_picker_text = "What is your favourite colour: "%}
+	{% set colour_picker_default_value = user.colour_to_hex()%}
+	{% set colour_picker_callback = "setFavColour()"%}
+	{% include "partials/profile_cards/colour_picker.html.jinja" %}
+	<script>
+		async function setFavColour ()
+		{
+			let picker = document.getElementById(picker_id);
+			const resp = await fetch("/profile/set_colour", {
+					method : "POST",
+					headers : {
+						'Content-Type' : "application/json",
+					},
+					body : JSON.stringify({
+						"colour" : picker.value
+					})
+			});
+			if (resp.headers.get("content-type") === "application/json"
+				|| resp.headers.get("Content-Type") === "application/json")
+			{
+				const jsresp = await resp.json();
+				let picker_status = document.getElementById(picker_status_id);
+				picker_status.classList.remove("w3-hide");
+				picker_status.style.color = jsresp.status === "error" ? "red" : "green";
+				picker_status.innerText = jsresp.message;
+			}
+		}
+	</script>
+{% else%}
+	{% include "partials/profile_cards/profile_fav_colour.html.jinja"%}
+{% endif %}

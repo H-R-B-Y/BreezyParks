@@ -4,8 +4,8 @@ function getColourFromValue (colourValue) {
 	return `#${colourValue.toString(16).padStart(6, '0')}`;
 }
 </script>
-<div id="colour-picker{% if colour_picker_id is defined %}-{{colour_picker_id}}{%endif%}" class="w3-cell-row w3-auto">
-	<div class="w3-cell w3-card w3-padding" style="border-radius:15px;">
+<div id="colour-picker{% if colour_picker_id is defined %}-{{colour_picker_id}}{%endif%}" class="w3-cell-row profile-card">
+	<div class="w3-cell" style="border-radius:15px;">
 		<div class="w3-border-bottom w3-margin-bottom">
 		{% if colour_picker_text is defined %}
 			{{ colour_picker_text }}
