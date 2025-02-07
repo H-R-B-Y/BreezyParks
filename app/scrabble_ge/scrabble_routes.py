@@ -1,17 +1,41 @@
 from flask import Blueprint, request, jsonify, make_response, render_template, flash
 from . import scrabble_bp, zeta_word_game, word_dictionary_connection, model, zeta_word_game_namespace_instance
-from .. import schema, app, db, socketio, require_admin, require_token, exit_handlers
+from .. import schema, app, db, socketio, require_admin, require_token, exit_handlers, render_page_failsafe
 from flask_login import login_required, current_user
 from datetime import datetime
 from functools import wraps
 from threading import Thread
 import sqlite3
 
-
 @scrabble_bp.route("/")
-@login_required
+@render_page_failsafe
 def scrabble_index():
+	# only just realised how scuffed this is,
+	# this whole thingposts thing will need a re-write of somesort so that
+	# I dont need to hard code this kinda stuff.
+	thing = schema.ThingPost.query.filter_by(title="Word Game").first()
+	if thing is None :
+		return "Thing not found", 404
+	if thing.status == "draft" and not current_user.is_authenticated:
+		return "Thing not found", 404
+	if thing.status == "draft" and current_user.is_authenticated and not current_user.is_admin:
+		return "Thing not found", 404
+	return render_template(
+		"scrabble_ge/word_game.html.jinja",
+		thing_id = thing.id,
+		thing = thing,
+	)
+
+@scrabble_bp.route("/play")
+@login_required
+def scrabble_play():
 	return render_template("scrabble_ge/scrabble_ge.html.jinja")
+
+@scrabble_bp.route("/rules")
+def scrabble_rules():
+	return render_template("scrabble_ge/rules.html.jinja")
+
+# region game code
 
 @scrabble_bp.route("/state_check")
 def scrabble_state_check():
@@ -52,16 +76,18 @@ def scrabble_reset():
 @require_token
 def scrabble_reset_with_token():
 	ns = zeta_word_game_namespace_instance
+	game_id = ns.board.gameid
+	start_time = ns.board.starttime
 	err = None
 	try:
 		ns.reset_game()
 	except Exception as e:
 		err = e
-	finally:
-		pass
 	data = {
 		"status" : "success" if None == (err or ns.err) else "error", # or will take any value or none if both is none
-		"message" : "Server reset"
+		"message" : "Server reset",
+		"gameid" : game_id,
+		"started_at" : start_time,
 	}
 	if err:
 		data["server_err"] = str(err)
@@ -237,3 +263,5 @@ def scrabble_discard_tile(id):
 	hand.tiles.remove(tile)	
 	hand.discardsUsed += 1;
 	return jsonify({"status":"success","message":"Discarded Tile"}), 200
+
+# endregion

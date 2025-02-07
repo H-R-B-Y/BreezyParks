@@ -1,0 +1,171 @@
+{% extends "things/thing_template.html.jinja" %}
+{% block sub_body %}
+<div class="w3-cell-row w3-auto w3-padding w3-margin w3-card", style="border-radius:15px;">
+	<div class="w3-cell w3-auto w3-center w3-margin w3-padding">
+		<a href="play">
+		<button class="w3-button my-hover-lilac w3-border" style="font-size:large;width:100%;border-radius:15px;">Play</button>
+		</a>
+	</div>
+	<div class="w3-cell w3-auto w3-center w3-margin w3-padding">
+		<a href="play">
+		<button class="w3-button my-hover-lilac w3-border" style="font-size:large;width:100%;border-radius:15px;">Rules</button>
+		</a>
+	</div>
+</div>
+{% with heading_text="Preface."%}
+	{% include "partials/sub_heading.html.jinja" %}
+{% endwith %}
+<p>I’d like to preface this post by saying that, while I’m excited to share this project with the world, I do not see this as a finished project.</p>
+
+<p>I started this project with little planning and no prior experience with the technologies involved. Midway through, I received a date for when I could return to 42, which gave me a fixed deadline and forced me to rush development. While I’m thrilled to be resuming my 42 journey, the timing was unfortunate: I had just committed to this project when I found out.</p>
+
+<p>As a result, the code isn’t my best work, and beta testing has revealed a host of issues I’m already aware of. That said, the project is functional, and I sincerely hope you enjoy it.</p>
+
+{% with heading_text="What and Why is Word Game?"%}
+	{% include "partials/sub_heading.html.jinja" %}
+{% endwith %}
+
+
+<p>With my impeccable ability to name projects, I’m sure it’s not hard to guess what Word Game is. But just in case: it’s a game about playing words.</p>
+
+<p>It’s similar to Scrabble, but with some rule changes to (theoretically) allow an infinite number of players.</p>
+
+<p>After releasing my first project on this site, <a href="{{url_for("paper_index")}}"><i>Paper Note</i></a>, I kept thinking about the kind of conversation it enables. My goal has always been to create interactive experiences that let people connect in different ways over the internet. But Paper Note is a very one-sided exchange: you send a note, I receive it, and that’s the end of the interaction.</p>
+
+<p>For my next project, I wanted to take conversational complexity a step further. something with more back-and-forth, a longer-lasting interaction. And so, I settled on making a game.</p>
+
+<p>Recently, a version of Scrabble has been gaining popularity in my friend circle. While playing, we ran into some frustrations, the word dictionary felt lacking, the UX was clunky, and <a class="my-hover-lilac" href="/2/profile">Dinosaur</a> was blatantly cheating. All of this made me realize that Scrabble would be an interesting project to tackle for my site.</p>
+
+<p>I figured a turn-based board game would be a good way to start learning about web game development—and while I still stand by that, I definitely underestimated the complexity involved.</p>
+
+{% with heading_text="An overview."%}
+	{% include "partials/sub_heading.html.jinja" %}
+{% endwith %}
+
+<p>If you’ve visited the site before, you may have noticed the hamsters in the background. That’s part of a project I started long before the site had any real content, one I still hope to do something with in the future. The underlying technologies from that project became the foundation for Word Game, as I had some leftover boilerplate code to build on.</p>
+
+<p>For graphics, I’m using PIXI.js, which has been a great choice so far. It provides useful features for developing web games like this and made handling the visuals much easier.</p>
+
+<p>For communication, I decided to use WebSockets, mainly because that’s what the hamster project used, and at the time, it seemed like a good fit. However, this decision came back to bite me later.</p>
+
+<p>The server is written in Python, as I mentioned in a previous post, it’s the language I’m most comfortable with.</p>
+
+{% with heading_text="The Client-Side Code"%}
+	{% include "partials/sub_heading.html.jinja" %}
+{% endwith %}
+
+
+
+<p>The client-side code is… not great. It’s written in JavaScript, and JavaScript is devious, it looks simple and innocent, but writing it well is an entirely different beast.</p>
+
+<p>I structured the game using a few simple classes: one for the board, one for the hand, one for tiles, and another for the game state. However, since the game is highly event-driven and doesn’t have a typical game loop running in the background, I ended up with a tangled mess of methods inside these classes. The more I added, the harder the code became to navigate. Looking back, I think splitting these classes into separate functions would have made life a lot easier.</p>
+
+<h4>WebSockets and Their Messy Consequences</h4>
+
+<p>From the start, I was dead set on using WebSockets for all communication between the client and server. That turned out to be a mistake. WebSockets are great for real-time updates, but I used them when a simple HTTP request would have been a better fit. This led to design flaws that I now dread refactoring.</p>
+
+<p>One major issue appeared early in beta testing: placing a word was handled via a WebSocket emit. Unlike an HTTP request, WebSockets don’t send back a response in a predictable request-response cycle. Instead, the server processes the event and at some later point, sends a response back, which is caught by an asynchronous event handler on the client side. To make things worse, placing a word can trigger a board resize, also handled asynchronously.</p>
+
+<p>At the time, I didn’t fully grasp the implications of this, and the results were a nightmare. The order in which the client received these events was effectively random. Sometimes the board resize event arrived before the word placement event, causing the tiles to be placed while the board was mid-resize. The result? Tiles being placed in the wrong spot, not being placed at all, or just completely breaking the game.</p>
+
+<p>This is a textbook race condition, and it was a huge design flaw that I haven’t truly fixed yet.</p>
+<h4>Possible Fixes for the Future</h4>
+
+<p>I’ve thought of two ways to solve this problem:</p>
+
+<ul>
+    <li>
+		<p>
+		Make board positions size-agnostic:<br/>
+		If I make the center tile {x:0, y:0}, then no matter how big the board is, tile placements will always be correct relative to the center. However, I’d still need to ensure that tiles can’t be placed while a resize is happening.
+		</p>
+	</li>
+
+	<li>
+		<p>
+		Introduce an event queue:<br/>
+		Instead of processing events as they arrive, leading to race conditions; I could queue them up and control the order in which they execute. This would allow me to ensure that a board resize is processed before any word placement. I could even send the new board size with the word placement data so the client doesn’t attempt to draw words until it knows the board size is correct.
+		</p>
+	</li>
+</ul>
+<p>I’m not sure which of these is the best solution, but what’s clear is that I need to be much more deliberate about how I structure data when working with asynchronous events.</p>
+
+<h4>The Chrome Incident</h4>
+
+<p>When beta testing started, I was excited to hear what my friends thought, until I heard the words:</p>
+<div class="w3-center w3-border w3-margin" style="border-radius:15px;"><q class="w3-large">It won’t let me do anything.</q></div>
+
+<p>The game worked fine on my machine and for some other testers, but one person couldn’t do anything at all. No clicks, no touch inputs, nothing. I quickly realized they were using Chrome, and my heart sank. If I had done all this work only for it to break in Chrome, I would’ve been devastated.</p>
+
+<p>Sure enough, I installed Chromium and confirmed the issue: no click events were registering. I spent ages going through the PIXI.js docs, double-checking that my containers were set to be interactive and that event modes were correct. Everything looked fine, yet nothing worked.</p>
+
+<p>I started digging through the HTML and CSS, tweaking event settings, adjusting element sizes, even deleting random chunks of code to see if it made a difference. And then, I saw it.</p>
+
+<p>A single line of CSS:</p>
+
+<code>
+z-index: -1;
+</code>
+
+<p>I have no idea what compelled me to change it, but I did. I set it to 0, and suddenly… everything worked.</p>
+
+<h4>The Curse of z-index: -1</h4>
+
+<p>For those unfamiliar, z-index controls the stacking order of elements on a webpage. A value of -1 means the element is placed behind all other elements. This was intentional, the game’s PIXI.js canvas needed to sit behind other UI elements. That line of CSS had been in my code for over a year, originally from the hamster project, and I never had a reason to question it.</p>
+
+<p>Apparently, Chrome’s rendering engine <strong>hates it.</strong></p>
+
+<p>I never would have guessed that something so inconspicuous would break everything, but there it was. One tiny line of CSS had nearly derailed the entire game.</p>
+
+{% with heading_text="The Server side code."%}
+	{% include "partials/sub_heading.html.jinja" %}
+{% endwith %}
+
+
+<p>The server is responsible for managing the entire game state, tracking player moves, scores, and timestamps for each action. Since the game involves multiple players interacting in real time, ensuring consistency and preventing conflicts was a challenge.</p>
+
+<p>Initially, as I described earlier, I built everything using WebSockets. To prevent issues like two players submitting words at the same time, I implemented async protection for board interactions. This ensured that words couldn’t be played on top of each other and that no moves could be made while a board resize was in progress.</p>
+
+<p>However, while WebSockets worked well for many aspects of the game, I quickly realized that they weren’t the best tool for everything. Some actions, like fetching game state data or submitting final scores were better suited for traditional HTTP endpoints. Eventually, I moved a significant portion of the code to standard API routes, making the system more reliable and easier to debug.</p>
+
+<h4>The Word Dictionary Fiasco</h4>
+
+<p>One thing I knew from the start was that I needed a word dictionary. My first thought was to use the Free Dictionary API to check whether a word existed. However, after some testing, I realized that this approach wasn’t viable. The API response times were inconsistent, and I didn’t want to rely on an external service for something as fundamental as word validation.</p>
+
+<p>After some research, I found a <a class="my-hover-lilac" href="https://github.com/dwyl/english-words">GitHub repository</a> that provided a JSON-based word dictionary. It seemed decent enough at a glance, but it lacked definitions, which was a problem since my original game design allowed players to look up word meanings.</p>
+
+<p>To make word lookups more efficient, I parsed the JSON into an SQLite database and wrote a script to populate it with definitions by querying the Free Dictionary API. This seemed like a solid plan <strong>until I ran into a massive problem.</strong></p>
+
+<h4>The 3-Day Disaster</h4>
+
+<p>For three days, my script chugged along, making API requests and inserting definitions into the database. Then I started noticing something odd <strong>some very common words had no definitions.</strong> At first, I assumed the API simply lacked entries for those words. But after some digging, I realized the truth: I was being rate-limited.</p>
+
+<p>And the worst part? <strong>I hadn’t stored the API responses,</strong> meaning I had no way to distinguish between words that were rate-limited and words that genuinely had no definition. Three days of work, wasted.</p>
+
+<p>At that point, I admitted defeat. Cleaning up the word list had been one of my key goals: I wanted my game to have a better dictionary than the one my friends and I had been playing with. Instead, I ended up with a messy, incomplete list. In the end, I settled on a simple rule: if the submit button turns green, the word is legal; no definitions, no cleanup, just raw word validation.</p>
+
+<h4>Future Fixes?</h4>
+
+<p>I still want to improve the dictionary at some point. One idea is to gameify the cleanup process <strong>perhaps by hosting an event where players can help refine the word list.</strong>
+Maybe I could even offer rewards, like special tiles or extra discards, to incentivize participation. Just a thought.</p>
+
+
+
+
+{% with heading_text="Closing thoughts"%}
+	{% include "partials/sub_heading.html.jinja" %}
+{% endwith %}
+<p>This project has been a lot of fun. Despite its flaws, I genuinely enjoyed developing the game and have learned a lot about what I can improve in the future.</p>
+
+<p>Right now, there’s no way to view the scoreboard once a game is over. I plan to fix this sooner rather than later, but my 42 work takes priority, so it may take a while.</p>
+
+<p>And yes, I know the mobile experience isn’t great, the UI is cluttered, and there’s no zoom. I do apologize for that. While I originally planned for mobile support, my 42 deadline forced me to cut some corners. Without an easy way to test zoom inputs on a touchscreen, I had to remove it from scope.</p>
+
+<p>This is my first project of this scale, and I knew from the start it wouldn’t be perfect. That said, I was still impressed with just how many mistakes I managed to make. But every misstep is a learning experience, and I’m looking forward to refactoring the code when I get the chance to make it a better experience.</p>
+
+<p>I also think it’s pretty funny how, in my last post, I was talking about efficiency, and now I’ve written some of my least efficient code yet.</p>
+
+<p>I really hope you can look past its flaws and enjoy the game.</p>
+
+
+{% endblock %}

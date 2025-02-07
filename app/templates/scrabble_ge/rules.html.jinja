@@ -1,0 +1,36 @@
+{% extends "nonzeta_template.html.jinja" %}
+{% set title = "Word Game Rules:" %}
+
+{% block body %}
+<div id="main">
+<div class="w3-margin w3-padding w3-border w3-card" style="border-radius:15px">
+	<h3>📅 Game Duration</h3>
+	<p>The game lasts for <strong>one week</strong>, starting on <strong>Monday</strong>.</p>
+	
+	<h3>📝 Turns & Play Rules</h3>
+	<ul>
+		<li>There is <strong>no turn order</strong>—anyone can play at any time.</li>
+		<li>You can only play <strong>one word per day</strong>.</li>
+		<li>You may discard <strong>up to 5 tiles per day</strong> without losing your turn.</li>
+		<li>You can use your daily discards <strong>before</strong> or <strong>after</strong> playing your word.</li>
+	</ul>
+	
+	<h3>🔠 Tiles & Words</h3>
+	<ul>
+		<li><strong>Unlimited tiles</strong>, but letter distribution follows traditional Scrabble rules.</li>
+		<li>No blank tiles.</li>
+		<li>The word dictionary is 70% illegal in normal Scrabble, if the <strong>submit button turns green it's legal!</strong></li>
+	</ul>
+	
+	<h3>📌 Board & Growth</h3>
+	<ul>
+		<li>The board <strong>expands</strong> when tiles are placed near the edges.</li>
+		<li><strong>Bonus squares</strong> (Double/Triple Letter & Word) are <strong>randomized</strong> and <strong>increase in value</strong> as the board grows.</li>
+	</ul>
+	
+	<h3>🏆 Winning</h3>
+	<p>The player with the most points at the end of the week wins!</p>
+
+</div>
+</div>
+{% endblock %}

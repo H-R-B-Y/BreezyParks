@@ -82,6 +82,15 @@ def profile(username:str = None):
 		else:
 			return render_template("profile.html.jinja", user=user)
 
+@app.route("/<int:id>/profile")
+@render_page_failsafe
+def profile_by_id(id:int = 1):
+	user = User.query.get(id)
+	if not user:
+		return jsonify({"status":"error","message":"User doesn't exist"}), 404
+	else:
+		return render_template("profile.html.jinja", user=user)
+
 
 @app.route("/profile/update", methods=["GET", "POST"])
 @login_required

@@ -28,7 +28,9 @@ def require_able_to_post(func):
 socketio.on_namespace(zetaSocketIO.zeta("/zeta/paper_index"))
 @app.route("/paper_index")
 def paper_index():
-	return render_template("things/paper_index.html.jinja", thing_id=1, thing=ThingPost.query.filter_by(id=1).first())
+	return render_template("things/paper_index.html.jinja",
+						thing_id=1,
+						thing=ThingPost.query.get(1))
 
 @app.route("/post_note", methods=["POST"])
 @login_required
