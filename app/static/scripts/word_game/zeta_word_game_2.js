@@ -30,6 +30,13 @@ function getContrastingColor(hexColor) {
 	return getBrightness(r, g, b) < 128 ? "#FFFFFF" : "#000000";
 }
 
+function GetDistance(a, b){
+	return Math.sqrt(
+		Math.pow(a.x - b.x, 2) + 
+		Math.pow(a.y - b.y, 2)
+	);
+}
+
 // endblock
 
 // Expect player class to be loaded!!
@@ -56,8 +63,19 @@ class Grid {
 		this.dragging = false;
 		this.startpos = {x:0,y:0};
 		this.container.eventMode = 'dynamic';
-		this.container.on("pointerdown", this.dragStart.bind(this));
-		this.container.on("pointerup", this.dragEnd.bind(this));
+
+		// mouse movement is fine!
+		// and zoom is just scroll
+		this.container.on("mousedown", this.clickDragStart.bind(this));
+		this.container.on("mouseup", this.clickDragEnd.bind(this));
+
+		// handle touch events seperatly
+		this.touches = {};
+		this.initialDistance = null;
+		this.currentDistance = null;
+		this.container.on("touchstart", this.touchDragStart.bind(this));
+		this.container.on("touchend", this.touchDragEnd.bind(this));
+		this.container.on("touchendoutside", this.touchDragEnd.bind(this));
 
 
 		this.offset = {x:0,y:0};
@@ -72,16 +90,17 @@ class Grid {
 
 	}
 
-	dragStart (event) {
+//#region MOUSEEVENTS
+	clickDragStart (event) {
 		if (!this.dragging && !this.game.holdingTile)
 		{
 			this.dragging = true;
 			this.startpos = {x:event.global.x, y:event.global.y};
 			this.startOffset = {x:this.offset.x, y:this.offset.y};
-			this.container.on("pointermove", this.onDrag.bind(this));
+			this.container.on("mousemove", this.clickOnDrag.bind(this));
 		}
 	}
-	onDrag (event) {
+	clickOnDrag (event) {
 		if (this.dragging)
 		{
 			let diff = {x: event.global.x - this.startpos.x, y: event.global.y - this.startpos.y};
@@ -90,31 +109,68 @@ class Grid {
 			this.centerGrid();
 		}
 	}
-	dragEnd () {
+	clickDragEnd () {
 		if (this.dragging && !this.game.holdingTile)
 		{
 			this.dragging = false;
-			this.container.off("pointermove");
+			this.container.off("mousemove");
+		}
+	}
+//#endregion
+
+//#region TOUCHEVENTS
+
+	touchDragStart (event) {
+		this.touches[event.pointerId] = { x: event.global.x, y: event.global.y };
+		this.startOffset = {x:this.offset.x, y:this.offset.y};
+		let keys = Object.keys(this.touches);
+		if (keys.length === 1) {
+			this.container.on("touchmove", this.touchOnDrag.bind(this));
+		} else if (keys.length === 2) {
+			this.initialDistance = Math.floor(GetDistance(this.touches[keys[0]], this.touches[keys[1]]), 12)
+		}
+		console.log(this.touches);
+	}
+
+	touchOnDrag (event) { 
+		let keys = Object.keys(this.touches);
+		if (keys.length === 1) {
+			let pos = this.touches[keys[0]];
+			let diff = {x: event.global.x - pos.x, y: event.global.y - pos.y}
+			this.offset.x = this.startOffset.x + diff.x;
+			this.offset.y = this.startOffset.y + diff.y;
+			this.centerGrid();
+		} else if (keys.length === 2) {
+			this.touches[event.pointerId] = { x: event.global.x, y: event.global.y }
+			this.currentDistance = Math.floor(
+				GetDistance(this.touches[keys[0]],
+					this.touches[keys[1]]
+				) / 12
+			);
+			console.log(`Initial dist: ${this.initialDistance}, curr dist: ${this.currentDistance}`);
+			if (this.initialDistance > this.currentDistance) {
+				this.setZoom(0.1, -1);
+				this.initialDistance = this.currentDistance;
+			} else if (this.initialDistance < this.currentDistance) {
+				this.setZoom(0.1, 1);
+				this.initialDistance = this.currentDistance;
+			}
 		}
 	}
 
-	// I literally have no way to test this OMG
-	// onPinchZoom (event) {
-	// 	if (event.data.originalEvent.touches && event.data.originalEvent.touches.length === 2) {
-	// 		// Two-finger pinch logic
-	// 		const touch1 = event.data.getLocalPosition(this.container);
-	// 		const touch2 = event.data.getLocalPosition(this.container);
-	// 		const pinchDistance = this.getDistance(touch1, touch2);
-	
-	// 		if (pinchStartDistance === 0) {
-	// 			pinchStartDistance = pinchDistance;
-	// 			pinchStartScale = this.container.scale.x;
-	// 		} else {
-	// 			const scaleFactor = pinchDistance / pinchStartDistance;
-	// 			this.setZoom(scaleFactor);
-	// 		}
-	// 	}
-	// }
+	touchDragEnd (event) {
+		delete this.touches[event.pointerId];
+		let keys = Object.keys(this.touches);
+		if (keys.length){
+			this.initialDistance = null;
+			this.currentDistance = null;
+		} else if (keys.length === 0) {
+			this.container.off("touchmove");
+		}
+		console.log(this.touches);
+	}
+
+//#endregion
 
 	onScroll (event) {
 		// I have been struggling with trying to get the zoom onto the pointer for so long i give up.

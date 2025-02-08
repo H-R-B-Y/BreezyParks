@@ -1,17 +1,6 @@
 {% extends "things/thing_template.html.jinja" %}
 {% block sub_body %}
-<div class="w3-cell-row w3-auto w3-padding w3-margin w3-card", style="border-radius:15px;">
-	<div class="w3-cell w3-auto w3-center w3-margin w3-padding">
-		<a href="play">
-		<button class="w3-button my-hover-lilac w3-border" style="font-size:large;width:100%;border-radius:15px;">Play</button>
-		</a>
-	</div>
-	<div class="w3-cell w3-auto w3-center w3-margin w3-padding">
-		<a href="rules">
-		<button class="w3-button my-hover-lilac w3-border" style="font-size:large;width:100%;border-radius:15px;">Rules</button>
-		</a>
-	</div>
-</div>
+{% include "scrabble_ge/partials/scrabble_header_one.html.jinja" %}
 {% with heading_text="Preface."%}
 	{% include "partials/sub_heading.html.jinja" %}
 {% endwith %}

@@ -17,6 +17,18 @@ def login():
 	session['nonce'] = "" # WARN: what is this lol
 	return render_template("login_page.html.jinja", google_login_url=url_for("login_google_redirect"))
 
+# if app.config["ENVIRONMENT_NAME"] != "production":
+# 	@app.route("/login_as/<int:id>")
+# 	def development_login_as(id):
+# 		if current_user.is_authenticated:
+# 			logout_user()
+# 		user = User.query.get(id)
+# 		if not user:
+# 			return redirect(url_for("login"))
+# 		login_user(user)
+# 		return redirect(url_for("profile"))
+
+
 @app.route("/login_google_redirect")
 def login_google_redirect():
 	if current_user.is_authenticated:

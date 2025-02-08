@@ -35,6 +35,10 @@ def scrabble_play():
 def scrabble_rules():
 	return render_template("scrabble_ge/rules.html.jinja")
 
+# @scrabble_bp.route("/test")
+# def scrabble_test():
+# 	return render_template("scrabble_ge/test.html.jinja")
+
 # region game code
 
 @scrabble_bp.route("/state_check")
