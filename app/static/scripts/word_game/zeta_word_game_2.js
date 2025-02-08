@@ -121,15 +121,18 @@ class Grid {
 //#region TOUCHEVENTS
 
 	touchDragStart (event) {
-		this.touches[event.pointerId] = { x: event.global.x, y: event.global.y };
-		this.startOffset = {x:this.offset.x, y:this.offset.y};
-		let keys = Object.keys(this.touches);
-		if (keys.length === 1) {
-			this.container.on("touchmove", this.touchOnDrag.bind(this));
-		} else if (keys.length === 2) {
-			this.initialDistance = Math.floor(GetDistance(this.touches[keys[0]], this.touches[keys[1]]), 12)
+		if (!this.game.holdingTile) {
+			this.touches[event.pointerId] = { x: event.global.x, y: event.global.y };
+			this.startOffset = {x:this.offset.x, y:this.offset.y};
+			let keys = Object.keys(this.touches);
+			if (keys.length === 1) {
+				this.dragging = true;
+				this.container.on("touchmove", this.touchOnDrag.bind(this));
+			} else if (keys.length === 2) {
+				this.initialDistance = Math.floor(GetDistance(this.touches[keys[0]], this.touches[keys[1]]), 12)
+			}
+			console.log(this.touches);
 		}
-		console.log(this.touches);
 	}
 
 	touchOnDrag (event) { 
@@ -165,6 +168,7 @@ class Grid {
 			this.initialDistance = null;
 			this.currentDistance = null;
 		} else if (keys.length === 0) {
+			this.dragging = false;
 			this.container.off("touchmove");
 		}
 		console.log(this.touches);

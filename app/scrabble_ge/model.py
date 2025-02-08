@@ -101,14 +101,18 @@ class Hand():
 		return {
 			"tiles" : [t.data() for t in self.tiles],
 			"score" : self.score,
-			"username" : self.owner
+			"username" : self.owner,
+			"discardsUsed" : self.discardsUsed,
+			"discardTimestamp" : self.discardTimestamp,
 		}
 	
 	@classmethod
 	def init_from_data(cls, owner, data):
 		hand = Hand(owner=owner)
-		hand.score = data["score"]
-		hand.tiles = [Tile.init_from_data(owner, t) for t in data["tiles"]]
+		hand.score = data.get("score", 0)
+		hand.tiles = [Tile.init_from_data(owner, t) for t in data.get("tiles", [])]
+		hand.discardsUsed = int(data.get("discardsUsed", 0))
+		hand.discardTimestamp = data.get("discardTimestamp", datetime.utcnow().timestamp())
 		return hand
 
 class Word():
