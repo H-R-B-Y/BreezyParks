@@ -162,17 +162,29 @@ class Word():
 		}
 	
 	@classmethod
-	def init_from_data(cls, owner, data):
-		tiles = [Tile.init_from_data(t["played_by"], t) for t in data["tiles"]]
+	def init_from_data(cls, owner, data, tiles):
+		# my_tiles = [Tile.init_from_data(t["played_by"], t) for t in data["tiles"]]
+		if tiles:
+			my_tiles = []
+			for tile_data in data["tiles"]:
+				if not tile_data["id"] in tiles.keys():
+					print("Error, tile duplicated between two primaries!")
+					my_tiles.append(Tile.get_by_uuid(tile_data["id"]))
+					continue
+				my_tiles.append(tiles[tile_data["id"]])
+				del tiles[tile_data["id"]]
+		else:
+			my_tiles = [Tile.get_by_uuid(t["id"]) for t in data["tiles"]]
 		word = Word(owner=owner, score=data["score"], axis=data["axis"])
 		del Word.words_by_uuid[word.id]
 		word.id = data["id"]
 		word.word = data["word"]
 		Word.words_by_uuid[data["id"]] = word
-		word.tiles = tiles
-		word.all_tiles = data.get("all_tiles")
+		word.tiles = my_tiles
+		word.all_tiles = [Tile.get_by_uuid(x["id"]) for x in data.get("all_tiles")]
 		word.score = data["score"]
 		word.extends = data["extends"]
+		word.is_primary = data["is_primary"]
 		return word
 	
 	@classmethod
@@ -307,6 +319,12 @@ class Board():
 		self.tile_occurance[identity] += 1
 		return Tile(identity=identity, owner=owner)
 	
+	def print_board_state(self):
+		for row in self.grid:
+			for square in row:
+				print("  " if square is None else square.identity + " ", end="")
+			print("")
+
 	def place_tiles(self, tiles):
 		with self.grid_lock:
 			for tile in tiles:
@@ -343,6 +361,8 @@ class Board():
 		new_size = new_inc + self.size
 		new_board = [[None for _ in range(new_size)] for _ in range(new_size)]
 		new_special = [[None for _ in range(new_size)] for _ in range(new_size)]
+		# self.print_board_state()
+		print()
 		with self.grid_lock:
 			current_board_state = self.grid
 			for x in range(len(current_board_state)):
@@ -351,9 +371,10 @@ class Board():
 						new_special[increment + x][increment + y] = self.special_grid[x][y]
 					if current_board_state[x][y] != None:
 						new_board[increment + x][increment + y] = current_board_state[x][y]
-						if isinstance(current_board_state[x][y], Tile):
-							current_board_state[x][y].position["x"] += increment
-							current_board_state[x][y].position["y"] += increment
+						print(f"{current_board_state[x][y]} at new position: {increment + x} {increment + y}")
+						current_board_state[x][y].position["x"] = increment + x
+						current_board_state[x][y].position["y"] = increment + y
+						print(f"{current_board_state[x][y]} at new position: {increment + x} {increment + y}")
 			self.grid = new_board
 			self.special_grid = new_special
 			old_size = self._size
@@ -363,6 +384,7 @@ class Board():
 			st[1] += increment
 		[self.create_tile_special_squares((old_size // 2) + 1, new_size // 2, int(3 + self._size / 6)) for i in range(10)]
 		[self.create_word_special_squares((old_size // 2) + 1, new_size // 2, int(3 + self._size / 6)) for i in range(6)]
+		# self.print_board_state()
 		return True
 	
 	def data(self, *args, **kwargs):
@@ -381,10 +403,10 @@ class Board():
 		}
 	
 	
-	def add_played_word_from_data(self, data):
-		word = Word.init_from_data(data["owner"], data)
+	def add_played_word_from_data(self, data, tiles):
+		word = Word.init_from_data(data["owner"], data, tiles)
 		# add tiles to grid
-		for tile in word.tiles: 
+		for tile in word.tiles:
 			# print(tile.id)
 			self.grid[tile.position["x"]][tile.position["y"]] = tile
 			self.played_tiles.add(tile.id)
@@ -396,13 +418,24 @@ class Board():
 	@classmethod
 	def init_from_data(cls, data):
 		board = Board(data["board_size"])
+		board.special_grid =[[None for _ in range(data["board_size"])] for _ in range(data["board_size"])]
 		for x, y, t, m in data["letter_mult_array"]:
 			board.special_grid[x][y] = [t, m]
 		board.special_tile_vector = data["letter_mult_array"]
 		# What happens when a word is played? 
+		tiles = {}
+		for tile in data["all_tiles"]:
+			if tile["id"] in tiles.keys():
+				print(f"Duplicate tile found in dataset! {tile} and {tiles[tile['id']]}")
+			else:
+				tiles[tile["id"]] = Tile.init_from_data(tile["played_by"], tile)
+		primary_ids = []
 		for word in data["primary_words"]:
-			# print(word["word"])
-			board.add_played_word_from_data(word)
+			board.add_played_word_from_data(word, tiles)
+			primary_ids.append(word["id"])
+		for word in data["all_words"]:
+			if word["id"] not in primary_ids:
+				board.words.add(Word.init_from_data(word["owner"], word, tiles=None))
 		board.gameid = data["id"]
 		return board
 

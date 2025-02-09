@@ -197,7 +197,8 @@ def scrabble_played_word():
 	try:
 		words = [ns.WordProto(w) for w in data]
 	except AssertionError as e:
-		return jsonify({"status": "error", "message": "Assertion error (tiles or axis invalid)", "details": str(e)})
+		pass
+		#return jsonify({"status": "error", "message": "Assertion error (tiles or axis invalid)", "details": str(e)})
 	primary = None
 	for word in words:
 		if word.is_parent and not primary:
@@ -240,8 +241,9 @@ def scrabble_played_word():
 		ns.board.words.add(this_word)
 		true_words.append(this_word)
 		if word == primary:
-			# print(word)
 			primary = this_word
+			for tile in primary.tiles:
+				tile.played_word = str(primary.id)
 			primary.is_primary = True
 
 	for tw in true_words:

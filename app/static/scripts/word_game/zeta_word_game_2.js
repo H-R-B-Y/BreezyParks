@@ -617,7 +617,7 @@ class UI {
 		
 		this.maxDiscards = 0;
 		this.discardsRemaining = 0;
-		this.discardButtonEnabled = true;
+		this.discardButtonEnabled = null;
 		this.discardContainer = new PIXI.Container();
 		this.discardContainer.interactive = true;
 		this.discardTarget = new PIXI.Graphics();

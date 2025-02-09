@@ -111,6 +111,7 @@ class zeta_word_game(zetaSocketIO.zeta):
 			self.base_init()
 		finally:
 			self.resetting = False
+			# self.board.print_board_state()
 
 	@word_dictionary_connection
 	def check_if_import_possible(self):
@@ -156,13 +157,14 @@ class zeta_word_game(zetaSocketIO.zeta):
 	@word_dictionary_connection
 	def save_game_state(self,):
 		with self.board.grid_lock:
+			# self.board.print_board_state()
 			conn : sqlite3.Connection = self.save_game_state.dictionary_connection
 			curs : sqlite3.Cursor = self.save_game_state.dictionary_cursor
 			# Save the game state and scores to DB?????
 			if len(self.board.words) == 0:
 				return
 
-			state_data = json.dumps(self.get_savable_data())
+			state_data = json.dumps(self.get_saveable_data())
 			
 			try:
 				if state_data:
