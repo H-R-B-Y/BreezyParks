@@ -28,7 +28,15 @@ def scrabble_index():
 
 @scrabble_bp.route("/play")
 @login_required
+@render_page_failsafe
 def scrabble_play():
+	thing = schema.ThingPost.query.filter_by(title="Word Game").first()
+	if thing is None :
+		return "Thing not found", 404
+	if thing.status == "draft" and not current_user.is_authenticated:
+		return "Thing not found", 404
+	if thing.status == "draft" and current_user.is_authenticated and not current_user.is_admin:
+		return "Thing not found", 404
 	return render_template("scrabble_ge/scrabble_ge.html.jinja")
 
 @scrabble_bp.route("/rules")
