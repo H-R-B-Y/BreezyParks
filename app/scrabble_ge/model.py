@@ -371,10 +371,10 @@ class Board():
 						new_special[increment + x][increment + y] = self.special_grid[x][y]
 					if current_board_state[x][y] != None:
 						new_board[increment + x][increment + y] = current_board_state[x][y]
-						print(f"{current_board_state[x][y]} at new position: {increment + x} {increment + y}")
+						# print(f"{current_board_state[x][y]} at new position: {increment + x} {increment + y}")
 						current_board_state[x][y].position["x"] = increment + x
 						current_board_state[x][y].position["y"] = increment + y
-						print(f"{current_board_state[x][y]} at new position: {increment + x} {increment + y}")
+						# print(f"{current_board_state[x][y]} at new position: {increment + x} {increment + y}")
 			self.grid = new_board
 			self.special_grid = new_special
 			old_size = self._size
