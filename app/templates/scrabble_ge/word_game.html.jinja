@@ -47,11 +47,11 @@
 
 <p>The client-side code is… not great. It’s written in JavaScript, and JavaScript is devious, it looks simple and innocent, but writing it well is an entirely different beast.</p>
 
-<p>I structured the game using a few simple classes: one for the board, one for the hand, one for tiles, and another for the game state. However, since the game is highly event-driven and doesn’t have a typical game loop running in the background, I ended up with a tangled mess of methods inside these classes. The more I added, the harder the code became to navigate. Looking back, I think splitting these classes into separate functions would have made life a lot easier.</p>
+<p>I structured the game using a few simple classes: one for the board, one for the hand, one for tiles, and another for the game state. However, since the game is highly event-driven and doesn’t have a typical game loop running in the background, I ended up with a tangled mess of methods inside these classes. The more I added, the harder the code became to navigate. Looking back, I think splitting these classes into separate files would have made life a lot easier.</p>
 
 <h4>WebSockets and Their Messy Consequences</h4>
 
-<p>From the start, I was dead set on using WebSockets for all communication between the client and server. That turned out to be a mistake. WebSockets are great for real-time updates, but I used them when a simple HTTP request would have been a better fit. This led to design flaws that I now dread refactoring.</p>
+<p>From the start, I was dead set on using WebSockets for all communication between the client and server. That turned out to be a mistake. WebSockets are great for real-time updates, but I used them when a simple HTTP request would have been a better fit. This led to design flaws that warrent refactoring.</p>
 
 <p>One major issue appeared early in beta testing: placing a word was handled via a WebSocket emit. Unlike an HTTP request, WebSockets don’t send back a response in a predictable request-response cycle. Instead, the server processes the event and at some later point, sends a response back, which is caught by an asynchronous event handler on the client side. To make things worse, placing a word can trigger a board resize, also handled asynchronously.</p>
 
@@ -148,13 +148,11 @@ Maybe I could even offer rewards, like special tiles or extra discards, to incen
 
 <p>Right now, there’s no way to view the scoreboard once a game is over. I plan to fix this sooner rather than later, but my 42 work takes priority, so it may take a while.</p>
 
-<p>And yes, I know the mobile experience isn’t great, the UI is cluttered, and there’s no zoom. I do apologize for that. While I originally planned for mobile support, my 42 deadline forced me to cut some corners. Without an easy way to test zoom inputs on a touchscreen, I had to remove it from scope.</p>
-
 <p>This is my first project of this scale, and I knew from the start it wouldn’t be perfect. That said, I was still impressed with just how many mistakes I managed to make. But every misstep is a learning experience, and I’m looking forward to refactoring the code when I get the chance to make it a better experience.</p>
 
 <p>I also think it’s pretty funny how, in my last post, I was talking about efficiency, and now I’ve written some of my least efficient code yet.</p>
 
-<p>I really hope you can look past its flaws and enjoy the game.</p>
+<p>That being said I really hope you can look past its flaws and enjoy the game.</p>
 
 
 {% endblock %}
