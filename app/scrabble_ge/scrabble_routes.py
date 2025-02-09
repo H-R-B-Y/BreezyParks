@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from datetime import datetime
 from functools import wraps
 from threading import Thread
-import sqlite3
+import sqlite3, json
 
 @scrabble_bp.route("/")
 @render_page_failsafe
@@ -40,6 +40,25 @@ def scrabble_rules():
 # 	return render_template("scrabble_ge/test.html.jinja")
 
 # region game code
+
+@scrabble_bp.route("/dump_state")
+@require_admin
+def scrabble_dump_state():
+	ns = zeta_word_game_namespace_instance
+	return jsonify(ns.get_saveable_data())
+
+@scrabble_bp.route("/view_games")
+@word_dictionary_connection
+@require_admin
+def scrabble_game_list():
+	ns = zeta_word_game_namespace_instance
+	conn : sqlite3.Connection = scrabble_game_list.dictionary_connection
+	curs : sqlite3.Cursor = scrabble_game_list.dictionary_cursor
+	game_states = curs.execute(
+		"SELECT id, state FROM games"
+	).fetchall()
+	return jsonify({"game_states":{x[0] : json.loads(x[1]) for x in game_states}})
+
 
 @scrabble_bp.route("/state_check")
 def scrabble_state_check():

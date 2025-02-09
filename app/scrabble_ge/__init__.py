@@ -138,6 +138,20 @@ class zeta_word_game(zetaSocketIO.zeta):
 			return False
 		else:
 			return game[1]
+		
+	def get_saveable_data(self):
+		startTime = datetime.fromtimestamp(self.board.starttime).replace(hour=0, minute=0, second=0, microsecond=0)
+		startTime += timedelta(days=7)
+		game_finished = False
+		if datetime.utcnow() > startTime:
+			game_finished = True
+		return self.board.data(
+					players = list(self.totalPlayers),
+					scores = {n:self.hands[n].score for n in self.hands.keys()},
+					hands = {h:self.hands[h].data() for h in self.hands},
+					timings = self.playerTiming,
+					game_state = ("finished" if game_finished else "in_progress")
+				)
 
 	@word_dictionary_connection
 	def save_game_state(self,):
@@ -147,23 +161,9 @@ class zeta_word_game(zetaSocketIO.zeta):
 			# Save the game state and scores to DB?????
 			if len(self.board.words) == 0:
 				return
-			game_finished = False
 
-			startTime = datetime.fromtimestamp(self.board.starttime).replace(hour=0, minute=0, second=0, microsecond=0)
-			startTime += timedelta(days=7)
-
-			if datetime.utcnow() > startTime:
-				game_finished = True
-
-			state_data = json.dumps(
-				self.board.data(
-					players = list(self.totalPlayers),
-					scores = {n:self.hands[n].score for n in self.hands.keys()},
-					hands = {h:self.hands[h].data() for h in self.hands},
-					timings = self.playerTiming,
-					game_state = ("finished" if game_finished else "in_progress")
-				)
-			)
+			state_data = json.dumps(self.get_savable_data())
+			
 			try:
 				if state_data:
 					curs.execute(
