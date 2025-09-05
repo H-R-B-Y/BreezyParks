@@ -1,6 +1,69 @@
+NEW STUFF:
+1. new tables for event, project, as well as columns for ssh keys
+2. setup gitolite (or similar) and create tables for managing permissions
+3. create a management script that will run automatically and configure gitolite based on the database tables
+4. create a web interface for managing the tables (admin only)
+5. create a web interface for managing ssh keys (admin and user)
+   this should be added to users profile, we can create a partial for this
+6. create web interface for managing events (admin only)
+7. create web interface for users to provision projects this will create repos,
+   one per user per event, users can be attributed to multiple projects (one per event)
+8. create web interface for users to manage their projects (add/remove users, view ssh keys)
+   this will include a place for them to upload graphics and a description of the project
+9. create web interface for admin to manage all projects (add/remove users, view ssh keys)
+
+Schema will need to be:
+event (id, name, description, start_date, end_date, created_at, updated_at)
+project (id, event_id, name, description, created_at, updated_at)
+user_ssh_key (id, user_id, key, created_at, updated_at)
+project_user (id, project_id, user_id, role, created_at, updated_at)
+role can be 'admin' or 'contributor'
+then we just need to assert that user can only have one project per event (this can be done in the schema.py we done need to validate in the sql)
+likes and comments will need to have their schema updated to link to projects.
+We will also need a table for the update queue, this will be used 
+to update things like the ssh keys, the repo ownership / permissions, etc.
+the queue will be processed by a seperate script that will run as a cron job or similar.
+this way the server doesn't need to keep updatign and recompiling the ssh and gitolite config on every change.
+
+for the cron job:
+1. check the update queue for any new updates
+2. if there are updates, process them one by one
+3. for each update, check the type of update (ssh key, project, etc)
+4. perform the necessary actions to update the system (update gitolite config, etc)
+5. mark the update as complete in the queue with a time
+6. write the necessary tables in the database to reflect the changes
+7. log any errors or issues that occur during the update process
+8. repeat the process every 5 minutes or so
+
+Another thing that i want to do is allow account creation via 42 api,
+ this will require a new table for 42 api tokens, and a new route for handling the oauth process.
+
+this will be in addition to the current login system, and we will allow users to link both their 42 account
+ and their google account and login will work with either.
+
+We will need to update the user table with the relevant fields from the 42 api.
+We will need to update the login route to handle the oauth process.
+
+OLD STUFF:
 1. write post on site about starting 42 London.
 2. add time and date to site posts (and list views).
 3. remove preloaded comments.
 4. add time and date fields (and other metadata) to header region in html for better seo.
+5. When a user is created they are prompted to change their name as we just pull it from google,
+    but it looks bad because it doesn't explicitly say they dont have to change it, and if they click change
+	then it tells them they cant change it to the same name, there should be something to skip this dialog.
+6. add a way to delete account, this should remove all user data, posts, comments
+7. new table for privileges, and a new wrapper for checking privileges,
+	this will allow us to have more granular control over what users can do.
+	like in the future if i want people to be able to provision their own events?
+
+8. Still need to make the user avatar creator, right now it just 404s when collecting the user avatar, because
+	there is no way to create the avatar yet.
 
 
+New module ideas:
+ - Interactive fractal map, can see where other people are in the fractal and follow people.
+ - Boids catch em all, interactive boids simulation where you can program the boids and share with friends.
+ - Terminal game: we have started the ground work for this, working with sixels in c, we just need to come up with a game idea.
+ - The big one (zeta): (redacted)
+ 

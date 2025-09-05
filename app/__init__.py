@@ -19,6 +19,7 @@ app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 app.config["ENVIRONMENT_NAME"] = os.getenv("ENVIRONMENT_NAME")
 
 if app.config["ENVIRONMENT_NAME"] == "development" or not app.config["ENVIRONMENT_NAME"]:
+	app.config["ENVIRONMENT_NAME"] = "development"
 	app.config['SESSION_COOKIE_DOMAIN'] = None
 	app.config['SESSION_COOKIE_SECURE'] = False  # Enforce HTTPS for cookies
 if app.config["ENVIRONMENT_NAME"] == "production":
